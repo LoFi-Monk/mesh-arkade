@@ -9,9 +9,9 @@ They may edit and organize these notes as they see fit.
 - [ ] Configure TSDoc enforcement and coverage
 - [ ] Integrate TDD workflow into OpenSpec proposals
 
-# Current Focus
-- [/] Initializing environment (Git, NPM, TS)
-- [ ] Establishing TDD patterns for OpenSpec
+- [x] Initializing environment (Git, NPM, TS)
+- [x] UI Setup (React, Vite, Pear Bridge)
+- [/] UI Adjustments & Fine-tuning
 
 # Notes to future self
 - **AGENTS.md**: Shared guidelines between me and Opencode. Focuses on tech stack, style, and commands.
@@ -41,6 +41,8 @@ They may edit and organize these notes as they see fit.
 - [2026-03-12] CTO Guardian Role: Use safeword **"Timeout! ⏰"** if user requests deviate from Pear architecture or P2P/Decentralized best practices.
 - [2026-03-12] Distribution Policy: **On-Demand Only**. Users only download what they interact with (ROMs, metadata, media).
 - [2026-03-12] Sharing Policy: **Mandatory Participation**. Sharing is non-optional to maintain swarm health. Users can throttle speed/connections, but never disable sharing entirely. The app acts as a decentralized tracker/gateway between Pear Swarms and IPFS/Torrents.
+- [2026-03-12] Milestone Complete: [01] UI Foundation committed to `feat/ui-setup-react`.
+- [2026-03-12] Established **Bridge Addr Trick** as the standard HMR pattern for MeshARKade.
 
 # Resources and References
 links to helpful resources and references.

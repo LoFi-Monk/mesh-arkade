@@ -1,6 +1,9 @@
-import { appName, primaryTagline, taglines, colors } from "./branding";
+import { appName, taglines, colors, categories } from "./branding";
 
 export function DiscoveryDeck() {
+  const allWords = Object.values(categories).flat();
+  const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+  const descriptor = `A Decent Game ${randomWord}`;
   const tagline = taglines[Math.floor(Math.random() * taglines.length)];
 
   return (
@@ -35,7 +38,7 @@ export function DiscoveryDeck() {
           marginBottom: "1.5rem",
         }}
       >
-        {primaryTagline}
+        {descriptor}
       </p>
       <p
         style={{
