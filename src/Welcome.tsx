@@ -40,15 +40,6 @@ export function DiscoveryDeck() {
       >
         {descriptor}
       </p>
-      <p
-        style={{
-          fontSize: "1rem",
-          fontStyle: "italic",
-          opacity: 0.8,
-        }}
-      >
-        "{tagline}"
-      </p>
     </div>
   );
 }

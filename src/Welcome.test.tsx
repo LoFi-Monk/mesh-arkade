@@ -14,10 +14,4 @@ describe("DiscoveryDeck", () => {
     // Replaces the old static primaryTagline test
     expect(screen.getByText(/A Decent Game .+/)).toBeInTheDocument();
   });
-
-  it("renders a random tagline from the list", () => {
-    render(<DiscoveryDeck />);
-    const taglineElements = screen.getAllByText(/"[^"]+"/);
-    expect(taglineElements.length).toBeGreaterThan(0);
-  });
 });
