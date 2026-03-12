@@ -19,10 +19,25 @@
     "name": "mesh-arkade",
     "pre": "pear-electron/pre",
     "gui": {
-      "width": 1200,
-      "height": 800,
-      "backgroundColor": "#000000",
+      "width": 1024,
+      "height": 768,
+      "backgroundColor": "#1a1a2e",
       "frame": true
+    },
+    "stage": {
+      "ignore": [
+        ".git/",
+        ".agent/",
+        ".opencode/",
+        "src/",
+        "tests/",
+        "openspec/",
+        "tsconfig.json",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "package-lock.json",
+        "*.md"
+      ]
     }
   },
   "devDependencies": {
