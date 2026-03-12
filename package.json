@@ -1,0 +1,51 @@
+{
+  "name": "mesh-arkade",
+  "version": "0.1.0",
+  "description": "Museum-quality P2P application",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ui": "vitest",
+    "dev:ui": "vite",
+    "dev": "concurrently \"npm run dev:ui\" \"wait-on http://localhost:5173 && pear run --dev .\"",
+    "build:ui": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "pear": {
+    "name": "mesh-arkade",
+    "pre": "pear-electron/pre",
+    "gui": {
+      "width": 1200,
+      "height": 800,
+      "backgroundColor": "#000000",
+      "frame": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.0.3",
+    "jsdom": "^28.1.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0",
+    "wait-on": "^9.0.4"
+  },
+  "dependencies": {
+    "pear-bridge": "^1.2.5",
+    "pear-electron": "^1.7.28",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}
