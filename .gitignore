@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Pear Runtime
+.pear/
+storage/
+
+# Agents
+.agent/temp/
+.agent/agent-notes/*.tmp
+brain/
+task.md
+implementation_plan.md
+walkthrough.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

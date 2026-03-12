@@ -1,0 +1,12 @@
+{
+  "agents": {
+    "enabled": true,
+    "default": "general"
+  },
+  "docs": [
+    "./AGENTS.md"
+  ],
+  "workspace": {
+    "root": "."
+  }
+}
