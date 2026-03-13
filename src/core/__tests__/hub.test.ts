@@ -145,6 +145,72 @@ describe("CoreHub JSON-RPC", () => {
 
       expect(response.result).toEqual([]);
     });
+
+    it("should handle curator:mount with missing path", async () => {
+      const request = {
+        method: "curator:mount",
+        params: {},
+        id: 4,
+      };
+      const response = await hub.handleRequest(request);
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain("Missing required parameter: path");
+    });
+
+    it("should handle curator:unmount with missing path", async () => {
+      const request = {
+        method: "curator:unmount",
+        params: {},
+        id: 5,
+      };
+      const response = await hub.handleRequest(request);
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain("Missing required parameter: path");
+    });
+
+    it("should handle unknown method", async () => {
+      const request = {
+        method: "unknown",
+        id: 6,
+      };
+      const response = await hub.handleRequest(request);
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain("Unknown method");
+    });
+  });
+
+  describe("environment and paths", () => {
+    it("should use storage from Pear if available", async () => {
+      vi.stubGlobal("Pear", { app: { storage: "/pear-path" } });
+      CoreHub.resetInstance();
+      const h = CoreHub.getInstance();
+      await h.start();
+      expect(h.getStoragePath()).toBe("/pear-path");
+    });
+
+    it("should default storage to ./data if Pear storage is missing", async () => {
+      vi.stubGlobal("Pear", { app: {} });
+      CoreHub.resetInstance();
+      const h = CoreHub.getInstance();
+      await h.start();
+      expect(h.getStoragePath()).toBe("./data");
+    });
+
+    it("should use backslash separator for Windows-like paths", async () => {
+      vi.stubGlobal("Pear", { app: { storage: "C:\\path" } });
+      CoreHub.resetInstance();
+      const h = CoreHub.getInstance();
+      await h.start();
+      expect(h.getSocketPath()).toBe("C:\\path\\mesharkade.sock");
+    });
+
+    it("should use forward slash separator for Unix-like paths", async () => {
+      vi.stubGlobal("Pear", { app: { storage: "/path" } });
+      CoreHub.resetInstance();
+      const h = CoreHub.getInstance();
+      await h.start();
+      expect(h.getSocketPath()).toBe("/path/mesharkade.sock");
+    });
   });
 
   describe("status and ping", () => {
@@ -170,6 +236,16 @@ describe("CoreHub JSON-RPC", () => {
       const response = await hub.handleRequest(request);
 
       expect(response.result).toEqual({ pong: true });
+    });
+
+    it("should be idempotent on start and stop", async () => {
+      const h = CoreHub.getInstance();
+      await h.start();
+      await h.start(); // Second start should return early
+      expect(h.getStatus().running).toBe(true);
+      await h.stop();
+      await h.stop(); // Second stop should return early
+      expect(h.getStatus().running).toBe(false);
     });
   });
 });

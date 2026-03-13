@@ -219,4 +219,49 @@ describe("Curator", () => {
       expect(mounts[0].path).toBe("/test/library1");
     });
   });
+
+  describe("Curator.getMount(path)", () => {
+    it("should return the mount if it exists", async () => {
+      const { Curator } = await import("../curator");
+      const path = "/test/path";
+      fsPromisesMock.readFile.mockResolvedValueOnce(
+        JSON.stringify([{ path, status: "active", fileCount: 0 }]),
+      );
+      const mount = await Curator.getMount(path);
+      expect(mount?.path).toBe(path);
+    });
+
+    it("should return null if it does not exist", async () => {
+      const { Curator } = await import("../curator");
+      fsPromisesMock.readFile.mockResolvedValueOnce(JSON.stringify([]));
+      const mount = await Curator.getMount("/missing");
+      expect(mount).toBeNull();
+    });
+  });
+
+  describe("Curator.mount(path) - Edge Cases", () => {
+    it("should throw if path is already active", async () => {
+      const { Curator } = await import("../curator");
+      const path = "/existing";
+      fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
+      fsPromisesMock.readFile.mockResolvedValueOnce(
+        JSON.stringify([{ path, status: "active" }]),
+      );
+
+      await expect(Curator.mount(path)).rejects.toThrow("is already mounted");
+    });
+
+    it("should allow mounting if existing mount is inactive", async () => {
+      const { Curator, MountStatus } = await import("../curator");
+      const path = "/re-mount";
+      fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
+      fsPromisesMock.readFile.mockResolvedValueOnce(
+        JSON.stringify([{ path, status: MountStatus.Inactive }]),
+      );
+      fsPromisesMock.writeFile.mockResolvedValueOnce(undefined);
+
+      const result = await Curator.mount(path);
+      expect(result.status).toBe(MountStatus.Active);
+    });
+  });
 });
