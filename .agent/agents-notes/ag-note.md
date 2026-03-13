@@ -2,9 +2,9 @@
 
 # Current Progress: Unified Design System Phase 1
 
-## Status: EXECUTION (Curator CLI Ready)
+## Status: HANDOFF (Curator CLI ready for Opencode)
 
-The user successfully established a production-grade safety net. We have moved from "Planning" to being ready for the "Curator CLI" implementation on a protected `main` branch.
+The codebase has been stabilized with zero typecheck errors. Milestone [03] (Curator CLI) is fully proposed on a dedicated branch with a TDD-enforced spec. Opencode is ready to implement.
 
 ### Completed:
 - [x] Renamed default branch from `master` to `main`.
@@ -18,7 +18,7 @@ The user successfully established a production-grade safety net. We have moved f
 ### 🏔️ Current Focus
 - [x] [00]: Production Contribution Workflow (Safety & CI) ✓
 - [x] [02]: The Core Engine (Headless/Bare) ✓
-- [/] [03]: The Curator CLI (Library Mount Manager) - PROMPT READY
+- [x] [03]: The Curator CLI (Library Mount Manager) - PROPOSAL READY (Opencode handoff)
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 

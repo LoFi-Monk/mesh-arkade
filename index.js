@@ -8,6 +8,17 @@ import readline from "readline";
 
 const isDev = Pear.app.dev;
 
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+function askQuestion(question) {
+  return new Promise((resolve) => {
+    rl.question(question, resolve);
+  });
+}
+
 /**
  * Displays help text to stdout.
  *
@@ -19,6 +30,9 @@ function showHelp(isJson) {
     commands: {
       help: "Display this help message",
       status: "Show Core Hub status",
+      mount: "Mount a library directory",
+      unmount: "Unmount a library directory",
+      "list-mounts": "List all mounted libraries (alias: mounts)",
       quit: "Exit the application",
       exit: "Exit the application",
     },
@@ -38,17 +52,20 @@ function showHelp(isJson) {
 Usage: mesh-arkade [options]
 
 Commands:
-  help     Display this help message
-  status   Show Core Hub status
-  quit     Exit the application
-  exit     Exit the application
+  help         Display this help message
+  status       Show Core Hub status
+  mount        Mount a library directory
+  unmount      Unmount a library directory
+  list-mounts  List all mounted libraries (alias: mounts)
+  quit         Exit the application
+  exit         Exit the application
 
 Options:
   --bare       Run in headless terminal mode
   --headless   Run in headless mode (alias for --bare)
   --json       Output in JSON format
   --silent     Suppress splash screen
-  --help       Display this help message
+  --help       Display help (same as running 'help' command)
 
 For more information, visit: https://github.com/mesharkade/mesh-arkade
 `);
@@ -86,8 +103,10 @@ function showStatus(isJson, mode) {
  * @intent Handle interactive CLI commands in Bare mode.
  * @guarantee Outputs appropriate response to stdout.
  */
-async function handleCommand(input, isJson, mode) {
-  const cmd = input.trim().toLowerCase();
+async function handleCommand(input, isJson, mode, hub) {
+  const parts = input.trim().toLowerCase().split(/\s+/);
+  const cmd = parts[0];
+  const arg = parts.slice(1).join(" ");
 
   switch (cmd) {
     case "help":
@@ -98,9 +117,20 @@ async function handleCommand(input, isJson, mode) {
     case "status":
       showStatus(isJson, mode);
       break;
+    case "mount":
+      await handleMount(arg, isJson, hub);
+      break;
+    case "unmount":
+      await handleUnmount(arg, isJson, hub);
+      break;
+    case "list-mounts":
+    case "mounts":
+      await handleListMounts(isJson, hub);
+      break;
     case "quit":
     case "exit":
       console.log("Goodbye!");
+      rl.close();
       process.exit(0);
       break;
     default:
@@ -111,6 +141,137 @@ async function handleCommand(input, isJson, mode) {
           `Unknown command: ${cmd}. Type 'help' for available commands.`,
         );
       }
+  }
+}
+
+async function handleMount(path, isJson, hub) {
+  if (!path) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: "Missing path argument" }));
+    } else {
+      console.log("Usage: mount <path>");
+    }
+    return;
+  }
+
+  try {
+    const result = await hub.handleRequest({
+      method: "curator:mount",
+      params: { path },
+    });
+
+    if (result.error) {
+      if (isJson) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(`Error: ${result.error.message}`);
+      }
+    } else {
+      if (isJson) {
+        console.log(JSON.stringify(result.result));
+      } else {
+        console.log(`Mounted: ${path}`);
+        console.log(`  Files: ${result.result.fileCount}`);
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+}
+
+async function handleUnmount(path, isJson, hub) {
+  if (!path) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: "Missing path argument" }));
+    } else {
+      console.log("Usage: unmount <path>");
+    }
+    return;
+  }
+
+  try {
+    const result = await hub.handleRequest({
+      method: "curator:unmount",
+      params: { path },
+    });
+
+    if (result.error) {
+      if (isJson) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(`Error: ${result.error.message}`);
+      }
+    } else {
+      if (isJson) {
+        console.log(JSON.stringify(result.result));
+      } else {
+        console.log(`Unmounted: ${path}`);
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+}
+
+async function handleListMounts(isJson, hub) {
+  try {
+    const result = await hub.handleRequest({
+      method: "curator:list",
+    });
+
+    if (result.error) {
+      if (isJson) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(`Error: ${result.error.message}`);
+      }
+    } else {
+      const mounts = result.result;
+      if (isJson) {
+        console.log(JSON.stringify(mounts));
+      } else {
+        if (mounts.length === 0) {
+          console.log("No libraries mounted.");
+        } else {
+          console.log("Mounted Libraries:");
+          console.log(
+            "+----------------------------------+----------+--------+",
+          );
+          console.log(
+            "| Path                             | Status   | Files  |",
+          );
+          console.log(
+            "+----------------------------------+----------+--------+",
+          );
+          for (const m of mounts) {
+            const path =
+              m.path.length > 34
+                ? "..." + m.path.slice(-31)
+                : m.path.padEnd(34);
+            const status = m.status.padEnd(8);
+            const files = String(m.fileCount).padEnd(6);
+            console.log(`| ${path} | ${status} | ${files} |`);
+          }
+          console.log(
+            "+----------------------------------+----------+--------+",
+          );
+        }
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
   }
 }
 
@@ -198,6 +359,64 @@ async function bootBare(options) {
     console.log("  Type 'help' for available commands");
     console.log("");
   }
+
+  // Check for first run - no mounts configured
+  const { mountsFileExists } = await import("./src/core/storage.js");
+  const hasMounts = await mountsFileExists();
+
+  if (!hasMounts && !isJson) {
+    await runFirstRunWizard(hub);
+  }
+
+  // Start interactive CLI loop
+  if (!isJson) {
+    const mode = isHeadless ? "bare" : "development";
+    rl.on("line", async (input) => {
+      await handleCommand(input, isJson, mode, hub);
+    });
+  }
+}
+
+async function runFirstRunWizard(hub) {
+  console.log("");
+  console.log(
+    "  [MUSEUM BOOT] No libraries detected. Initialization required.",
+  );
+  console.log("");
+
+  const libraryPath = await askQuestion(
+    "  Where is your library? (Enter path): ",
+  );
+
+  if (!libraryPath || libraryPath.trim() === "") {
+    console.log(
+      "  No path entered. You can add a library later with 'mount <path>'.",
+    );
+    console.log("");
+    return;
+  }
+
+  const trimmedPath = libraryPath.trim();
+
+  console.log("");
+  console.log(`  Mounting: ${trimmedPath}...`);
+
+  try {
+    const result = await hub.handleRequest({
+      method: "curator:mount",
+      params: { path: trimmedPath },
+    });
+
+    if (result.error) {
+      console.log(`  Error: ${result.error.message}`);
+    } else {
+      console.log(`  Success! Mounted ${result.result.fileCount} files.`);
+    }
+  } catch (err) {
+    console.log(`  Error: ${err.message}`);
+  }
+
+  console.log("");
 }
 
 /**

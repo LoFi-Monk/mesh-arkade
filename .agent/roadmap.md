@@ -31,7 +31,7 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 **Context**: Establish the "Hub" architecture. Refactor `branding.ts` into `src/core` for shared identity. Implement a dual-mode `index.js` that detects Bare (CLI) vs. Electron (GUI). Create a high-quality 8-bit ASCII terminal splash screen and integrate `pear-terminal` for a persistent CLI status footer.
 
 ## **[03] The Curator CLI (Mount Manager)**
-**Status**: ACTIVE [/]
+**Status**: PROPOSAL READY [/]
 **Context**: Implement the "Cellular Library" logic. Allow the engine to `mount` external directories, detect existing ROMs, and `sanctify` paths by creating a local Hypercore metadata index (`.mesh-hub`). 
 
 ### **Next Prompt for Implementation Agent:**

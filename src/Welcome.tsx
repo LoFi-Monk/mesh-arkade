@@ -1,4 +1,4 @@
-import { appName, descriptor, taglines } from "./lib/branding";
+import { appName, descriptor, taglines } from "./core/branding";
 import { Card, CardContent } from "./components/ui/8bit/card";
 
 export function DiscoveryDeck() {

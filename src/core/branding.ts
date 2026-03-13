@@ -100,6 +100,9 @@ export const branding = {
 
 export const colors = branding.colors;
 export type Branding = typeof branding;
- 
- 
- 
+
+/**
+ * Default instances for component compatibility.
+ */
+export const descriptor = getDescriptor();
+export const tagline = getTagline();

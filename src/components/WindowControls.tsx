@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Minus, Square } from "lucide-react";
 import { Button } from "./ui/8bit/button";
-import { branding } from "../lib/branding";
+import { appName } from "../core/branding";
 
 export function WindowControls() {
   // Access Pear API from the window object (provided by pear-electron)

@@ -3,6 +3,8 @@
  * @description Core Hub - singleton engine managing P2P swarm, storage, and local bridge sockets.
  */
 
+import { Curator, Mount } from "./curator.js";
+
 interface PearAppWithStorage {
   args: string[];
   key: string | null;
@@ -58,6 +60,10 @@ class CoreHub {
   private _running: boolean = false;
   private _socketPath: string | null = null;
   private _storagePath: string | null = null;
+
+  static resetInstance(): void {
+    CoreHub.instance = null;
+  }
 
   /**
    * Gets the singleton instance of CoreHub.
@@ -158,6 +164,39 @@ class CoreHub {
     return `${storagePath}${separator}mesharkade.sock`;
   }
 
+  private async handleCuratorMount(
+    params: Record<string, unknown> | undefined,
+  ): Promise<Mount> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curator:mount");
+    }
+    const { path } = params;
+    if (typeof path !== "string") {
+      throw new Error("Missing required parameter: path");
+    }
+    return Curator.mount(path);
+  }
+
+  private async handleCuratorUnmount(
+    params: Record<string, unknown> | undefined,
+  ): Promise<{ success: boolean }> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curator:unmount");
+    }
+    const { path } = params;
+    if (typeof path !== "string") {
+      throw new Error("Missing required parameter: path");
+    }
+    await Curator.unmount(path);
+    return { success: true };
+  }
+
+  private async handleCuratorList(
+    _params: Record<string, unknown> | undefined,
+  ): Promise<Mount[]> {
+    return Curator.listMounts();
+  }
+
   /**
    * Processes an incoming JSON-RPC request.
    *
@@ -177,6 +216,15 @@ class CoreHub {
         case "ping":
           result = { pong: true };
           break;
+        case "curator:mount":
+          result = await this.handleCuratorMount(params);
+          break;
+        case "curator:unmount":
+          result = await this.handleCuratorUnmount(params);
+          break;
+        case "curator:list":
+          result = await this.handleCuratorList(params);
+          break;
         default:
           throw new Error(`Unknown method: ${method}`);
       }
@@ -195,4 +243,5 @@ class CoreHub {
 }
 
 export const hub = CoreHub.getInstance();
+export { CoreHub };
 export default hub;
