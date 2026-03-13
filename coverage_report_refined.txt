@@ -1,0 +1,107 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/ag-workspace/mesh-arkade[39m
+      [2mCoverage enabled with [22m[33mistanbul[39m
+
+ [32mΓ£ô[39m tests/math.test.ts[2m > [22mmath[2m > [22msum[2m > [22mshould return the sum of two positive numbers
+ [32mΓ£ô[39m tests/math.test.ts[2m > [22mmath[2m > [22msum[2m > [22mshould return the sum of two negative numbers
+ [32mΓ£ô[39m tests/math.test.ts[2m > [22mmath[2m > [22msum[2m > [22mshould return the sum of positive and negative numbers
+ [32mΓ£ô[39m tests/math.test.ts[2m > [22mmath[2m > [22msum[2m > [22mshould return zero when both inputs are zero
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mappName[2m > [22mexports a non-empty app name
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mappName[2m > [22mmatches expected app name
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetTagline[2m > [22mreturns a string
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetTagline[2m > [22mreturns a non-empty string
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetTagline[2m > [22mreturns a valid tagline from the predefined list
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetTagline[2m > [22mreturns consistent result for the same seed
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetDescriptor[2m > [22mreturns a string
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetDescriptor[2m > [22mreturns a non-empty string
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mgetDescriptor[2m > [22mstarts with 'A Decent Game'
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mexports a branding object
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mhas colors object
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mhas retro color scheme
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mhas baseline colors for compatibility
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mhas fonts object
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mbranding[2m > [22mhas retro font
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mcolors (backward compatibility)[2m > [22mexports colors object
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mcolors (backward compatibility)[2m > [22mincludes retro color scheme
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mBare compatibility[2m > [22mdoes not reference process, window, or document at module level
+ [32mΓ£ô[39m src/core/__tests__/branding.test.ts[2m > [22mbranding[2m > [22mBare compatibility[2m > [22mall exported functions work without browser APIs
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:mount[2m > [22mshould handle curator:mount request
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:mount[2m > [22mshould handle curator:mount with error
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:unmount[2m > [22mshould handle curator:unmount request
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:unmount[2m > [22mshould handle curator:unmount with error
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:list[2m > [22mshould handle curator:list request
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mcurator:list[2m > [22mshould return empty array when no mounts exist
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mstatus and ping[2m > [22mshould handle status request
+ [32mΓ£ô[39m src/core/__tests__/hub.test.ts[2m > [22mCoreHub JSON-RPC[2m > [22mstatus and ping[2m > [22mshould handle ping request
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mMount interface[2m > [22mshould export MountStatus enum values
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mmounts.json persistence[2m > [22mshould load mounts from storage
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mmounts.json persistence[2m > [22mshould load mounts with existing data
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mmounts.json persistence[2m > [22mshould save mounts to storage
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mmounts.json persistence[2m > [22mshould handle missing mounts.json gracefully
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.mount(path)[2m > [22mshould export mount function
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.mount(path)[2m > [22mshould validate path exists and is a directory
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.mount(path)[2m > [22mshould create .mesh-hub directory on mount
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.mount(path)[2m > [22mshould add mount to mounts.json
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.unmount(path)[2m > [22mshould export unmount function
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.unmount(path)[2m > [22mshould remove mount from mounts.json
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.unmount(path)[2m > [22mshould handle non-existent mount
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.listMounts()[2m > [22mshould export listMounts function
+ [32mΓ£ô[39m src/core/__tests__/curator.test.ts[2m > [22mCurator[2m > [22mCurator.listMounts()[2m > [22mshould return all active mounts
+ [32mΓ£ô[39m src/Welcome.test.tsx[2m > [22mDiscoveryDeck[2m > [22mrenders the app name
+ [32mΓ£ô[39m src/Welcome.test.tsx[2m > [22mDiscoveryDeck[2m > [22mrenders a randomized descriptor
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m47 passed[39m[22m[90m (47)[39m
+[2m   Start at [22m 02:31:09
+[2m   Duration [22m 5.57s[2m (transform 989ms, setup 519ms, collect 1.36s, tests 154ms, environment 4.27s, prepare 775ms)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mistanbul[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    3.42 |      0.3 |   36.43 |    3.41 |                   
+ mesh-arkade       |       0 |        0 |       0 |       0 |                   
+  index.test.js    |       0 |        0 |       0 |       0 | 3-108             
+  vite.config.ts   |       0 |      100 |     100 |       0 | 7                 
+  ...onfig.core.ts |       0 |      100 |     100 |       0 | 5                 
+  vitest.config.ts |       0 |      100 |     100 |       0 | 5                 
+ ..._modules/react |       0 |      100 |     100 |       0 |                   
+  index.js         |       0 |      100 |     100 |       0 | 6                 
+  ...ev-runtime.js |       0 |      100 |     100 |       0 | 6                 
+ ...ules/react-dom |       0 |      100 |     100 |       0 |                   
+  client.js        |       0 |      100 |     100 |       0 | 37                
+  index.js         |       0 |      100 |     100 |       0 | 37                
+ .../react-dom/cjs |       0 |        0 |       0 |       0 |                   
+  ...evelopment.js |       0 |        0 |       0 |       0 | 15-28117          
+  ...evelopment.js |       0 |        0 |       0 |       0 | 12-420            
+ ...ules/react/cjs |       0 |        0 |       0 |       0 |                   
+  ...evelopment.js |       0 |        0 |       0 |       0 | 12-327            
+  ...evelopment.js |       0 |        0 |       0 |       0 | 12-1280           
+ ...ules/scheduler |       0 |      100 |     100 |       0 |                   
+  index.js         |       0 |      100 |     100 |       0 | 6                 
+ .../scheduler/cjs |       0 |        0 |       0 |       0 |                   
+  ...evelopment.js |       0 |        0 |       0 |       0 | 12-360            
+ mesh-arkade/src   |     100 |      100 |     100 |     100 |                   
+  Welcome.test.tsx |     100 |      100 |     100 |     100 |                   
+  Welcome.tsx      |     100 |      100 |     100 |     100 |                   
+  math.ts          |     100 |      100 |     100 |     100 |                   
+ ...src/components |       0 |        0 |       0 |       0 |                   
+  ...wControls.tsx |       0 |        0 |       0 |       0 | 14-41             
+  ...-provider.tsx |       0 |      100 |       0 |       0 | 16                
+ ...rkade/src/core |   66.86 |    38.46 |   63.88 |   68.07 |                   
+  branding.ts      |     100 |       75 |     100 |     100 | 83                
+  curator.ts       |   75.47 |     37.5 |   66.66 |   79.59 | ...21-122,184-185 
+  environment.ts   |       0 |        0 |       0 |       0 | 51-70             
+  hub.ts           |    61.4 |    46.87 |   53.84 |    61.4 | ...84,193,197,238 
+  storage.ts       |   81.25 |       60 |   85.71 |   80.64 | 38,131-136        
+ ...core/__tests__ |   99.11 |      100 |   97.18 |   99.09 |                   
+  branding.test.ts |     100 |      100 |     100 |     100 |                   
+  curator.test.ts  |      98 |      100 |   92.85 |   97.91 | 42,52             
+  hub.test.ts      |     100 |      100 |     100 |     100 |                   
+ ...arkade/src/lib |     100 |      100 |     100 |     100 |                   
+  utils.ts         |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for lines (3.41%) does not meet global threshold (80%)
+ERROR: Coverage for functions (36.43%) does not meet global threshold (80%)
+ERROR: Coverage for statements (3.42%) does not meet global threshold (80%)
+ERROR: Coverage for branches (0.3%) does not meet global threshold (80%)

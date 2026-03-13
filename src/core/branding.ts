@@ -7,7 +7,7 @@
  * The official application name.
  *
  * @intent Provide a single source of truth for the app's display name.
- * @guarantee This value is never empty and matches exactly "MeshARKade".
+ * @guarantee This value is never empty and matches exactly "Mesh ARKade".
  */
 export const appName = "Mesh ARKade";
 
@@ -39,10 +39,11 @@ export type Tagline = (typeof taglines)[number];
  * @guarantee Returns a non-empty string from the predefined taglines.
  */
 export const getTagline = (seed?: number): string => {
+  const len = taglines.length;
   const index =
     seed !== undefined
-      ? seed % taglines.length
-      : Math.floor(Math.random() * taglines.length);
+      ? ((seed % len) + len) % len
+      : Math.floor(Math.random() * len);
   return taglines[index];
 };
 
@@ -79,10 +80,11 @@ const allWords = Object.values(categories).flat();
  *            When seed is provided, returns the same descriptor for the same seed.
  */
 export const getDescriptor = (seed?: number): string => {
+  const len = allWords.length;
   const index =
     seed !== undefined
-      ? seed % allWords.length
-      : Math.floor(Math.random() * allWords.length);
+      ? ((seed % len) + len) % len
+      : Math.floor(Math.random() * len);
   return `A Decent Game ${allWords[index]}`;
 };
 

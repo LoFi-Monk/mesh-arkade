@@ -1,7 +1,6 @@
 import React from "react";
 import { X, Minus, Square } from "lucide-react";
 import { Button } from "./ui/8bit/button";
-import { appName } from "../core/branding";
 
 /**
  * Custom window control buttons (Minimize, Maximize, Close) for Pear/Electron.

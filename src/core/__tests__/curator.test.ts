@@ -167,6 +167,32 @@ describe("Curator", () => {
       expect(result).toBeDefined();
       expect(result.path).toBe("/test/library");
     });
+
+    it("should count ROM files recursively", async () => {
+      const { Curator } = await import("../curator");
+
+      fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
+      fsPromisesMock.access.mockRejectedValueOnce(
+        new Error("ENOENT: no such file or directory"),
+      );
+      fsPromisesMock.mkdir.mockResolvedValueOnce(undefined);
+      fsPromisesMock.readFile.mockResolvedValueOnce(JSON.stringify([]));
+      fsPromisesMock.writeFile.mockResolvedValueOnce(undefined);
+
+      // Mock readdir for recursive scan
+      // Top level: one file, one directory
+      fsPromisesMock.readdir.mockResolvedValueOnce([
+        { name: "game1.nes", isFile: () => true, isDirectory: () => false },
+        { name: "subdir", isFile: () => false, isDirectory: () => true },
+      ]);
+      // Sub level: one file
+      fsPromisesMock.readdir.mockResolvedValueOnce([
+        { name: "game2.snes", isFile: () => true, isDirectory: () => false },
+      ]);
+
+      const result = await Curator.mount("/test/library/recursive");
+      expect(result.fileCount).toBe(2);
+    });
   });
 
   describe("Curator.unmount(path)", () => {

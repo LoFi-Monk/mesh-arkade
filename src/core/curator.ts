@@ -81,16 +81,24 @@ async function createMeshHub(path: string): Promise<void> {
 
 async function countRomFiles(path: string): Promise<number> {
   try {
-    const entries = await readdir(path, { withFileTypes: true });
     let count = 0;
-    for (const entry of entries) {
-      if (entry.isFile()) {
-        const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf("."));
-        if (ROM_EXTENSIONS.includes(ext)) {
-          count++;
+    async function scanDirectory(dirPath: string) {
+      const entries = await readdir(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(dirPath, entry.name);
+        if (entry.isFile()) {
+          const ext = entry.name
+            .toLowerCase()
+            .slice(entry.name.lastIndexOf("."));
+          if (ROM_EXTENSIONS.includes(ext)) {
+            count++;
+          }
+        } else if (entry.isDirectory()) {
+          await scanDirectory(fullPath);
         }
       }
     }
+    await scanDirectory(path);
     return count;
   } catch {
     return 0;

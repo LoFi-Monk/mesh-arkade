@@ -8,17 +8,6 @@ import readline from "readline";
 
 const isDev = Pear.app.dev;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-function askQuestion(question) {
-  return new Promise((resolve) => {
-    rl.question(question, resolve);
-  });
-}
-
 /**
  * Displays help text to stdout.
  *
@@ -103,9 +92,9 @@ function showStatus(isJson, mode) {
  * @intent Handle interactive CLI commands in Bare mode.
  * @guarantee Outputs appropriate response to stdout.
  */
-async function handleCommand(input, isJson, mode, hub) {
-  const parts = input.trim().toLowerCase().split(/\s+/);
-  const cmd = parts[0];
+async function handleCommand(input, isJson, mode, hub, rl) {
+  const parts = input.trim().split(/\s+/);
+  const cmd = parts[0].toLowerCase();
   const arg = parts.slice(1).join(" ");
 
   switch (cmd) {
@@ -293,6 +282,7 @@ async function boot() {
 
   if (hasHelp) {
     showHelp(isJson);
+    process.exit(0);
     return;
   }
 
@@ -312,6 +302,17 @@ async function boot() {
  */
 async function bootBare(options) {
   const { isJson, isSilent, isHeadless } = options;
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  function askQuestion(question) {
+    return new Promise((resolve) => {
+      rl.question(question, resolve);
+    });
+  }
 
   // Initialize Core Hub for local bridge
   const { hub } = await import("./src/core/hub.js");
@@ -365,19 +366,19 @@ async function bootBare(options) {
   const hasMounts = await mountsFileExists();
 
   if (!hasMounts && !isJson) {
-    await runFirstRunWizard(hub);
+    await runFirstRunWizard(hub, askQuestion);
   }
 
   // Start interactive CLI loop
   if (!isJson) {
     const mode = isHeadless ? "bare" : "development";
     rl.on("line", async (input) => {
-      await handleCommand(input, isJson, mode, hub);
+      await handleCommand(input, isJson, mode, hub, rl);
     });
   }
 }
 
-async function runFirstRunWizard(hub) {
+async function runFirstRunWizard(hub, askQuestion) {
   console.log("");
   console.log(
     "  [MUSEUM BOOT] No libraries detected. Initialization required.",
