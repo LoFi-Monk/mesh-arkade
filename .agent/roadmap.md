@@ -11,15 +11,11 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 ---
 
 ## **[02] The Core Engine (Headless/Bare)**
-**Status**: STAGED [/]
+**Status**: Completed ✓
 **Context**: Establish the "Hub" architecture. Refactor `branding.ts` into `src/core` for shared identity. Implement a dual-mode `index.js` that detects Bare (CLI) vs. Electron (GUI). Create a high-quality 8-bit ASCII terminal splash screen and integrate `pear-terminal` for a persistent CLI status footer.
-**Command**:
-```bash
-/opsx-propose Refactor branding to src/core, implement dual-mode entry in index.js, and build the 8-bit ASCII terminal splash with pear-terminal integration. Ensure the engine is 'headless ready' via a local socket bridge.
-```
 
 ## **[03] The Curator CLI (Mount Manager)**
-**Status**: PLANNED [ ]
+**Status**: ACTIVE [/]
 **Context**: Implement the "Cellular Mount" logic. Allow the engine to `mount` external directories, detect existing ROMs, and `sanctify` paths by creating a local Hypercore metadata index (`.mesh-hub`).
 **Capabilities**:
 - `mesharkade mount <path>`: Atomic discovery and indexing.
@@ -65,7 +61,7 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 ---
 
 ## **[10] The Living Identity: Dynamic Tagline Engine**
-**Status**: Staged
+**Status**: Completed ✓
 **Context**: Implement the "Glitch Transition" and dynamic tagline rotation defined in `branding.ts`.
 
 ---
