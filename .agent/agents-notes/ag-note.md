@@ -26,8 +26,8 @@ This is the primary organizational space for the Antigravity agent.
 
 ## 🏔️ Current Focus
 - [01]: React UI & Branding (Merged)
-- [ ] [02]: The Core Engine (Headless/Bare)
-- [ ] [03]: The Curator CLI (Terminal Interface)
+- [/] [02]: The Core Engine (Headless/Bare) - STAGED
+- [ ] [03]: The Curator CLI (Cellular Mount Manager)
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 

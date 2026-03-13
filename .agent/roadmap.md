@@ -11,14 +11,20 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 ---
 
 ## **[02] The Core Engine (Headless/Bare)**
-**Status**: PLANNING [/]
-**Context**: Build the runtime-agnostic engine. Refactor `branding.ts` and core logic into a shared module that can run in both Terminal and Electron. 
+**Status**: STAGED [/]
+**Context**: Establish the "Hub" architecture. Refactor `branding.ts` into `src/core` for shared identity. Implement a dual-mode `index.js` that detects Bare (CLI) vs. Electron (GUI). Create a high-quality 8-bit ASCII terminal splash screen and integrate `pear-terminal` for a persistent CLI status footer.
+**Command**:
+```bash
+/opsx-propose Refactor branding to src/core, implement dual-mode entry in index.js, and build the 8-bit ASCII terminal splash with pear-terminal integration. Ensure the engine is 'headless ready' via a local socket bridge.
+```
 
----
-
-## **[03] The Curator CLI (Terminal Interface)**
-**Status**: Backlog
-**Context**: Direct tool access for power users. All [04]-[07] features (Ingestion, Scanning, Normalization) must be implemented here *before* the UI.
+## **[03] The Curator CLI (Mount Manager)**
+**Status**: PLANNED [ ]
+**Context**: Implement the "Cellular Mount" logic. Allow the engine to `mount` external directories, detect existing ROMs, and `sanctify` paths by creating a local Hypercore metadata index (`.mesh-hub`).
+**Capabilities**:
+- `mesharkade mount <path>`: Atomic discovery and indexing.
+- `mesharkade sanctify`: Scaffolding a museum structure on empty drives.
+- **Sparse Sync**: Support for fetching only requested ROM bytes (Fetch-on-Demand).
 
 ---
 

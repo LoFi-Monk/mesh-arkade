@@ -7,6 +7,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:core": "vitest run --config vitest.config.core.ts",
     "test:ui": "vitest",
     "dev:ui": "vite",
     "dev": "concurrently \"npm run dev:ui\" \"wait-on http://localhost:5173 && pear run --dev .\"",
