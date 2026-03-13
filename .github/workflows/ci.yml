@@ -20,7 +20,7 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm install --legacy-peer-deps --ignore-scripts
 
     - name: Type check
       run: npm run typecheck
@@ -44,7 +44,7 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm install --legacy-peer-deps --ignore-scripts
 
     - name: Check TSDoc
       run: node scripts/check-tsdoc.mjs --strict
