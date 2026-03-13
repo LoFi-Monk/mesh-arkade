@@ -11,7 +11,8 @@
     "test:ui": "vitest",
     "dev:ui": "vite",
     "dev": "concurrently \"npm run dev:ui\" \"wait-on http://localhost:5173 && pear run --dev .\"",
-    "build:ui": "vite build"
+    "build:ui": "vite build",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
