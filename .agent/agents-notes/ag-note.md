@@ -2,32 +2,23 @@
 
 # Current Progress: Unified Design System Phase 1
 
-## Status: PLANNING (Terminal-First Pivot)
+## Status: EXECUTION (Curator CLI Ready)
 
-The user proposed a "Terminal First" strategy. We are refactoring the roadmap to prioritize a headless engine (Curator CLI) that can serve the UI over the network (PWA) or locally via Electron.
+The user successfully established a production-grade safety net. We have moved from "Planning" to being ready for the "Curator CLI" implementation on a protected `main` branch.
 
 ### Completed:
-- [x] Initialized shadcn v4 and `@8bitcn` registry.
-- [x] Installed base components (`button`, `card`).
-- [x] Set up `src/lib/branding.ts` and `src/lib/utils.ts`.
-- [x] Updated `src/index.css` with Tailwind v4 and retro fonts.
-- [x] Refactored `src/components/ui/8bit/button.tsx` for Vite compatibility.
-- [x] Integrated `RetroModeSwitcher` and `WindowControls`.
+- [x] Renamed default branch from `master` to `main`.
+- [x] Cleaned up legacy branches from Opencode locally and on GitHub.
+- [x] Set up Husky pre-commit hooks (TSDoc + Tests).
+- [x] Implemented GitHub Actions CI (Build, Test, Coverage, Lint, Audit).
+- [x] Configured Branch Protection (Required PRs, Passing Checks, Resolved Threads).
+- [x] Created PR Template and CODEOWNERS.
+- [x] Made repository **Public** to enforce mandatory CI gates.
 
-### Blockers/Bugs to fix on resume:
-1. **ReferenceError: process is not defined**: `WindowControls.tsx` uses `process.env.NODE_ENV`. Need to change to `import.meta.env.DEV`.
-2. **UI Rendering**: Verification shows a blank screen or legacy UI. Likely due to the crash above blocking the module evaluation.
-
-### Next Steps:
-- Apply the `WindowControls` fix.
-- Final browser verification for the "wow" factor.
-
-This is the primary organizational space for the Antigravity agent. 
-
-## 🏔️ Current Focus
-- [01]: React UI & Branding (Merged)
-- [/] [02]: The Core Engine (Headless/Bare) - STAGED
-- [ ] [03]: The Curator CLI (Cellular Mount Manager)
+### 🏔️ Current Focus
+- [x] [00]: Production Contribution Workflow (Safety & CI) ✓
+- [x] [02]: The Core Engine (Headless/Bare) ✓
+- [/] [03]: The Curator CLI (Library Mount Manager) - PROMPT READY
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 

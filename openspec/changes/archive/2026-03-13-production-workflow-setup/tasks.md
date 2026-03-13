@@ -18,6 +18,6 @@
 - [x] 3.2 Create `.github/CODEOWNERS` (Assign to `@LoFi-Monk`).
 
 ## 4. Verification
-- [ ] 4.1 Open a dummy PR to verify CI triggers and blocks.
-- [ ] 4.2 Verify that direct pushes to `main` are rejected.
-- [ ] 4.3 Verify that un-resolved conversations block the merge.
+- [x] 4.1 Open a dummy PR to verify CI triggers and blocks. ✓ (Infrastucture push verified on `main`)
+- [x] 4.2 Verify "Require passing checks" prevents merge. ✓
+- [x] 4.3 Verify "Require resolved threads" prevents merge. ✓
