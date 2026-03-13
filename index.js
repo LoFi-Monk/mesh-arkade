@@ -375,6 +375,8 @@ async function bootBare(options) {
     rl.on("line", async (input) => {
       await handleCommand(input, isJson, mode, hub, rl);
     });
+  } else {
+    rl.close();
   }
 }
 

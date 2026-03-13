@@ -52,7 +52,6 @@ const ROM_EXTENSIONS = [
   ".gcz",
   ".narc",
   ".cci",
-  ".xci",
 ];
 
 async function isValidDirectory(path: string): Promise<boolean> {
