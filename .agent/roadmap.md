@@ -1,14 +1,18 @@
 # Mesh-Arkade Project Roadmap (Curator Overhaul)
 
+**Repository:** [LoFi-Monk/mesh-arkade](https://github.com/LoFi-Monk/mesh-arkade)
+
 This roadmap tracks our strategic goals. Commands are prompt-style to give the implementation agent (Opencode) full context. 
 
 ---
 
-## **[01] React UI & Branding Foundation**
-**Status**: Completed ✓
-**Context**: Establish the dual-world architecture (`pear-electron` + `pear-bridge`) and the central branding identity.
+## **[00] Production Contribution Workflow (Safety & CI)**
+**Status**: ACTIVE [/]
+**Context**: Implement a production-grade safety net. Setting up GitHub Actions, branch protection rules (PRs required, checks must pass, threads resolved), and AI-led review integration to ensure the `main` branch is a fortress of quality.
 
 ---
+
+## **[01] React UI & Branding Foundation**
 
 ## **[02] The Core Engine (Headless/Bare)**
 **Status**: Completed ✓
