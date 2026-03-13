@@ -1,48 +1,95 @@
-# Antigravity Notes
-These notes belong to the antigravity agent.
-They may edit and organize these notes as they see fit.
+# Antigravity Notes (MeshARKade)
 
-# Backlog
-- [ ] Initialize Git repository
-- [ ] Initialize NPM workspace
-- [ ] Setup TypeScript with strict configuration
-- [ ] Configure TSDoc enforcement and coverage
-- [ ] Integrate TDD workflow into OpenSpec proposals
+# Current Progress: Unified Design System Phase 1
 
-- [x] Initializing environment (Git, NPM, TS)
-- [x] UI Setup (React, Vite, Pear Bridge)
-- [/] UI Adjustments & Fine-tuning
+## Status: PLANNING (Terminal-First Pivot)
 
-# Notes to future self
-- **AGENTS.md**: Shared guidelines between me and Opencode. Focuses on tech stack, style, and commands.
-- **GEMINI.md**: My personal pair programming and project management instructions.
-- **Pear Runtime**: Core dependency. Always refer to `pear-runtime` skill and `references/pear-annealing.md`.
-- **OpenSpec**: The bridge between my planning and Opencode's execution.
-- **TDD Priority**: Every proposal must include a verification plan that follows TDD. Tests first.
-- **Documentation**: Use TSDoc for commenting and enforce coverage.
-- **Git Strategy**: Create a new feature branch for every new OpenSpec proposal before drafting.
-- **Roadmap-First Flow**: Instead of jumping to OpenSpec, we maintain a `roadmap.md` in `.agent/`. This allows us to strategize, reorder, and refine goals before formalizing them into OpenSpec changes.
-- **Opencode Context Protocol**: Opencode is "on rails" and fresh per session. Every OpenSpec proposal MUST include explicit tasks for it to gather context (e.g., "Read the pear-runtime skill", "Ask DeepWiki about X").
-- **Design Philosophy**: "Accessible Museum" — The UI must be simple enough for casual play/contribution, while providing deep archival metadata and technical info for those who seek it.
+The user proposed a "Terminal First" strategy. We are refactoring the roadmap to prioritize a headless engine (Curator CLI) that can serve the UI over the network (PWA) or locally via Electron.
 
-# Decisions
-- [2026-03-12] Using `ag-note.md` for long-term project context and "desk" organization.
-- [2026-03-12] Environment base: TypeScript, NPM, TSDoc, TDD.
-- [2026-03-12] UX Mandate: Progressive Disclosure. Museum quality internals/metadata, but a frictionless consumer-facing experience.
-- [2026-03-12] Roadmap-First Flow: Using `.agent/roadmap.md` as a staging area for ideas before formal OpenSpec proposals.
-- [2026-03-12] Branding Strategy: Central `branding.ts` for identity (Name, Tagline, Colors).
-- [2026-03-12] UI Component Choice: `shadcn/ui` + `8bitcn`. Default to 8-bit retro, but maintain 1-to-1 mapping with modern shadcn for user customizability.
-- [2026-03-12] Data Ground Floor: Use Libretro DATs (No-Intro) for hashing and metadata verification.
-- [2026-03-12] P2P File Bridge: DAT Verification -> IPFS -> Magnet/Torrent conversion. Only verified files are swarm-visible.
-- [2026-03-12] Milestone Complete: `init-environment` (Environment setup, TDD, TSDoc) archived to `openspec/changes/archive/2026-03-12-init-environment`.
-- [2026-03-12] Proposal Protocol: All proposals must explicitly command Opencode to read the `pear-runtime` skill and relevant docs at the start of tasks to ensure context isn't lost.
-- [2026-03-12] Architectural Guardrail: Use **Local Streaming Bridge** via `pear-bridge` for ROM/Core data to prevent IPC memory bottlenecks between Bare and React processes.
-- [2026-03-12] Research Goal: Establish a decentralized "Root of Trust" (e.g., Curator Multi-Sig) to allow trustless P2P distribution of DAT files.
-- [2026-03-12] CTO Guardian Role: Use safeword **"Timeout! ⏰"** if user requests deviate from Pear architecture or P2P/Decentralized best practices.
-- [2026-03-12] Distribution Policy: **On-Demand Only**. Users only download what they interact with (ROMs, metadata, media).
-- [2026-03-12] Sharing Policy: **Mandatory Participation**. Sharing is non-optional to maintain swarm health. Users can throttle speed/connections, but never disable sharing entirely. The app acts as a decentralized tracker/gateway between Pear Swarms and IPFS/Torrents.
-- [2026-03-12] Milestone Complete: [01] UI Foundation committed to `feat/ui-setup-react`.
-- [2026-03-12] Established **Bridge Addr Trick** as the standard HMR pattern for MeshARKade.
+### Completed:
+- [x] Initialized shadcn v4 and `@8bitcn` registry.
+- [x] Installed base components (`button`, `card`).
+- [x] Set up `src/lib/branding.ts` and `src/lib/utils.ts`.
+- [x] Updated `src/index.css` with Tailwind v4 and retro fonts.
+- [x] Refactored `src/components/ui/8bit/button.tsx` for Vite compatibility.
+- [x] Integrated `RetroModeSwitcher` and `WindowControls`.
 
-# Resources and References
-links to helpful resources and references.
+### Blockers/Bugs to fix on resume:
+1. **ReferenceError: process is not defined**: `WindowControls.tsx` uses `process.env.NODE_ENV`. Need to change to `import.meta.env.DEV`.
+2. **UI Rendering**: Verification shows a blank screen or legacy UI. Likely due to the crash above blocking the module evaluation.
+
+### Next Steps:
+- Apply the `WindowControls` fix.
+- Final browser verification for the "wow" factor.
+
+This is the primary organizational space for the Antigravity agent. 
+
+## 🏔️ Current Focus
+- [01]: React UI & Branding (Merged)
+- [ ] [02]: The Core Engine (Headless/Bare)
+- [ ] [03]: The Curator CLI (Terminal Interface)
+- [ ] [04]: The Preservation Deck (Web/PWA Bridge)
+- [ ] [05]: Modern Museum UI (Paused)
+
+### 🌊 Workflows
+- **Start Session**: [/session-start](file:///c:/ag-workspace/mesh-arkade/.agent/workflows/session-start.md)
+- **End Session**: [/session-end](file:///c:/ag-workspace/mesh-arkade/.agent/workflows/session-end.md)
+
+## 📋 Project Checkpoint
+- **Git**: Branching strategy enforced (master + feature branches).
+- **Pear**: DX optimized with HMR (Bridge Addr Trick).
+- **OpenSpec**: Baseline specs established in `openspec/specs/`.
+
+---
+
+## 🏗️ Architectural Decisions
+
+### 🌍 Terminal-First / Multi-Runtime Architecture
+- **Engine-First**: Core logic (DAT, Swarm, Vault) must be runtime-agnostic (Pure JS/Bare).
+- **Headless Mode**: Support running without a GUI for remote/server scenarios.
+- **Museum Bridge**: The UI is treated as an "Exhibition" layer that connects to the local Engine.
+- **Two-World Execution**: Bare for P2P/Hypercore logic, React for UI. Isolated via `pear-bridge`.
+- **HMR Pattern**: Use the **"Bridge Addr Trick"** in `index.js`. Point `runtime.start({ bridge: { ...bridge, addr: 'http://localhost:5173' } })` to Vite while maintaining the Pear API link.
+- **Data Flow**: Use a **Local Streaming Bridge** (via `pear-bridge`) for large binary data (ROMs/Cores) to bypass IPC memory limits.
+- **Distribution**: **On-Demand Only**. Users download what they interact with. **Mandatory Sharing** is the baseline for swarm health.
+
+### 🍱 UX & Branding
+- **Philosophical North**: "Accessible Museum" — Progressive disclosure of technical/archival metadata.
+- **Design Tokens**: Centralized in `src/branding.ts` for identity-level consistency.
+- **🍱 UI Strategy**: `shadcn` (structure) + `8bitcn` (aesthetic). Must build robust **Focus States** in [02] to support future Gamepad/10-foot UI.
+- **🎮 Gamepad Input**: Long-term goal for the "Arcade View". Need to research Gamepad API in Electron renderer.
+- **📥 Background Seeder**: Milestone [11] goal. Use `ui.app.tray` to allow low-resource background seeding without UI.
+- **Identity Logic**: Dual randomization. Independent "Descriptor" (A Decent Game Vault) and "Tagline" (Seed the Archive).
+
+### 🏛️ Preservation & Data
+- **Preservation Standards**: Codified in [preservation-standards.md](file:///c:/ag-workspace/mesh-arkade/.agent/agents-notes/preservation-standards.md).
+- **Curator-First Flow**: Verification (DAT) must precede Playback (Emulator). Nothing is "Museum Quality" until verified.
+- **Source of Truth**: Libretro / No-Intro DAT files. Verification is mandatory before a file is visible to the swarm.
+- **Normalization (TorrentZip)**: Critical for swarm health. All shared files must be bit-perfect masters (headerless, standardized).
+- **Decentralized Trust (Anti-Spoofing)**:
+    - **Ed25519 Signatures**: Use signed Hypercores for DAT distribution. Only keys belonging to trusted curators (Guardians) can publish "Canonical" DAT updates.
+    - **Deterministic Scraping**: Nodes run the same scraper JS; their results must match the signed hash of the "Oracle."
+    - **Multi-Sig Guardians**: Require M-of-N signatures for sensitive updates (System BIOS DATs).
+- **P2P Path**: DAT Hash Verification -> TorrentZip Normalization -> IPFS -> Magnet/Torrent Gateway.
+- **Root of Trust**: (Future) Investigate Curator Multi-Sig for decentralized DAT signing.
+
+---
+
+## 🚨 CRITICAL RULES (AG)
+- **NO AUTO-PROPOSALS**: Never initiate a new `openspec` change or proposal without explicit user request.
+- **NO AUTO-TASKS**: Do not use `task_boundary` for research or brainstorming.
+- **PEER OVER AGENT**: Prioritize being a pair-programmer over being an "autonomous agent".
+
+---
+
+## 📓 Technical Knowledge (Annealing)
+- **Pear-Electron Initialization**: Always include `"pre": "pear-electron/pre"` in `package.json`.
+- **Pear.teardown()**: Preferred over `process.on('exit')` for cleaning up Swarms/Corestores.
+- **Ignore Strategy**: Define `pear.stage.ignore` explicitly. REMEMBER: `.git` is NOT auto-ignored if a custom list exists.
+
+---
+
+## 🛠️ Resources
+- **DeepWiki**: AI-grounded research for the Holepunch/Pear ecosystem.
+- **Pear Skill**: `.agent/skills/pear-runtime/SKILL.md` (Refer to for Bare API).
+- **Roadmap**: `.agent/roadmap.md` (Strategic overview).

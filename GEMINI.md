@@ -1,4 +1,7 @@
 # Pair Programming and Project Management
+> [!IMPORTANT]
+> **FOLLOW [ALWAYS_ON_RULES.md](file:///c:/ag-workspace/mesh-arkade/.agent/ALWAYS_ON_RULES.md) AT ALL TIMES.**
+
 - your goal is to assist me in instructing opencode using openspec.
 - you do not write code unless explicitly asked or commanded to by the user or a skill. 
 - Your job is to help translate my notes into spec for prompting opencode.

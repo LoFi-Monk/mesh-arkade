@@ -24,9 +24,10 @@ if (isDev) {
 await bridge.ready();
 
 const pipe = runtime.start({
-  bridge: isDev ? { ...bridge, addr: "http://localhost:5173" } : bridge,
+  bridge: isDev ? { addr: "http://localhost:5173" } : bridge
 });
 
-Pear.teardown(() => {
-  pipe.end();
+Pear.teardown(async () => {
+  if (pipe && typeof pipe.end === 'function') pipe.end();
+  await bridge.close();
 });

@@ -1,45 +1,33 @@
-import { appName, taglines, colors, categories } from "./branding";
+import { appName, descriptor, taglines } from "./lib/branding";
+import { Card, CardContent } from "./components/ui/8bit/card";
 
 export function DiscoveryDeck() {
-  const allWords = Object.values(categories).flat();
-  const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
-  const descriptor = `A Decent Game ${randomWord}`;
-  const tagline = taglines[Math.floor(Math.random() * taglines.length)];
+  const currentTagline = taglines[Math.floor(Math.random() * taglines.length)];
 
   return (
-    <div
-      style={{
-        backgroundColor: colors.primary.toLowerCase(),
-        color: colors.accent.toLowerCase(),
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        padding: "2rem",
-        textAlign: "center",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: "3rem",
-          fontWeight: 700,
-          marginBottom: "0.5rem",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        {appName}
-      </h1>
-      <p
-        style={{
-          fontSize: "1.25rem",
-          color: colors.secondary.toLowerCase(),
-          marginBottom: "1.5rem",
-        }}
-      >
-        {descriptor}
-      </p>
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8 font-retro">
+      <Card className="max-w-2xl w-full">
+        <CardContent className="p-8 space-y-6">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-retro-primary animate-pulse">
+            {appName}
+          </h1>
+          
+          <div className="space-y-2">
+            <p className="text-xl md:text-2xl text-retro-secondary opacity-90 leading-relaxed">
+              {descriptor}
+            </p>
+            <p className="text-sm md:text-base text-muted-foreground uppercase tracking-widest">
+              {currentTagline}
+            </p>
+          </div>
+
+          <div className="pt-4 border-t-4 border-retro-secondary/20">
+            <p className="text-xs text-retro-secondary/60">
+              System Ready. Initializing P2P Mesh...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,12 +1,62 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+@import "./components/ui/8bit/styles/retro.css";
+
+@theme {
+  --font-retro: "Press Start 2P", system-ui, sans-serif;
+
+  --color-retro-primary: #ff00ff;
+  --color-retro-secondary: #00ffff;
+  --color-retro-background: #0d0d21;
+  --color-retro-surface: #1a1a3a;
+  --color-retro-accent: #ffff00;
+  
+  --color-border: var(--border);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+
+  --radius-retro: 0px;
 }
 
-html,
-body,
-#root {
-  width: 100%;
-  height: 100%;
+:root {
+  --background: 240 40% 9%;
+  --foreground: 0 0% 100%;
+  --card: 240 40% 12%;
+  --card-foreground: 0 0% 100%;
+  --popover: 240 40% 9%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 300 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 180 100% 50%;
+  --secondary-foreground: 240 40% 9%;
+  --muted: 240 20% 20%;
+  --muted-foreground: 240 10% 70%;
+  --accent: 60 100% 50%;
+  --accent-foreground: 240 40% 9%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 20% 30%;
+  --input: 240 20% 30%;
+  --ring: 300 100% 50%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  .font-retro {
+    font-family: var(--font-retro);
+  }
 }
