@@ -5,6 +5,9 @@
 
 /**
  * Describes the detected runtime environment.
+ *
+ * @intent Provide a unified interface for runtime context across GUI and Terminal modes.
+ * @guarantee Properties are mutually exclusive where appropriate (e.g., isHeadless vs isGui).
  */
 export interface Environment {
   /** The primary operating mode: development, bare, headless, or gui */

@@ -1,6 +1,12 @@
 import { appName, descriptor, taglines } from "./core/branding";
 import { Card, CardContent } from "./components/ui/8bit/card";
 
+/**
+ * The primary welcome screen and splash area.
+ *
+ * @intent provide a beautiful, branded first-run experience.
+ * @guarantee Renders an 8-bit styled card with randomized branding elements.
+ */
 export function DiscoveryDeck() {
   const currentTagline = taglines[Math.floor(Math.random() * taglines.length)];
 

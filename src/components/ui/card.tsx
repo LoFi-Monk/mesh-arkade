@@ -2,6 +2,12 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Base Card container.
+ *
+ * @intent Provide a consistent surface for content groupings.
+ * @guarantee Renders an accessible div with theme-compliant shadows and borders.
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -17,6 +23,12 @@ const Card = React.forwardRef<
 ))
 Card.displayName = "Card"
 
+/**
+ * Card Header section.
+ *
+ * @intent consistent layout for titles and descriptions.
+ * @guarantee Vertically stacks children with standardized padding.
+ */
 const CardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -29,6 +41,12 @@ const CardHeader = React.forwardRef<
 ))
 CardHeader.displayName = "CardHeader"
 
+/**
+ * Card Title component.
+ *
+ * @intent Provide high-level categorization of card content.
+ * @guarantee rendered as a DIV with semantic-compliant styling.
+ */
 const CardTitle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -41,6 +59,12 @@ const CardTitle = React.forwardRef<
 ))
 CardTitle.displayName = "CardTitle"
 
+/**
+ * Card Description component.
+ *
+ * @intent Provide secondary fallback text for card titles.
+ * @guarantee rendered as a DIV with muted-foreground styling.
+ */
 const CardDescription = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -53,6 +77,12 @@ const CardDescription = React.forwardRef<
 ))
 CardDescription.displayName = "CardDescription"
 
+/**
+ * Main Card content area.
+ *
+ * @intent Provide a consistent container for primary card data.
+ * @guarantee Standardizes internal padding and spacing.
+ */
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -61,6 +91,12 @@ const CardContent = React.forwardRef<
 ))
 CardContent.displayName = "CardContent"
 
+/**
+ * Card Footer section.
+ *
+ * @intent Provide consistent placement for card actions.
+ * @guarantee strictly positioned at the bottom of the card container.
+ */
 const CardFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

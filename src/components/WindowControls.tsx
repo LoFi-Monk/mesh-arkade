@@ -3,6 +3,12 @@ import { X, Minus, Square } from "lucide-react";
 import { Button } from "./ui/8bit/button";
 import { appName } from "../core/branding";
 
+/**
+ * Custom window control buttons (Minimize, Maximize, Close) for Pear/Electron.
+ *
+ * @intent Provide OS-native feeling window management in the customized title bar.
+ * @guarantee Safely invokes Pear UI APIs if available, otherwise renders null.
+ */
 export function WindowControls() {
   // Access Pear API from the window object (provided by pear-electron)
   const pear = (window as any).Pear;

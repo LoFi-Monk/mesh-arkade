@@ -7,7 +7,19 @@ import { readFile, writeFile, mkdir, access } from "fs/promises";
 import { existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 
+/**
+ * Hidden directory used to store mesh indexing data within libraries.
+ *
+ * @intent Define the consistent hidden folder name for per-library metadata.
+ * @guarantee This constant is used in both storage and curator modules.
+ */
 export const MESH_HUB_DIR = ".mesh-hub";
+/**
+ * Filename for the persistent list of library mounts.
+ *
+ * @intent Define the registration filename for library persistence.
+ * @guarantee This file is located within the app storage directory.
+ */
 export const MOUNTS_FILE = "mounts.json";
 
 interface PearAppWithStorage {
@@ -26,6 +38,12 @@ function getStoragePath(): string {
   return "./data";
 }
 
+/**
+ * Ensures the application storage directory exists.
+ *
+ * @intent Initialize the persistent data directory for the app.
+ * @guarantee Returns the absolute path to the verified storage directory.
+ */
 export async function ensureStorageDir(): Promise<string> {
   const storagePath = getStoragePath();
 
@@ -36,11 +54,23 @@ export async function ensureStorageDir(): Promise<string> {
   return storagePath;
 }
 
+/**
+ * Resolves the absolute path to the mounts.json file.
+ *
+ * @intent Provide a central path resolver for the mounts registry.
+ * @guarantee Returns the full path to the mounts persistence file.
+ */
 export async function getMountsFilePath(): Promise<string> {
   const storagePath = await ensureStorageDir();
   return join(storagePath, MOUNTS_FILE);
 }
 
+/**
+ * Loads the list of library mounts from persistent storage.
+ *
+ * @intent Retrieve user-defined library paths for system initialization.
+ * @guarantee Returns an array of Mount objects, or an empty array if storage is missing/corrupt.
+ */
 export async function loadMounts(): Promise<Mount[]> {
   try {
     const mountsPath = await getMountsFilePath();
@@ -51,6 +81,12 @@ export async function loadMounts(): Promise<Mount[]> {
   }
 }
 
+/**
+ * Persists the list of library mounts to storage.
+ *
+ * @intent Save changes to the user's library configuration.
+ * @guarantee Atomically writes the mounts list to disk in JSON format.
+ */
 export async function saveMounts(mounts: Mount[]): Promise<void> {
   const mountsPath = await getMountsFilePath();
   const dir = dirname(mountsPath);
@@ -62,6 +98,12 @@ export async function saveMounts(mounts: Mount[]): Promise<void> {
   await writeFile(mountsPath, JSON.stringify(mounts, null, 2), "utf-8");
 }
 
+/**
+ * Data model for a library mount entry.
+ *
+ * @intent Provide a consistent structure for library metadata and indexing status.
+ * @guarantee Includes path validation status and file count tracking.
+ */
 export interface Mount {
   path: string;
   status: MountStatus;
@@ -70,12 +112,21 @@ export interface Mount {
   lastIndexed?: string;
 }
 
+/**
+ * Status states for a library mount.
+ */
 export enum MountStatus {
   Active = "active",
   Inactive = "inactive",
   Error = "error",
 }
 
+/**
+ * Checks if the mounts registry exists on disk.
+ *
+ * @intent Determine if the hub has been initialized with libraries.
+ * @guarantee Returns true if mounts.json exists and is readable.
+ */
 export async function mountsFileExists(): Promise<boolean> {
   try {
     const mountsPath = await getMountsFilePath();

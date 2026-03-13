@@ -11,6 +11,12 @@ interface RetroModeSwitcherProps {
   className?: string;
 }
 
+/**
+ * Toggle component to switch between Light and Dark (Retro) modes.
+ *
+ * @intent provide a user-facing theme toggle with custom SVG iconography.
+ * @guarantee Uses next-themes for global state and renders consistent icons for each mode.
+ */
 export function RetroModeSwitcher({ className }: RetroModeSwitcherProps) {
   const { setTheme, resolvedTheme } = useTheme();
 

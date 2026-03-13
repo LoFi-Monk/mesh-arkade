@@ -13,6 +13,12 @@ import {
 
 import "@/components/ui/8bit/styles/retro.css";
 
+/**
+ * Base styling variants for the 8-bit Card using CVA.
+ *
+ * @intent Define retro font options for the bit-card.
+ * @guarantee Returns a processed string of CSS classes based on the font variant.
+ */
 export const cardVariants = cva("", {
   variants: {
     font: {
@@ -25,26 +31,38 @@ export const cardVariants = cva("", {
   },
 });
 
+/**
+ * Properties for 8-bit Card components.
+ *
+ * @intent consistent type definitions for all retro card parts.
+ * @guarantee based on standard HTML attributes and card variant props.
+ */
 export interface BitCardProps
   extends React.ComponentProps<"div">,
     VariantProps<typeof cardVariants> {
   asChild?: boolean;
 }
 
+/**
+ * Retro pixel-art style Card container.
+ *
+ * @intent provide a consistent retro container for bit-arkade UI.
+ * @guarantee Renders an absolute-positioned pixelated border around the content.
+ */
 function Card({ ...props }: BitCardProps) {
   const { className, font } = props;
 
   return (
     <div
       className={cn(
-        "relative border-y-6 border-foreground dark:border-ring !p-0",
+        "relative border-y-6 border-foreground dark:border-ring p-0!",
         className
       )}
     >
       <ShadcnCard
         {...props}
         className={cn(
-          "rounded-none border-0 !w-full",
+          "rounded-none border-0 w-full!",
           font !== "normal" && "retro",
           className
         )}
@@ -58,6 +76,12 @@ function Card({ ...props }: BitCardProps) {
   );
 }
 
+/**
+ * Retro Card Header section.
+ *
+ * @intent strictly themed header for bit-cards.
+ * @guarantee correctly applies retro font variant to inner header.
+ */
 function CardHeader({ ...props }: BitCardProps) {
   const { className, font } = props;
 
@@ -69,6 +93,12 @@ function CardHeader({ ...props }: BitCardProps) {
   );
 }
 
+/**
+ * Retro Card Title component.
+ *
+ * @intent strictly themed title for bit-cards.
+ * @guarantee correctly applies retro font variant to inner title.
+ */
 function CardTitle({ ...props }: BitCardProps) {
   const { className, font } = props;
 
@@ -80,6 +110,12 @@ function CardTitle({ ...props }: BitCardProps) {
   );
 }
 
+/**
+ * Retro Card Description component.
+ *
+ * @intent strictly themed description for bit-cards.
+ * @guarantee correctly applies muted retro styling.
+ */
 function CardDescription({ ...props }: BitCardProps) {
   const { className, font } = props;
 
@@ -92,6 +128,12 @@ function CardDescription({ ...props }: BitCardProps) {
 }
 
 
+/**
+ * Retro Card Content area.
+ *
+ * @intent strictly themed content area for bit-cards.
+ * @guarantee standardized retro padding and font usage.
+ */
 function CardContent({ ...props }: BitCardProps) {
   const { className, font } = props;
 
@@ -103,6 +145,12 @@ function CardContent({ ...props }: BitCardProps) {
   );
 }
 
+/**
+ * Retro Card Footer section.
+ *
+ * @intent strictly themed actions area for bit-cards.
+ * @guarantee strictly positioned at bottom-right for action placement.
+ */
 function CardFooter({ ...props }: BitCardProps) {
   const { className, font } = props;
 

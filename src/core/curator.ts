@@ -97,7 +97,19 @@ async function countRomFiles(path: string): Promise<number> {
   }
 }
 
+/**
+ * Curator manages library mounts and directory lifecycle.
+ *
+ * @intent Provide a central controller for library discovery and indexing.
+ * @guarantee Methods are idempotent or throw clear errors on failure.
+ */
 class CuratorClass {
+  /**
+   * Mounts a local directory as a game library.
+   *
+   * @intent Register a new library path and initialize its mesh-hub index.
+   * @guarantee Returns a Mount object on success. Throws if path is invalid or already mounted.
+   */
   async mount(path: string): Promise<Mount> {
     if (!(await isValidDirectory(path))) {
       throw new Error(`Invalid path: ${path} is not a valid directory`);
@@ -134,6 +146,12 @@ class CuratorClass {
     return newMount;
   }
 
+  /**
+   * Unmounts a library path.
+   *
+   * @intent Remove a library from the system management.
+   * @guarantee Removes the mount entry from persistent storage. Throws if mount not found.
+   */
   async unmount(path: string): Promise<void> {
     const mounts = await loadMounts();
     const index = mounts.findIndex((m) => m.path === path);
@@ -146,16 +164,34 @@ class CuratorClass {
     await saveMounts(mounts);
   }
 
+  /**
+   * Lists all registered library mounts.
+   *
+   * @intent Provide visibility into all mounted collections.
+   * @guarantee Returns an array of Mount objects from persistent storage.
+   */
   async listMounts(): Promise<Mount[]> {
     return loadMounts();
   }
 
+  /**
+   * Retrieves a specific mount by path.
+   *
+   * @intent Fetch metadata for a single known library.
+   * @guarantee Returns the Mount object if found, otherwise null.
+   */
   async getMount(path: string): Promise<Mount | null> {
     const mounts = await loadMounts();
     return mounts.find((m) => m.path === path) ?? null;
   }
 }
 
+/**
+ * Static instance of the Curator manager.
+ *
+ * @intent Provide a central entry point for library mount management.
+ * @guarantee Always refers to the singleton CuratorClass instance.
+ */
 export const Curator = new CuratorClass();
 export { Mount, MountStatus };
 export default Curator;

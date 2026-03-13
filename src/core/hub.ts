@@ -14,6 +14,9 @@ interface PearAppWithStorage {
 
 /**
  * Core Hub status information.
+ *
+ * @intent Provide a structured status report for the hub's runtime state.
+ * @guarantee Contains current running state and resolved path information.
  */
 export interface HubStatus {
   /** Whether the hub is currently running */
@@ -26,6 +29,9 @@ export interface HubStatus {
 
 /**
  * JSON-RPC request format for hub commands.
+ *
+ * @intent Define the communication contract for all hub interface clients.
+ * @guarantee Strictly follows JSON-RPC 2.0 structure for method calls.
  */
 export interface HubRequest {
   /** The command to execute */
@@ -38,6 +44,9 @@ export interface HubRequest {
 
 /**
  * JSON-RPC response format from hub.
+ *
+ * @intent Define the result/error wrapper for hub command responses.
+ * @guarantee Always includes either a result or an error object with a matching ID.
  */
 export interface HubResponse {
   /** The result of the command (if successful) */
@@ -242,6 +251,12 @@ class CoreHub {
   }
 }
 
+/**
+ * Static instance of the hub shared across the application.
+ *
+ * @intent Provide the main singleton entry point for hub operations.
+ * @guarantee This object is always an initialized CoreHub instance.
+ */
 export const hub = CoreHub.getInstance();
 export { CoreHub };
 export default hub;
