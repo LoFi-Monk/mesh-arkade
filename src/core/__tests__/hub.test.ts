@@ -307,7 +307,7 @@ describe("CoreHub JSON-RPC", () => {
       const response = await engineHub.handleRequest(request);
 
       expect(response.result).toBeDefined();
-      expect(response.result.systemId).toBe("nes");
+      expect((response.result as { systemId: string }).systemId).toBe("nes");
     });
 
     it("should handle curation:seed with missing system", async () => {
@@ -329,7 +329,7 @@ describe("CoreHub JSON-RPC", () => {
     it("should handle curation:seed with invalid params", async () => {
       const request = {
         method: "curation:seed",
-        params: "invalid",
+        params: { invalid: true },
         id: 12,
       };
 
@@ -399,7 +399,7 @@ describe("CoreHub JSON-RPC", () => {
     it("should handle curation:search with invalid params", async () => {
       const request = {
         method: "curation:search",
-        params: "invalid",
+        params: { invalid: true },
         id: 17,
       };
 
