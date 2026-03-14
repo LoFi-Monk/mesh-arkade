@@ -11,7 +11,7 @@ import {
   MESH_HUB_DIR,
 } from "./storage.js";
 import { stat, access, mkdir, readdir } from "fs/promises";
-import { join } from "path";
+import { join, extname } from "path";
 
 const ROM_EXTENSIONS = [
   ".zip",
@@ -86,9 +86,7 @@ async function countRomFiles(path: string): Promise<number> {
       for (const entry of entries) {
         const fullPath = join(dirPath, entry.name);
         if (entry.isFile()) {
-          const ext = entry.name
-            .toLowerCase()
-            .slice(entry.name.lastIndexOf("."));
+          const ext = extname(entry.name).toLowerCase();
           if (ROM_EXTENSIONS.includes(ext)) {
             count++;
           }

@@ -93,7 +93,10 @@ function showStatus(isJson, mode) {
  * @guarantee Outputs appropriate response to stdout.
  */
 async function handleCommand(input, isJson, mode, hub, rl) {
-  const parts = input.trim().split(/\s+/);
+  const trimmedInput = input.trim();
+  if (!trimmedInput) return;
+
+  const parts = trimmedInput.split(/\s+/);
   const cmd = parts[0].toLowerCase();
   const arg = parts.slice(1).join(" ");
 
