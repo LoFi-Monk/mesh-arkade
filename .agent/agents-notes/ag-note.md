@@ -81,6 +81,22 @@ The Curator CLI remediation is reaching its final stage. All major bugs (TOCTOU,
 
 ---
 
+## 🧠 Devin Feedback Loop & Lessons Learned
+
+To ensure we leverage Devin's "deep scans" and don't repeat mistakes across milestones, we maintain this log of architectural insights:
+
+### 🏗️ Patterns & Gotchas
+- **Atomic File Operations**: Always write to `.tmp` and `rename()` for config/metadata files. `saveMounts` at `src/core/storage.ts` is the gold standard for Mesh Hub logic.
+- **CLI Serialization**: Use `rl.pause()` and `rl.resume()` inside `rl.on("line")` for sequential processing of async commands.
+- **JSON Framing**: External consumers (like Devin or the Deck) expect **JSONL** (newline-delimited JSON) for robust parsing.
+- **Recursive Guards**: Always explicitly filter `MESH_HUB_DIR` (e.g., `.mesh-hub`) during library scans to prevent metadata-as-content indexing.
+- **Bare Runtime Lifecycles**: Every entry point must include `Pear.teardown()` to ensure clean teardown of P2P resources and stdout streams.
+
+### 🌊 Remediation Workflow
+When Devin leaves "deep" reviews, we use the [/devin-remediate](file:///c:/ag-workspace/mesh-arkade/.agent/workflows/devin-remediate.md) workflow to triangulate, delegate, and verify results.
+
+---
+
 ## 🛠️ Resources
 - **DeepWiki**: AI-grounded research for the Holepunch/Pear ecosystem.
 - **Pear Skill**: `.agent/skills/pear-runtime/SKILL.md` (Refer to for Bare API).

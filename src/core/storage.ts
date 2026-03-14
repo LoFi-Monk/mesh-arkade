@@ -7,6 +7,22 @@ import { readFile, writeFile, mkdir, access, rename } from "fs/promises";
 import { existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 
+let storageMutex: Promise<void> = Promise.resolve();
+
+async function withMutex<T>(fn: () => Promise<T>): Promise<T> {
+  const current = storageMutex;
+  let release: () => void;
+  storageMutex = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await current;
+  try {
+    return await fn();
+  } finally {
+    release!();
+  }
+}
+
 /**
  * Hidden directory used to store mesh indexing data within libraries.
  *
@@ -72,19 +88,21 @@ export async function getMountsFilePath(): Promise<string> {
  * @guarantee Returns an array of Mount objects, or an empty array if storage is missing/corrupt.
  */
 export async function loadMounts(): Promise<Mount[]> {
-  try {
-    const mountsPath = await getMountsFilePath();
-    const data = await readFile(mountsPath, "utf-8");
-    return JSON.parse(data) as Mount[];
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      console.error(
-        "[Curator] mounts.json is corrupt — returning empty list. Manual recovery may be needed.",
-        error.message,
-      );
+  return withMutex(async () => {
+    try {
+      const mountsPath = await getMountsFilePath();
+      const data = await readFile(mountsPath, "utf-8");
+      return JSON.parse(data) as Mount[];
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        console.error(
+          "[Curator] mounts.json is corrupt — returning empty list. Manual recovery may be needed.",
+          error.message,
+        );
+      }
+      return [];
     }
-    return [];
-  }
+  });
 }
 
 /**
@@ -94,16 +112,18 @@ export async function loadMounts(): Promise<Mount[]> {
  * @guarantee Atomically writes the mounts list to disk in JSON format.
  */
 export async function saveMounts(mounts: Mount[]): Promise<void> {
-  const mountsPath = await getMountsFilePath();
-  const tmpPath = `${mountsPath}.tmp`;
-  const dir = dirname(mountsPath);
+  return withMutex(async () => {
+    const mountsPath = await getMountsFilePath();
+    const tmpPath = `${mountsPath}.tmp`;
+    const dir = dirname(mountsPath);
 
-  if (!existsSync(dir)) {
-    await mkdir(dir, { recursive: true });
-  }
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
 
-  await writeFile(tmpPath, JSON.stringify(mounts, null, 2), "utf-8");
-  await rename(tmpPath, mountsPath);
+    await writeFile(tmpPath, JSON.stringify(mounts, null, 2), "utf-8");
+    await rename(tmpPath, mountsPath);
+  });
 }
 
 /**

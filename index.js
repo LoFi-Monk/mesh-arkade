@@ -136,6 +136,12 @@ async function handleCommand(input, isJson, mode, hub, rl) {
   }
 }
 
+/**
+ * Handles the mount command to add a library path.
+ *
+ * @intent Register a new library directory as a mount point.
+ * @guarantee Outputs mount result or error to stdout.
+ */
 async function handleMount(path, isJson, hub) {
   if (!path) {
     if (isJson) {
@@ -175,6 +181,12 @@ async function handleMount(path, isJson, hub) {
   }
 }
 
+/**
+ * Handles the unmount command to remove a library path.
+ *
+ * @intent Remove a library mount point from the registry.
+ * @guarantee Outputs unmount result or error to stdout.
+ */
 async function handleUnmount(path, isJson, hub) {
   if (!path) {
     if (isJson) {
@@ -213,6 +225,12 @@ async function handleUnmount(path, isJson, hub) {
   }
 }
 
+/**
+ * Handles the list-mounts command to show all mounted libraries.
+ *
+ * @intent Display all registered library mount points.
+ * @guarantee Outputs list of mounts or error to stdout.
+ */
 async function handleListMounts(isJson, hub) {
   try {
     const result = await hub.handleRequest({
@@ -311,6 +329,12 @@ async function bootBare(options) {
     output: process.stdout,
   });
 
+  Pear.teardown(async () => {
+    rl.close();
+    const { hub } = await import("./src/core/hub.js");
+    await hub.stop();
+  });
+
   function askQuestion(question) {
     return new Promise((resolve) => {
       rl.question(question, resolve);
@@ -356,6 +380,8 @@ async function bootBare(options) {
       storagePath: hubStatus.storagePath,
     };
     console.log(JSON.stringify(status));
+    rl.close();
+    return;
   } else {
     console.log("  Mesh ARKade Core Hub initialized");
     console.log(`  Socket: ${hubStatus.socketPath}`);

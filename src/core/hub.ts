@@ -70,6 +70,10 @@ class CoreHub {
   private _socketPath: string | null = null;
   private _storagePath: string | null = null;
 
+  /**
+   * Resets the singleton instance.
+   * @internal
+   */
   static resetInstance(): void {
     CoreHub.instance = null;
   }
