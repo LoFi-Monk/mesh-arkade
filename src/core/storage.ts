@@ -3,7 +3,7 @@
  * @description Storage utilities for Curator mounts management using pear-electron storage.
  */
 
-import { readFile, writeFile, mkdir, access } from "fs/promises";
+import { readFile, writeFile, mkdir, access, rename } from "fs/promises";
 import { existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 
@@ -95,13 +95,15 @@ export async function loadMounts(): Promise<Mount[]> {
  */
 export async function saveMounts(mounts: Mount[]): Promise<void> {
   const mountsPath = await getMountsFilePath();
+  const tmpPath = `${mountsPath}.tmp`;
   const dir = dirname(mountsPath);
 
   if (!existsSync(dir)) {
     await mkdir(dir, { recursive: true });
   }
 
-  await writeFile(mountsPath, JSON.stringify(mounts, null, 2), "utf-8");
+  await writeFile(tmpPath, JSON.stringify(mounts, null, 2), "utf-8");
+  await rename(tmpPath, mountsPath);
 }
 
 /**

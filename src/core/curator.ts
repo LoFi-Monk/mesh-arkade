@@ -30,7 +30,6 @@ const ROM_EXTENSIONS = [
   ".iso",
   ".bin",
   ".cue",
-  ".md",
   ".gen",
   ".sms",
   ".pce",
@@ -91,7 +90,9 @@ async function countRomFiles(path: string): Promise<number> {
             count++;
           }
         } else if (entry.isDirectory()) {
-          await scanDirectory(fullPath);
+          if (entry.name !== MESH_HUB_DIR) {
+            await scanDirectory(fullPath);
+          }
         }
       }
     }

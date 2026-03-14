@@ -9,6 +9,7 @@ const fsPromisesMock = {
   rmdir: vi.fn(),
   unlink: vi.fn(),
   access: vi.fn(),
+  rename: vi.fn(),
   constants: { R_OK: 0 },
 };
 

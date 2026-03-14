@@ -365,10 +365,10 @@ async function bootBare(options) {
   }
 
   // Check for first run - no mounts configured
-  const { mountsFileExists } = await import("./src/core/storage.js");
-  const hasMounts = await mountsFileExists();
+  const { loadMounts } = await import("./src/core/storage.js");
+  const mounts = await loadMounts();
 
-  if (!hasMounts && !isJson) {
+  if (mounts.length === 0 && !isJson) {
     await runFirstRunWizard(hub, askQuestion);
   }
 
@@ -376,7 +376,12 @@ async function bootBare(options) {
   if (!isJson) {
     const mode = isHeadless ? "bare" : "development";
     rl.on("line", async (input) => {
-      await handleCommand(input, isJson, mode, hub, rl);
+      rl.pause();
+      try {
+        await handleCommand(input, isJson, mode, hub, rl);
+      } finally {
+        rl.resume();
+      }
     });
   } else {
     rl.close();

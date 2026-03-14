@@ -2,9 +2,9 @@
 
 # Current Progress: Unified Design System Phase 1
 
-## Status: HANDOFF (Curator CLI ready for Opencode)
+## Status: FINAL REMEDIATION (PR #1 Phase 2 Complete)
 
-The codebase has been stabilized with zero typecheck errors. Milestone [03] (Curator CLI) is fully proposed on a dedicated branch with a TDD-enforced spec. Opencode is ready to implement.
+The Curator CLI remediation is reaching its final stage. All major bugs (TOCTOU, logic serialization, and JSON robustness) have been resolved. Local tests and typechecks are passing 100%. We are currently waiting for a final clean scan from Devin before merging.
 
 ### Completed:
 - [x] Renamed default branch from `master` to `main`.
@@ -14,11 +14,12 @@ The codebase has been stabilized with zero typecheck errors. Milestone [03] (Cur
 - [x] Configured Branch Protection (Required PRs, Passing Checks, Resolved Threads).
 - [x] Created PR Template and CODEOWNERS.
 - [x] Made repository **Public** to enforce mandatory CI gates.
+- [x] Resolved Devin "Bug" and "Warning" items (TOCTOU, JSON parse, naming, etc.).
 
 ### 🏔️ Current Focus
 - [x] [00]: Production Contribution Workflow (Safety & CI) ✓
 - [x] [02]: The Core Engine (Headless/Bare) ✓
-- [x] [03]: The Curator CLI (Library Mount Manager) - PROPOSAL READY (Opencode handoff)
+- [x] [03]: The Curator CLI (Library Mount Manager) - FINAL REMEDIATION (PR #1)
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 

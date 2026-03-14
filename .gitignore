@@ -32,7 +32,7 @@ Thumbs.db
 
 # Coverage
 coverage/
-*.txt
+coverage_report*.txt
 !README.md
 !AGENTS.md
 !GEMINI.md
