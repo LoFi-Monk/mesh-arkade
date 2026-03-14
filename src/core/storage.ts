@@ -10,6 +10,13 @@ import { join, dirname } from "path";
 let storageMutex: Promise<void> = Promise.resolve();
 let currentHolder: { release: () => void } | null = null;
 
+/**
+ * Executes a function under a mutual exclusion lock for storage operations.
+ *
+ * @intent Serialize concurrent access to mounts.json to prevent lost updates.
+ * @guarantee Only one caller's fn executes at a time; others queue until the lock is released.
+ * @constraint Must not be called in a nested fashion — use raw storage helpers inside an outer withMutex block.
+ */
 async function withMutex<T>(fn: () => Promise<T>): Promise<T> {
   if (currentHolder) {
     return fn();
