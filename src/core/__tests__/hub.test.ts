@@ -16,6 +16,35 @@ vi.mock("../curator.js", async () => {
   };
 });
 
+vi.mock("../curation.js", async () => {
+  return {
+    getCurationManager: () => ({
+      seedSystem: vi.fn().mockResolvedValue({
+        systemId: "nes",
+        systemTitle: "Nintendo Entertainment System",
+        gamesAdded: 10,
+        totalGames: 10,
+      }),
+      searchWishlist: vi.fn().mockResolvedValue([
+        {
+          title: "Super Mario Bros.",
+          sha1: "abc123",
+          crc: "12345678",
+          md5: "abcd1234",
+          region: "USA",
+          system_id: "nes",
+        },
+      ]),
+      getSupportedSystems: vi
+        .fn()
+        .mockResolvedValue([
+          { id: "nes", title: "NES", datUrl: "http://example.com/nes.dat" },
+        ]),
+      getSystemInfo: vi.fn().mockResolvedValue(null),
+    }),
+  };
+});
+
 vi.stubGlobal("Pear", {
   app: {
     args: ["--bare"],
@@ -57,7 +86,9 @@ describe("CoreHub JSON-RPC", () => {
     });
 
     it("should handle curator:mount with error", async () => {
-      vi.mocked(mockCurator.mount).mockRejectedValueOnce(new Error("Invalid path"));
+      vi.mocked(mockCurator.mount).mockRejectedValueOnce(
+        new Error("Invalid path"),
+      );
 
       const request = {
         method: "curator:mount",
@@ -161,7 +192,9 @@ describe("CoreHub JSON-RPC", () => {
       const engineHub = getEngineHub();
       const response = await engineHub.handleRequest(request);
       expect(response.error).toBeDefined();
-      expect(response.error?.message).toContain("Missing required parameter: path");
+      expect(response.error?.message).toContain(
+        "Missing required parameter: path",
+      );
     });
 
     it("should handle curator:unmount with missing path", async () => {
@@ -173,7 +206,9 @@ describe("CoreHub JSON-RPC", () => {
       const engineHub = getEngineHub();
       const response = await engineHub.handleRequest(request);
       expect(response.error).toBeDefined();
-      expect(response.error?.message).toContain("Missing required parameter: path");
+      expect(response.error?.message).toContain(
+        "Missing required parameter: path",
+      );
     });
 
     it("should handle unknown method", async () => {
@@ -257,6 +292,135 @@ describe("CoreHub JSON-RPC", () => {
       await h.stop();
       await h.stop(); // Second stop should return early
       expect(h.getStatus().running).toBe(false);
+    });
+  });
+
+  describe("curation:seed", () => {
+    it("should handle curation:seed request", async () => {
+      const request = {
+        method: "curation:seed",
+        params: { system: "nes" },
+        id: 10,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeDefined();
+      expect(response.result.systemId).toBe("nes");
+    });
+
+    it("should handle curation:seed with missing system", async () => {
+      const request = {
+        method: "curation:seed",
+        params: {},
+        id: 11,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain(
+        "Missing required parameter: system",
+      );
+    });
+
+    it("should handle curation:seed with invalid params", async () => {
+      const request = {
+        method: "curation:seed",
+        params: "invalid",
+        id: 12,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+    });
+  });
+
+  describe("curation:search", () => {
+    it("should handle curation:search request", async () => {
+      const request = {
+        method: "curation:search",
+        params: { query: "Mario" },
+        id: 13,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeInstanceOf(Array);
+    });
+
+    it("should handle curation:search with system filter", async () => {
+      const request = {
+        method: "curation:search",
+        params: { query: "Mario", system: "nes" },
+        id: 14,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeInstanceOf(Array);
+    });
+
+    it("should handle curation:search with limit", async () => {
+      const request = {
+        method: "curation:search",
+        params: { query: "Mario", limit: 5 },
+        id: 15,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeInstanceOf(Array);
+    });
+
+    it("should handle curation:search with missing query", async () => {
+      const request = {
+        method: "curation:search",
+        params: {},
+        id: 16,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain(
+        "Missing required parameter: query",
+      );
+    });
+
+    it("should handle curation:search with invalid params", async () => {
+      const request = {
+        method: "curation:search",
+        params: "invalid",
+        id: 17,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+    });
+  });
+
+  describe("curation:systems", () => {
+    it("should handle curation:systems request", async () => {
+      const request = {
+        method: "curation:systems",
+        id: 18,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeInstanceOf(Array);
     });
   });
 });
