@@ -3,7 +3,8 @@
  * @description Core Hub - singleton engine managing P2P swarm, storage, and local bridge sockets.
  */
 
-import { Curator, Mount } from "./curator.js";
+import type { Mount } from "./curator.js";
+import type { SeedResult, SearchResult } from "./curation.js";
 
 interface PearAppWithStorage {
   args: string[];
@@ -187,7 +188,8 @@ class CoreHub {
     if (typeof path !== "string") {
       throw new Error("Missing required parameter: path");
     }
-    return Curator.mount(path);
+    const { getCurator } = await import("./curator.js");
+    return getCurator().mount(path);
   }
 
   private async handleCuratorUnmount(
@@ -200,14 +202,55 @@ class CoreHub {
     if (typeof path !== "string") {
       throw new Error("Missing required parameter: path");
     }
-    await Curator.unmount(path);
+    const { getCurator } = await import("./curator.js");
+    await getCurator().unmount(path);
     return { success: true };
   }
 
   private async handleCuratorList(
     _params: Record<string, unknown> | undefined,
   ): Promise<Mount[]> {
-    return Curator.listMounts();
+    const { getCurator } = await import("./curator.js");
+    return getCurator().listMounts();
+  }
+
+  private async handleCurationSeed(
+    params: Record<string, unknown> | undefined,
+  ): Promise<SeedResult> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curation:seed");
+    }
+    const { system } = params;
+    if (typeof system !== "string") {
+      throw new Error("Missing required parameter: system");
+    }
+    const { getCurationManager } = await import("./curation.js");
+    return getCurationManager().seedSystem(system);
+  }
+
+  private async handleCurationSearch(
+    params: Record<string, unknown> | undefined,
+  ): Promise<SearchResult[]> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curation:search");
+    }
+    const { query, system, limit } = params;
+    if (typeof query !== "string") {
+      throw new Error("Missing required parameter: query");
+    }
+    const { getCurationManager } = await import("./curation.js");
+    return getCurationManager().searchWishlist(
+      query,
+      typeof system === "string" ? system : undefined,
+      typeof limit === "number" ? limit : 50,
+    );
+  }
+
+  private async handleCurationSystems(
+    _params: Record<string, unknown> | undefined,
+  ): Promise<{ id: string; title: string; datUrl: string }[]> {
+    const { getCurationManager } = await import("./curation.js");
+    return getCurationManager().getSupportedSystems();
   }
 
   /**
@@ -238,6 +281,21 @@ class CoreHub {
         case "curator:list":
           result = await this.handleCuratorList(params);
           break;
+        case "curation:seed":
+          result = await this.handleCurationSeed(params);
+          break;
+        case "curation:search":
+          result = await this.handleCurationSearch(params);
+          break;
+        case "curation:systems":
+          result = await this.handleCurationSystems(params);
+          break;
+        case "database:reset": {
+          const { resetDatabase } = await import("./database.js");
+          await resetDatabase();
+          result = { success: true };
+          break;
+        }
         default:
           throw new Error(`Unknown method: ${method}`);
       }
@@ -261,6 +319,8 @@ class CoreHub {
  * @intent Provide the main singleton entry point for hub operations.
  * @guarantee This object is always an initialized CoreHub instance.
  */
-export const hub = CoreHub.getInstance();
+export function getEngineHub() {
+  return CoreHub.getInstance();
+}
 export { CoreHub };
-export default hub;
+export default getEngineHub;

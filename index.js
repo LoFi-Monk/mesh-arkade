@@ -4,9 +4,26 @@
  */
 
 // GUI-specific modules are imported dynamically in bootGui() to remain headless-ready.
-import readline from "readline";
+// Use bare-readline and bare-tty in Bare runtime, fallback to node:readline for tests/Node environment
+let readline;
+let stdin;
+let stdout;
 
-const isDev = Pear.app.dev;
+if (typeof Bare !== "undefined") {
+  readline = await import("bare-readline");
+  const { ReadStream, WriteStream } = await import("bare-tty");
+  stdin = new ReadStream(0);
+  stdout = new WriteStream(1);
+} else {
+  readline = await import("readline");
+  stdin = process.stdin;
+  stdout = process.stdout;
+}
+
+// Global Core Hub instance
+var hubInstance;
+
+const isDev = typeof Pear !== "undefined" && Pear.app ? Pear.app.dev : true;
 
 /**
  * Displays help text to stdout.
@@ -22,6 +39,10 @@ function showHelp(isJson) {
       mount: "Mount a library directory",
       unmount: "Unmount a library directory",
       "list-mounts": "List all mounted libraries (alias: mounts)",
+      systems: "List all supported game systems (fetching from GitHub)",
+      init: "Initialize/seeding system DATs (use: init --seed <system>)",
+      search: "Search wishlist database (use: search <query>)",
+      reset: "Wipe all local database and storage state",
       quit: "Exit the application",
       exit: "Exit the application",
     },
@@ -46,8 +67,12 @@ Commands:
   mount        Mount a library directory
   unmount      Unmount a library directory
   list-mounts  List all mounted libraries (alias: mounts)
-  quit         Exit the application
-  exit         Exit the application
+  systems      List all supported game systems (fetching from GitHub)
+  init        Initialize/seeding system DATs (use: init --seed <system>)
+  search      Search wishlist database (use: search <query>)
+  reset       Wipe all local database and storage state
+  quit        Exit the application
+  exit        Exit the application
 
 Options:
   --bare       Run in headless terminal mode
@@ -72,7 +97,8 @@ function showStatus(isJson, mode) {
     status: "ready",
     mode,
     version: "0.1.0",
-    uptime: process.uptime?.() ?? 0,
+    uptime:
+      typeof process !== "undefined" && process.uptime ? process.uptime() : 0,
   };
 
   if (isJson) {
@@ -92,7 +118,7 @@ function showStatus(isJson, mode) {
  * @intent Handle interactive CLI commands in Bare mode.
  * @guarantee Outputs appropriate response to stdout.
  */
-async function handleCommand(input, isJson, mode, hub, rl) {
+async function handleCommand(input, isJson, mode, rl) {
   const trimmedInput = input.trim();
   if (!trimmedInput) return;
 
@@ -110,20 +136,36 @@ async function handleCommand(input, isJson, mode, hub, rl) {
       showStatus(isJson, mode);
       break;
     case "mount":
-      await handleMount(arg, isJson, hub);
+      await handleMount(arg, isJson);
       break;
     case "unmount":
-      await handleUnmount(arg, isJson, hub);
+      await handleUnmount(arg, isJson);
       break;
     case "list-mounts":
     case "mounts":
-      await handleListMounts(isJson, hub);
+      await handleListMounts(isJson);
+      break;
+    case "init":
+      await handleInit(arg, isJson);
+      break;
+    case "systems":
+      await handleSystems(isJson);
+      break;
+    case "search":
+      await handleSearch(arg, isJson);
+      break;
+    case "reset":
+      await handleReset(isJson, rl);
       break;
     case "quit":
     case "exit":
       console.log("Goodbye!");
       rl.close();
-      process.exit(0);
+      if (typeof Pear !== "undefined") {
+        Pear.exit(0);
+      } else {
+        process.exit(0);
+      }
       break;
     default:
       if (isJson) {
@@ -142,7 +184,7 @@ async function handleCommand(input, isJson, mode, hub, rl) {
  * @intent Register a new library directory as a mount point.
  * @guarantee Outputs mount result or error to stdout.
  */
-async function handleMount(path, isJson, hub) {
+async function handleMount(path, isJson) {
   if (!path) {
     if (isJson) {
       console.log(JSON.stringify({ error: "Missing path argument" }));
@@ -153,7 +195,7 @@ async function handleMount(path, isJson, hub) {
   }
 
   try {
-    const result = await hub.handleRequest({
+    const result = await hubInstance.handleRequest({
       method: "curator:mount",
       params: { path },
     });
@@ -187,7 +229,7 @@ async function handleMount(path, isJson, hub) {
  * @intent Remove a library mount point from the registry.
  * @guarantee Outputs unmount result or error to stdout.
  */
-async function handleUnmount(path, isJson, hub) {
+async function handleUnmount(path, isJson) {
   if (!path) {
     if (isJson) {
       console.log(JSON.stringify({ error: "Missing path argument" }));
@@ -198,7 +240,7 @@ async function handleUnmount(path, isJson, hub) {
   }
 
   try {
-    const result = await hub.handleRequest({
+    const result = await hubInstance.handleRequest({
       method: "curator:unmount",
       params: { path },
     });
@@ -231,9 +273,9 @@ async function handleUnmount(path, isJson, hub) {
  * @intent Display all registered library mount points.
  * @guarantee Outputs list of mounts or error to stdout.
  */
-async function handleListMounts(isJson, hub) {
+async function handleListMounts(isJson) {
   try {
-    const result = await hub.handleRequest({
+    const result = await hubInstance.handleRequest({
       method: "curator:list",
     });
 
@@ -285,6 +327,212 @@ async function handleListMounts(isJson, hub) {
   }
 }
 
+function parseArgs(argsStr) {
+  const args = {};
+  const trimmed = (argsStr || "").trim();
+  if (!trimmed) return { args: {}, positional: [] };
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  for (const part of parts) {
+    if (part.startsWith("--")) {
+      const [key, value] = part.slice(2).split("=");
+      args[key] = value ?? true;
+    }
+  }
+  const positional = parts.filter((p) => !p.startsWith("--"));
+  return { args, positional };
+}
+
+function drawProgressBar(current, total, width = 40) {
+  const percentage = Math.min(100, Math.round((current / total) * 100));
+  const filled = Math.round((width * current) / total);
+  const empty = width - filled;
+  const bar = "=".repeat(filled) + "-".repeat(empty);
+  return `[${bar}] ${percentage}% (${current}/${total})`;
+}
+
+async function handleInit(argsStr, isJson) {
+  const { args, positional } = parseArgs(argsStr);
+  const seedFlag = args.seed;
+  const system = typeof seedFlag === "string" ? seedFlag : positional[0];
+
+  if (!system) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: "Usage: init --seed=<system-id>" }));
+    } else {
+      console.log("Usage: init --seed=<system-id>");
+      console.log("Example: init --seed=nes");
+    }
+    return;
+  }
+
+  try {
+    if (isJson) {
+      const result = await hubInstance.handleRequest({
+        method: "curation:seed",
+        params: { system },
+      });
+
+      if (result.error) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(JSON.stringify(result.result));
+      }
+    } else {
+      console.log(`Seeding system: ${system}`);
+      console.log("");
+
+      const result = await hubInstance.handleRequest({
+        method: "curation:seed",
+        params: { system },
+      });
+
+      if (result.error) {
+        console.log(`Error: ${result.error.message}`);
+      } else {
+        const { systemTitle, gamesAdded, totalGames } = result.result;
+        console.log("");
+        console.log(`Successfully seeded ${systemTitle}`);
+        console.log(`  Games added: ${gamesAdded}`);
+        console.log(`  Total in database: ${totalGames}`);
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+}
+
+async function handleSearch(argsStr, isJson) {
+  const { args, positional } = parseArgs(argsStr || "");
+  const query = positional.join(" ");
+  const system = args.system;
+
+  if (!query && !system) {
+    if (isJson) {
+      console.log(
+        JSON.stringify({ error: "Usage: search <query> [--system=<id>]" }),
+      );
+    } else {
+      console.log("Usage: search <query> [--system=<id>]");
+      console.log('Example: search "Super Mario"');
+      console.log("Example: search --system=nes (lists all NES games)");
+    }
+    return;
+  }
+
+  try {
+    const result = await hubInstance.handleRequest({
+      method: "curation:search",
+      params: { query, system, limit: 20 },
+    });
+
+    if (result.error) {
+      if (isJson) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(`Error: ${result.error.message}`);
+      }
+    } else {
+      const results = result.result;
+      if (isJson) {
+        console.log(JSON.stringify(results));
+      } else {
+        if (results.length === 0) {
+          console.log(`No results found for "${query}"`);
+        } else {
+          console.log(`Found ${results.length} result(s) for "${query}":`);
+          console.log("");
+          for (const r of results) {
+            const sha1 = r.sha1 ? r.sha1.slice(0, 8) + "..." : "N/A";
+            console.log(`  ${r.title}`);
+            console.log(`    SHA1: ${sha1} | Region: ${r.region}`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+}
+
+async function handleSystems(isJson) {
+  try {
+    const result = await hubInstance.handleRequest({
+      method: "curation:systems",
+    });
+
+    if (result.error) {
+      if (isJson) {
+        console.log(JSON.stringify({ error: result.error.message }));
+      } else {
+        console.log(`Error: ${result.error.message}`);
+      }
+    } else {
+      const systems = result.result;
+      if (isJson) {
+        console.log(JSON.stringify(systems));
+      } else {
+        console.log("Supported Game Systems (fetched from Libretro GitHub):");
+        console.log("");
+        systems
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .forEach((s) => console.log(`  - ${s.title} (${s.id})`));
+        console.log("");
+        console.log("To seed a system, use: init --seed <id>");
+      }
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+}
+
+async function handleReset(isJson, rl) {
+  if (isJson) {
+    const result = await hubInstance.handleRequest({
+      method: "database:reset",
+    });
+    console.log(JSON.stringify(result.result || result.error));
+    return;
+  }
+
+  const confirm = await new Promise((resolve) => {
+    rl.question(
+      "  WARNING: This will wipe all local metadata and databases. Proceed? (y/N): ",
+      resolve,
+    );
+  });
+
+  if (confirm.toLowerCase() === "y") {
+    console.log("  Resetting system state...");
+    try {
+      const result = await hubInstance.handleRequest({
+        method: "database:reset",
+      });
+      if (result.error) {
+        console.log(`  Error: ${result.error.message}`);
+      } else {
+        console.log("  Success! System has been reset to a clean state.");
+      }
+    } catch (err) {
+      console.log(`  Error: ${err.message}`);
+    }
+  } else {
+    console.log("  Reset cancelled.");
+  }
+}
+
 /**
  * Detects the runtime mode and configures accordingly.
  *
@@ -292,8 +540,16 @@ async function handleListMounts(isJson, hub) {
  * @guarantee Either GUI bridge or headless TerminalHub is initialized.
  */
 async function boot() {
-  const args = Pear.app.args ?? [];
-  const key = Pear.app.key;
+  let args;
+  if (typeof Pear !== "undefined") {
+    args = Pear.app.args ?? [];
+  } else if (typeof Bare !== "undefined") {
+    args = Bare.argv.slice(1);
+  } else {
+    args = process.argv.slice(2);
+  }
+
+  const key = typeof Pear !== "undefined" ? Pear.app.key : null;
   const isLocal = key === null;
   const isHeadless = args.includes("--bare") || args.includes("--headless");
   const isJson = args.includes("--json");
@@ -303,12 +559,18 @@ async function boot() {
 
   if (hasHelp) {
     showHelp(isJson);
-    process.exit(0);
+    if (typeof Pear !== "undefined") {
+      Pear.exit(0);
+    } else if (typeof Bare !== "undefined") {
+      Bare.exit(0);
+    } else {
+      process.exit(0);
+    }
     return;
   }
 
   if (isLocal || isHeadless) {
-    await bootBare({ isJson, isSilent, isHeadless });
+    await bootBare({ isJson, isSilent, isHeadless, args });
   } else {
     await bootGui();
   }
@@ -322,17 +584,11 @@ async function boot() {
  *            Initializes Core Hub with socket bridge.
  */
 async function bootBare(options) {
-  const { isJson, isSilent, isHeadless } = options;
+  const { isJson, isSilent, isHeadless, args } = options;
 
   const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  Pear.teardown(async () => {
-    rl.close();
-    const { hub } = await import("./src/core/hub.js");
-    await hub.stop();
+    input: stdin,
+    output: stdout,
   });
 
   function askQuestion(question) {
@@ -342,11 +598,31 @@ async function bootBare(options) {
   }
 
   // Initialize Core Hub for local bridge
-  const { hub } = await import("./src/core/hub.js");
-  await hub.start();
+  const { getEngineHub } = await import("./dist/src/core/hub.js");
+  hubInstance = getEngineHub();
+  await hubInstance.start();
+
+  // Register lifecycle hooks after initialization to avoid TDZ
+  if (typeof Pear !== "undefined") {
+    Pear.teardown(async () => {
+      rl.close();
+      await hubInstance.stop();
+    });
+  } else if (typeof Bare !== "undefined") {
+    Bare.on("exit", () => {
+      rl.close();
+      hubInstance.stop();
+    });
+  } else {
+    process.on("SIGINT", async () => {
+      rl.close();
+      await hubInstance.stop();
+      process.exit(0);
+    });
+  }
 
   if (!isSilent) {
-    const { appName, getTagline } = await import("./src/core/branding.js");
+    const { appName, getTagline } = await import("./dist/src/core/branding.js");
     const tagline = getTagline();
 
     if (isJson) {
@@ -371,7 +647,7 @@ async function bootBare(options) {
     }
   }
 
-  const hubStatus = hub.getStatus();
+  const hubStatus = hubInstance.getStatus();
   if (isJson) {
     const status = {
       status: "ready",
@@ -390,12 +666,23 @@ async function bootBare(options) {
     console.log("");
   }
 
+  // Check for direct command execution from arguments
+  const appFlags = ["--silent", "--json", "--bare", "--headless", "--help"];
+  const commandArgs = args.filter((a) => !appFlags.includes(a));
+  if (commandArgs.length > 0 && commandArgs[0] !== "help") {
+    const mode = isHeadless ? "bare" : "development";
+    const input = commandArgs.join(" ");
+    await handleCommand(input, isJson, mode, rl);
+    rl.close();
+    return;
+  }
+
   // Check for first run - no mounts configured
-  const { loadMounts } = await import("./src/core/storage.js");
+  const { loadMounts } = await import("./dist/src/core/storage.js");
   const mounts = await loadMounts();
 
   if (mounts.length === 0 && !isJson) {
-    await runFirstRunWizard(hub, askQuestion);
+    await runFirstRunWizard(rl);
   }
 
   // Start interactive CLI loop
@@ -404,7 +691,7 @@ async function bootBare(options) {
     rl.on("line", async (input) => {
       rl.pause();
       try {
-        await handleCommand(input, isJson, mode, hub, rl);
+        await handleCommand(input, isJson, mode, rl);
       } finally {
         rl.resume();
       }
@@ -414,16 +701,16 @@ async function bootBare(options) {
   }
 }
 
-async function runFirstRunWizard(hub, askQuestion) {
+async function runFirstRunWizard(rl) {
   console.log("");
   console.log(
     "  [MUSEUM BOOT] No libraries detected. Initialization required.",
   );
   console.log("");
 
-  const libraryPath = await askQuestion(
-    "  Where is your library? (Enter path): ",
-  );
+  const libraryPath = await new Promise((resolve) => {
+    rl.question("  Where is your library? (Enter path): ", resolve);
+  });
 
   if (!libraryPath || libraryPath.trim() === "") {
     console.log(
@@ -439,7 +726,7 @@ async function runFirstRunWizard(hub, askQuestion) {
   console.log(`  Mounting: ${trimmedPath}...`);
 
   try {
-    const result = await hub.handleRequest({
+    const result = await hubInstance.handleRequest({
       method: "curator:mount",
       params: { path: trimmedPath },
     });
@@ -492,5 +779,11 @@ async function bootGui() {
 
 boot().catch((err) => {
   console.error("Failed to boot:", err);
-  process.exit(1);
+  if (typeof Pear !== "undefined") {
+    Pear.exit(1);
+  } else if (typeof Bare !== "undefined") {
+    Bare.exit(1);
+  } else {
+    process.exit(1);
+  }
 });

@@ -21,9 +21,11 @@ vi.mock("fs/promises", () => ({
 vi.mock("fs", () => ({
   existsSync: vi.fn().mockReturnValue(true),
   mkdirSync: vi.fn(),
+  promises: fsPromisesMock,
   default: {
     existsSync: vi.fn().mockReturnValue(true),
     mkdirSync: vi.fn(),
+    promises: fsPromisesMock,
   },
 }));
 
@@ -120,13 +122,15 @@ describe("Curator", () => {
 
   describe("Curator.mount(path)", () => {
     it("should export mount function", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       expect(Curator).toBeDefined();
       expect(typeof Curator.mount).toBe("function");
     });
 
     it("should validate path exists and is a directory", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       const fs = await import("fs/promises");
 
       fsPromisesMock.stat.mockRejectedValueOnce(
@@ -137,7 +141,8 @@ describe("Curator", () => {
     });
 
     it("should create .mesh-hub directory on mount", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       const fs = await import("fs/promises");
 
       fsPromisesMock.stat.mockResolvedValueOnce({ isDirectory: () => true });
@@ -152,7 +157,8 @@ describe("Curator", () => {
     });
 
     it("should add mount to mounts.json", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       const fs = await import("fs/promises");
 
       fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
@@ -170,7 +176,8 @@ describe("Curator", () => {
     });
 
     it("should count ROM files recursively", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
 
       fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
       fsPromisesMock.access.mockRejectedValueOnce(
@@ -198,12 +205,14 @@ describe("Curator", () => {
 
   describe("Curator.unmount(path)", () => {
     it("should export unmount function", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       expect(typeof Curator.unmount).toBe("function");
     });
 
     it("should remove mount from mounts.json", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
 
       fsPromisesMock.readFile.mockResolvedValueOnce(
         JSON.stringify([{ path: "/test/library", status: "active" }]),
@@ -216,7 +225,8 @@ describe("Curator", () => {
     });
 
     it("should handle non-existent mount", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
 
       fsPromisesMock.readFile.mockResolvedValueOnce(JSON.stringify([]));
 
@@ -226,12 +236,14 @@ describe("Curator", () => {
 
   describe("Curator.listMounts()", () => {
     it("should export listMounts function", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       expect(typeof Curator.listMounts).toBe("function");
     });
 
     it("should return all active mounts", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
 
       fsPromisesMock.readFile.mockResolvedValueOnce(
         JSON.stringify([
@@ -249,7 +261,8 @@ describe("Curator", () => {
 
   describe("Curator.getMount(path)", () => {
     it("should return the mount if it exists", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       const path = "/test/path";
       fsPromisesMock.readFile.mockResolvedValueOnce(
         JSON.stringify([{ path, status: "active", fileCount: 0 }]),
@@ -259,7 +272,8 @@ describe("Curator", () => {
     });
 
     it("should return null if it does not exist", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       fsPromisesMock.readFile.mockResolvedValueOnce(JSON.stringify([]));
       const mount = await Curator.getMount("/missing");
       expect(mount).toBeNull();
@@ -268,7 +282,8 @@ describe("Curator", () => {
 
   describe("Curator.mount(path) - Edge Cases", () => {
     it("should throw if path is already active", async () => {
-      const { Curator } = await import("../curator");
+      const { getCurator } = await import("../curator.js");
+      const Curator = getCurator();
       const path = "/existing";
       fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
       fsPromisesMock.readFile.mockResolvedValueOnce(
@@ -279,14 +294,15 @@ describe("Curator", () => {
     });
 
     it("should allow mounting if existing mount is inactive", async () => {
-      const { Curator, MountStatus } = await import("../curator");
+      const { getCurator, MountStatus } = await import("../curator.js");
+      const Curator = getCurator();
       const path = "/re-mount";
       fsPromisesMock.stat.mockResolvedValue({ isDirectory: () => true });
       fsPromisesMock.readFile.mockResolvedValueOnce(
         JSON.stringify([{ path, status: MountStatus.Inactive }]),
       );
       fsPromisesMock.writeFile.mockResolvedValueOnce(undefined);
-
+ 
       const result = await Curator.mount(path);
       expect(result.status).toBe(MountStatus.Active);
     });

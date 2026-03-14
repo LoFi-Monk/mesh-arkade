@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*C:/ag-workspace/mesh-arkade && node index.js --silent init --seed=nes 2>&1)"
+    ]
+  }
+}
