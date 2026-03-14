@@ -77,8 +77,12 @@ export async function loadMounts(): Promise<Mount[]> {
     const data = await readFile(mountsPath, "utf-8");
     return JSON.parse(data) as Mount[];
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error("[Curator] mounts.json is corrupt — returning empty list. Manual recovery may be needed.", error.message);
+    }
     return [];
   }
+}
 }
 
 /**
