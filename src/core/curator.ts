@@ -210,7 +210,7 @@ class CuratorClass {
 }
 
 /**
- * Returns the Curator singleton instance.
+ * Returns a new Curator instance.
  *
  * @intent Provide access to library mount management operations.
  * @guarantee Returns a new CuratorClass instance on each call.

@@ -479,7 +479,7 @@ class CurationManagerClass {
 }
 
 /**
- * Returns the CurationManager singleton instance.
+ * Returns a new CurationManager instance.
  *
  * @intent Provides access to curation operations for DAT parsing and wishlist management.
  * @guarantee Returns a new CurationManagerClass instance on each call.
