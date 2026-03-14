@@ -3,6 +3,8 @@
  * @description Core Hub - singleton engine managing P2P swarm, storage, and local bridge sockets.
  */
 
+import { Curator, Mount } from "./curator.js";
+
 interface PearAppWithStorage {
   args: string[];
   key: string | null;
@@ -12,6 +14,9 @@ interface PearAppWithStorage {
 
 /**
  * Core Hub status information.
+ *
+ * @intent Provide a structured status report for the hub's runtime state.
+ * @guarantee Contains current running state and resolved path information.
  */
 export interface HubStatus {
   /** Whether the hub is currently running */
@@ -24,6 +29,9 @@ export interface HubStatus {
 
 /**
  * JSON-RPC request format for hub commands.
+ *
+ * @intent Define the communication contract for all hub interface clients.
+ * @guarantee Strictly follows JSON-RPC 2.0 structure for method calls.
  */
 export interface HubRequest {
   /** The command to execute */
@@ -36,6 +44,9 @@ export interface HubRequest {
 
 /**
  * JSON-RPC response format from hub.
+ *
+ * @intent Define the result/error wrapper for hub command responses.
+ * @guarantee Always includes either a result or an error object with a matching ID.
  */
 export interface HubResponse {
   /** The result of the command (if successful) */
@@ -58,6 +69,14 @@ class CoreHub {
   private _running: boolean = false;
   private _socketPath: string | null = null;
   private _storagePath: string | null = null;
+
+  /**
+   * Resets the singleton instance.
+   * @internal
+   */
+  static resetInstance(): void {
+    CoreHub.instance = null;
+  }
 
   /**
    * Gets the singleton instance of CoreHub.
@@ -158,6 +177,39 @@ class CoreHub {
     return `${storagePath}${separator}mesharkade.sock`;
   }
 
+  private async handleCuratorMount(
+    params: Record<string, unknown> | undefined,
+  ): Promise<Mount> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curator:mount");
+    }
+    const { path } = params;
+    if (typeof path !== "string") {
+      throw new Error("Missing required parameter: path");
+    }
+    return Curator.mount(path);
+  }
+
+  private async handleCuratorUnmount(
+    params: Record<string, unknown> | undefined,
+  ): Promise<{ success: boolean }> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for curator:unmount");
+    }
+    const { path } = params;
+    if (typeof path !== "string") {
+      throw new Error("Missing required parameter: path");
+    }
+    await Curator.unmount(path);
+    return { success: true };
+  }
+
+  private async handleCuratorList(
+    _params: Record<string, unknown> | undefined,
+  ): Promise<Mount[]> {
+    return Curator.listMounts();
+  }
+
   /**
    * Processes an incoming JSON-RPC request.
    *
@@ -177,6 +229,15 @@ class CoreHub {
         case "ping":
           result = { pong: true };
           break;
+        case "curator:mount":
+          result = await this.handleCuratorMount(params);
+          break;
+        case "curator:unmount":
+          result = await this.handleCuratorUnmount(params);
+          break;
+        case "curator:list":
+          result = await this.handleCuratorList(params);
+          break;
         default:
           throw new Error(`Unknown method: ${method}`);
       }
@@ -194,5 +255,12 @@ class CoreHub {
   }
 }
 
+/**
+ * Static instance of the hub shared across the application.
+ *
+ * @intent Provide the main singleton entry point for hub operations.
+ * @guarantee This object is always an initialized CoreHub instance.
+ */
 export const hub = CoreHub.getInstance();
+export { CoreHub };
 export default hub;

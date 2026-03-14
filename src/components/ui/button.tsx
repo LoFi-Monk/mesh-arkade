@@ -4,6 +4,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Base styling variants for the Button component using CVA.
+ *
+ * @intent Define a central theme-compliant set of button styles and sizes.
+ * @guarantee Returns a processed string of CSS classes based on variant/size props.
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
@@ -34,12 +40,24 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Properties for the Button component.
+ *
+ * @intent Provide type safety and variant options for the button interface.
+ * @guarantee Extends standard HTML button attributes and CVA variant props.
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
+/**
+ * Primary Button component.
+ *
+ * @intent provide a reusable, polymorphic button component.
+ * @guarantee Correctly merges Tailwind classes and handles 'asChild' prop for composition.
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"

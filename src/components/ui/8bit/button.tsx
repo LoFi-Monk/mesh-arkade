@@ -6,6 +6,12 @@ import { Button as ShadcnButton } from "../button";
 
 import "@/components/ui/8bit/styles/retro.css";
 
+/**
+ * Base styling variants for the 8-bit Button using CVA.
+ *
+ * @intent provide retro styling variants for the bit-button.
+ * @guarantee Returns a processed string of CSS classes based on font, variant, and size.
+ */
 export const buttonVariants = cva("", {
   variants: {
     font: {
@@ -33,6 +39,12 @@ export const buttonVariants = cva("", {
   },
 });
 
+/**
+ * Properties for the 8-bit Button component.
+ *
+ * @intent Provide type safety and variant options for retro button interfaces.
+ * @guarantee Strictly based on standard button attributes and bit-button variants.
+ */
 export interface BitButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
@@ -40,6 +52,12 @@ export interface BitButtonProps
   ref?: React.Ref<HTMLButtonElement>;
 }
 
+/**
+ * Retro pixel-art style Button component.
+ *
+ * @intent provide a highly customized retro-themed button component.
+ * @guarantee Correctly renders pixelated borders and shadows based on variants.
+ */
 export const Button = ({ children, asChild, ...props }: BitButtonProps) => {
   const { variant, size, className, font } = props;
 

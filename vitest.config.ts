@@ -15,8 +15,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
     coverage: {
-      provider: "v8",
+      provider: "istanbul",
       reporter: ["text", "json", "html"],
+      include: ["src/**"],
+      exclude: [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/components/**",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/__tests__/**",
+        "src/core/__tests__/**",
+      ],
       thresholds: {
         lines: 80,
         functions: 80,

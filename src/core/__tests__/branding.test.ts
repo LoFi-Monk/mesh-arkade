@@ -46,6 +46,12 @@ describe("branding", () => {
       const tagline2 = getTagline(42);
       expect(tagline1).toBe(tagline2);
     });
+
+    it("handles negative seeds correctly", () => {
+      const tagline1 = getTagline(-1);
+      expect(tagline1).toBeDefined();
+      expect(typeof tagline1).toBe("string");
+    });
   });
 
   describe("getDescriptor", () => {
@@ -62,6 +68,12 @@ describe("branding", () => {
     it("starts with 'A Decent Game'", () => {
       const descriptor = getDescriptor();
       expect(descriptor.startsWith("A Decent Game")).toBe(true);
+    });
+
+    it("handles negative seeds correctly", () => {
+      const descriptor1 = getDescriptor(-1);
+      expect(descriptor1).toBeDefined();
+      expect(descriptor1.startsWith("A Decent Game")).toBe(true);
     });
   });
 

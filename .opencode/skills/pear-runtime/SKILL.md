@@ -272,11 +272,14 @@ const version = `${Pear.app.fork}.${Pear.app.length}.${key}`
 
 ## When Docs Fail — Fallback Strategy
 
-When `docs.pears.com` is stale or incomplete (it often is):
-1. **GitHub README first**: `https://github.com/holepunchto/<module-name>`
-2. **Open issues**: `https://github.com/holepunchto/pear-electron/issues` (many known bugs documented there)
-3. **Official examples**: `https://github.com/holepunchto/pear/tree/main/examples`
-4. **Holepunch org**: `https://github.com/holepunchto`
+**`docs.pears.com` and `github.com/holepunchto/pear-docs` are the same thing** — the repo is the source for the website. Neither is more up to date than the other. Both lag behind the actual module implementations.
+
+When docs are wrong or missing, check in this order:
+1. **The module's own GitHub README**: `https://github.com/holepunchto/<module-name>` — this is the most accurate source for any specific module's API (e.g. `pear-electron`, `pear-bridge`, `hyperswarm`)
+2. **Open issues on the module repo** — known bugs, API changes in progress, workarounds from other users
+3. **Open issues on pear itself**: `https://github.com/holepunchto/pear/issues`
+4. **Official examples**: `https://github.com/holepunchto/pear/tree/main/examples`
+5. **The annealing notes**: `references/pear-annealing.md` — real lessons from this project
 
 ---
 

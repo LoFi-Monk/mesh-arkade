@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { DiscoveryDeck } from "./Welcome";
-import { appName } from "./lib/branding";
+import { appName } from "./core/branding";
 
 describe("DiscoveryDeck", () => {
   it("renders the app name", () => {

@@ -2,9 +2,9 @@
 
 # Current Progress: Unified Design System Phase 1
 
-## Status: EXECUTION (Curator CLI Ready)
+## Status: FINAL REMEDIATION (PR #1 Phase 2 Complete)
 
-The user successfully established a production-grade safety net. We have moved from "Planning" to being ready for the "Curator CLI" implementation on a protected `main` branch.
+The Curator CLI remediation is reaching its final stage. All major bugs (TOCTOU, logic serialization, and JSON robustness) have been resolved. Local tests and typechecks are passing 100%. We are currently waiting for a final clean scan from Devin before merging.
 
 ### Completed:
 - [x] Renamed default branch from `master` to `main`.
@@ -14,11 +14,12 @@ The user successfully established a production-grade safety net. We have moved f
 - [x] Configured Branch Protection (Required PRs, Passing Checks, Resolved Threads).
 - [x] Created PR Template and CODEOWNERS.
 - [x] Made repository **Public** to enforce mandatory CI gates.
+- [x] Resolved Devin "Bug" and "Warning" items (TOCTOU, JSON parse, naming, etc.).
 
 ### 🏔️ Current Focus
 - [x] [00]: Production Contribution Workflow (Safety & CI) ✓
 - [x] [02]: The Core Engine (Headless/Bare) ✓
-- [/] [03]: The Curator CLI (Library Mount Manager) - PROMPT READY
+- [x] [03]: The Curator CLI (Library Mount Manager) - FINAL REMEDIATION (PR #1)
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 
@@ -77,6 +78,22 @@ The user successfully established a production-grade safety net. We have moved f
 - **Pear-Electron Initialization**: Always include `"pre": "pear-electron/pre"` in `package.json`.
 - **Pear.teardown()**: Preferred over `process.on('exit')` for cleaning up Swarms/Corestores.
 - **Ignore Strategy**: Define `pear.stage.ignore` explicitly. REMEMBER: `.git` is NOT auto-ignored if a custom list exists.
+
+---
+
+## 🧠 Devin Feedback Loop & Lessons Learned
+
+To ensure we leverage Devin's "deep scans" and don't repeat mistakes across milestones, we maintain this log of architectural insights:
+
+### 🏗️ Patterns & Gotchas
+- **Atomic File Operations**: Always write to `.tmp` and `rename()` for config/metadata files. `saveMounts` at `src/core/storage.ts` is the gold standard for Mesh Hub logic.
+- **CLI Serialization**: Use `rl.pause()` and `rl.resume()` inside `rl.on("line")` for sequential processing of async commands.
+- **JSON Framing**: External consumers (like Devin or the Deck) expect **JSONL** (newline-delimited JSON) for robust parsing.
+- **Recursive Guards**: Always explicitly filter `MESH_HUB_DIR` (e.g., `.mesh-hub`) during library scans to prevent metadata-as-content indexing.
+- **Bare Runtime Lifecycles**: Every entry point must include `Pear.teardown()` to ensure clean teardown of P2P resources and stdout streams.
+
+### 🌊 Remediation Workflow
+When Devin leaves "deep" reviews, we use the [/devin-remediate](file:///c:/ag-workspace/mesh-arkade/.agent/workflows/devin-remediate.md) workflow to triangulate, delegate, and verify results.
 
 ---
 
