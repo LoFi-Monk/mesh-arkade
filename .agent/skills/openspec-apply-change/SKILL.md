@@ -24,7 +24,13 @@ Implement tasks from an OpenSpec change.
 
    Always announce: "Using change: <name>" and how to override (e.g., `/opsx:apply <other>`).
 
-2. **Check status to understand the schema**
+2. **Verify Branch**
+   Ensure you are on the correct feature branch for this change:
+   ```bash
+   git checkout "feature/<name>"
+   ```
+
+3. **Check status to understand the schema**
    ```bash
    openspec status --change "<name>" --json
    ```

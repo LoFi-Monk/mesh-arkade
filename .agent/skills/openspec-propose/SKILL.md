@@ -33,11 +33,19 @@ When ready to implement, run /opsx:apply
 
    **IMPORTANT**: Do NOT proceed without understanding what the user wants to build.
 
-2. **Create the change directory**
+3. **Create the change directory**
    ```bash
    openspec new change "<name>"
    ```
    This creates a scaffolded change at `openspec/changes/<name>/` with `.openspec.yaml`.
+
+4. **Initialize Branch & Draft PR**
+   Execute these commands to prepare the environment:
+   ```bash
+   git checkout -b "feature/<name>"
+   git push origin "feature/<name>" -u
+   gh pr create --draft --title "feat: <name>" --body "Initialized by OpenSpec proposal" --base main --head "feature/<name>"
+   ```
 
 3. **Get the artifact build order**
    ```bash
