@@ -536,6 +536,40 @@ describe("DAT Parsing - branch coverage", () => {
     await manager.seedSystem("nes");
   });
 
+  it("should parse CLRMamePro DAT with rom block containing sha1, crc, and md5", async () => {
+    const mockDatContent = `game (
+  name "Super Mario Bros. (World)"
+  rom ( name "Super Mario Bros. (World).nes" size 40976 crc 3A3EEAB0 sha1 facee9c577a5262dbe33ac4930bb0b58c8c037f7 md5 811b027eaf99c2def7b933c5208636de )
+)
+game (
+  name "Zelda (USA)"
+  rom ( name "Zelda.nes" size 131088 crc ABCD1234 sha1 1234567890abcdef1234567890abcdef12345678 md5 abcdef1234567890abcdef1234567890 )
+)`;
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: "Nintendo - NES.dat",
+            download_url: "http://example.com/nes.dat",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => mockDatContent,
+      });
+
+    const { getCurationManager, clearSystemCache } =
+      await import("../curation.js");
+    clearSystemCache?.();
+
+    const manager = getCurationManager();
+    const result = await manager.seedSystem("nes");
+    expect(result.totalGames).toBe(2);
+  });
+
   it("should handle XML format DAT with sha1", async () => {
     const xmlContent = `<?xml version="1.0"?>
 <datafile>
