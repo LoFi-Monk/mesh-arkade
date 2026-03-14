@@ -9,6 +9,7 @@ import {
   loadMounts,
   saveMounts,
   MESH_HUB_DIR,
+  withMutex,
 } from "./storage.js";
 import { stat, access, mkdir, readdir } from "fs/promises";
 import { join, extname } from "path";
@@ -119,39 +120,41 @@ class CuratorClass {
    * @guarantee Returns a Mount object on success. Throws if path is invalid or already mounted.
    */
   async mount(path: string): Promise<Mount> {
-    if (!(await isValidDirectory(path))) {
-      throw new Error(`Invalid path: ${path} is not a valid directory`);
-    }
-
-    const mounts = await loadMounts();
-    const existing = mounts.find((m) => m.path === path);
-    if (existing) {
-      if (existing.status === MountStatus.Active) {
-        throw new Error(`Path ${path} is already mounted`);
+    return withMutex(async () => {
+      if (!(await isValidDirectory(path))) {
+        throw new Error(`Invalid path: ${path} is not a valid directory`);
       }
-    }
 
-    const hubExists = await meshHubExists(path);
-    if (!hubExists) {
-      await createMeshHub(path);
-    }
+      const mounts = await loadMounts();
+      const existing = mounts.find((m) => m.path === path);
+      if (existing) {
+        if (existing.status === MountStatus.Active) {
+          throw new Error(`Path ${path} is already mounted`);
+        }
+      }
 
-    const fileCount = await countRomFiles(path);
-    const now = new Date().toISOString();
+      const hubExists = await meshHubExists(path);
+      if (!hubExists) {
+        await createMeshHub(path);
+      }
 
-    const newMount: Mount = {
-      path,
-      status: MountStatus.Active,
-      fileCount,
-      createdAt: now,
-      lastIndexed: now,
-    };
+      const fileCount = await countRomFiles(path);
+      const now = new Date().toISOString();
 
-    const updatedMounts = mounts.filter((m) => m.path !== path);
-    updatedMounts.push(newMount);
-    await saveMounts(updatedMounts);
+      const newMount: Mount = {
+        path,
+        status: MountStatus.Active,
+        fileCount,
+        createdAt: now,
+        lastIndexed: now,
+      };
 
-    return newMount;
+      const updatedMounts = mounts.filter((m) => m.path !== path);
+      updatedMounts.push(newMount);
+      await saveMounts(updatedMounts);
+
+      return newMount;
+    });
   }
 
   /**
@@ -161,15 +164,17 @@ class CuratorClass {
    * @guarantee Removes the mount entry from persistent storage. Throws if mount not found.
    */
   async unmount(path: string): Promise<void> {
-    const mounts = await loadMounts();
-    const index = mounts.findIndex((m) => m.path === path);
+    return withMutex(async () => {
+      const mounts = await loadMounts();
+      const index = mounts.findIndex((m) => m.path === path);
 
-    if (index === -1) {
-      throw new Error(`Mount ${path} not found`);
-    }
+      if (index === -1) {
+        throw new Error(`Mount ${path} not found`);
+      }
 
-    mounts.splice(index, 1);
-    await saveMounts(mounts);
+      mounts.splice(index, 1);
+      await saveMounts(mounts);
+    });
   }
 
   /**

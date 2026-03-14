@@ -8,20 +8,27 @@ import { existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 
 let storageMutex: Promise<void> = Promise.resolve();
+let currentHolder: { release: () => void } | null = null;
 
 async function withMutex<T>(fn: () => Promise<T>): Promise<T> {
+  if (currentHolder) {
+    return fn();
+  }
   const current = storageMutex;
   let release: () => void;
   storageMutex = new Promise<void>((resolve) => {
     release = resolve;
   });
+  currentHolder = { release: release! };
   await current;
   try {
     return await fn();
   } finally {
+    currentHolder = null;
     release!();
   }
 }
+export { withMutex };
 
 /**
  * Hidden directory used to store mesh indexing data within libraries.
