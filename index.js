@@ -354,18 +354,17 @@ function drawProgressBar(current, total, width = 40) {
 async function handleInit(argsStr, isJson) {
   const { args, positional } = parseArgs(argsStr);
   const seedFlag = args.seed;
+  const system = typeof seedFlag === "string" ? seedFlag : positional[0];
 
-  if (!seedFlag && positional.length === 0) {
+  if (!system) {
     if (isJson) {
-      console.log(JSON.stringify({ error: "Usage: init --seed <system>" }));
+      console.log(JSON.stringify({ error: "Usage: init --seed=<system-id>" }));
     } else {
-      console.log("Usage: init --seed <system>");
-      console.log("Example: init --seed nes");
+      console.log("Usage: init --seed=<system-id>");
+      console.log("Example: init --seed=nes");
     }
     return;
   }
-
-  const system = seedFlag || positional[0];
 
   try {
     if (isJson) {
@@ -610,9 +609,9 @@ async function bootBare(options) {
       await hubInstance.stop();
     });
   } else if (typeof Bare !== "undefined") {
-    Bare.on("exit", async () => {
+    Bare.on("exit", () => {
       rl.close();
-      await hubInstance.stop();
+      hubInstance.stop();
     });
   } else {
     process.on("SIGINT", async () => {
@@ -727,7 +726,7 @@ async function runFirstRunWizard(rl) {
   console.log(`  Mounting: ${trimmedPath}...`);
 
   try {
-    const result = await hub.handleRequest({
+    const result = await hubInstance.handleRequest({
       method: "curator:mount",
       params: { path: trimmedPath },
     });

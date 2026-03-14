@@ -409,7 +409,6 @@ class CurationManagerClass {
 
     console.log(`Fetching DAT for ${systemDef.title}...`);
     const xmlContent = await fetchDat(systemDef.datUrl);
-    console.log(`DAT Content Preview: ${xmlContent.slice(0, 500)}`);
 
     console.log(`Parsing DAT...`);
     const games = parseDat(xmlContent, systemId);

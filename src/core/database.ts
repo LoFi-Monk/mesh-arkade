@@ -181,19 +181,15 @@ export async function insertWishlistBatch(
 
     let key: string;
     if (record.sha1 && record.sha1.length === 40) {
-      key = `game:${record.sha1}:${record.system_id}`;
-    } else if (record.crc && record.crc.length === 8) {
-      key = `game:${record.crc}:${record.system_id}`;
-    } else if (record.md5 && record.md5.length === 32) {
-      key = `game:${record.md5}:${record.system_id}`;
+      key = `${record.system_id}!${record.sha1}`;
     } else {
-      // Fallback: use name + index to ensure uniqueness
-      // Create a simple hash from the name to keep key length reasonable
-      const nameHash = record.title
+      // Fallback: use sanitized title slug if SHA1 is not available
+      const titleSlug = record.title
         .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 16);
-      key = `game:${nameHash}:${record.system_id}:${i}`;
+        .replace(/[^a-z0-9]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      key = `${record.system_id}!${titleSlug}`;
     }
 
     await batch.put(key, {

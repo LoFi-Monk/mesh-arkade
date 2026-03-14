@@ -111,7 +111,7 @@ async function countRomFiles(pathStr: string): Promise<number> {
     return count;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[Curator] Error scanning ${path}: ${message}`);
+    console.error(`[Curator] Error scanning ${pathStr}: ${message}`);
     return 0;
   }
 }
