@@ -1,10 +1,10 @@
 # Antigravity Notes (MeshARKade)
 
-# Current Progress: Unified Design System Phase 1
+# Current Progress: Preservation Deck Preparation (Phase 1)
 
-## Status: FINAL REMEDIATION (PR #1 Phase 2 Complete)
+## Status: MILESTONE 03 COMPLETE (PR #1 Merged)
 
-The Curator CLI remediation is reaching its final stage. All major bugs (TOCTOU, logic serialization, and JSON robustness) have been resolved. Local tests and typechecks are passing 100%. We are currently waiting for a final clean scan from Devin before merging.
+The Curator CLI (Milestone 03) is fully implemented and merged into `main`. All outstanding technical debt from Devin's reviews (transactional integrity, atomic writes, CLI serialization) has been resolved. The repository is now optimized for the next phase of development.
 
 ### Completed:
 - [x] Renamed default branch from `master` to `main`.
@@ -16,10 +16,17 @@ The Curator CLI remediation is reaching its final stage. All major bugs (TOCTOU,
 - [x] Made repository **Public** to enforce mandatory CI gates.
 - [x] Resolved Devin "Bug" and "Warning" items (TOCTOU, JSON parse, naming, etc.).
 
+### 🛠️ CLI / Curation Flow (Finalized)
+- [x] Multi-stage Lifecycle (Stage -> Audit -> Refine -> Sanctify -> Swarm).
+- [x] "From Zero" Fetch Flow using Seed DATs (Libretro).
+- [x] Triple-Layer P2P (Pear, IPFS, BitTorrent).
+- [x] TorrentZip (T0Z) for binary identity (Normalization in Rust).
+- [x] Manual Nostalgist.js testing as verification step.
+
 ### 🏔️ Current Focus
 - [x] [00]: Production Contribution Workflow (Safety & CI) ✓
 - [x] [02]: The Core Engine (Headless/Bare) ✓
-- [x] [03]: The Curator CLI (Library Mount Manager) - FINAL REMEDIATION (PR #1)
+- [x] [03]: The Curator CLI (Library Mount Manager) ✓
 - [ ] [04]: The Preservation Deck (Web/PWA Bridge)
 - [ ] [05]: Modern Museum UI (Paused)
 
@@ -91,6 +98,9 @@ To ensure we leverage Devin's "deep scans" and don't repeat mistakes across mile
 - **JSON Framing**: External consumers (like Devin or the Deck) expect **JSONL** (newline-delimited JSON) for robust parsing.
 - **Recursive Guards**: Always explicitly filter `MESH_HUB_DIR` (e.g., `.mesh-hub`) during library scans to prevent metadata-as-content indexing.
 - **Bare Runtime Lifecycles**: Every entry point must include `Pear.teardown()` to ensure clean teardown of P2P resources and stdout streams.
+- **Workflow Automation**: Always- **Current Context**: Completed CLI exploration for the "Sanctity Flow" (Multi-stage curation).
+- **Goal**: Start Milestone 04 - Implement functional CLI tools (Fetch, Audit, Refine) at `E:\mesh_arkade_dev`.
+- **Workflow**: Auto-branching and PR creation is active.
 
 ### 🌊 Remediation Workflow
 When Devin leaves "deep" reviews, we use the [/devin-remediate](file:///c:/ag-workspace/mesh-arkade/.agent/workflows/devin-remediate.md) workflow to triangulate, delegate, and verify results.

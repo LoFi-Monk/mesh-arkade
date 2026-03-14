@@ -4,15 +4,23 @@
  */
 
 import {
-  Mount,
+  type Mount,
   MountStatus,
   loadMounts,
   saveMounts,
   MESH_HUB_DIR,
   withMutex,
 } from "./storage.js";
-import { stat, access, mkdir, readdir } from "fs/promises";
-import { join, extname } from "path";
+let fs: any;
+let path: any;
+
+if (typeof Bare !== "undefined") {
+  fs = (await import("bare-fs")).default;
+  path = (await import("bare-path")).default;
+} else {
+  fs = await import("fs");
+  path = await import("path");
+}
 
 const ROM_EXTENSIONS = [
   ".zip",
@@ -54,39 +62,41 @@ const ROM_EXTENSIONS = [
   ".cci",
 ];
 
-async function isValidDirectory(path: string): Promise<boolean> {
+async function isValidDirectory(pathStr: string): Promise<boolean> {
   try {
-    const stats = await stat(path);
+    const stats = await fs.promises.stat(pathStr);
     return stats.isDirectory();
   } catch {
     return false;
   }
 }
 
-async function meshHubExists(path: string): Promise<boolean> {
-  const hubPath = join(path, MESH_HUB_DIR);
+async function meshHubExists(pathStr: string): Promise<boolean> {
+  const hubPath = path.join(pathStr, MESH_HUB_DIR);
   try {
-    await access(hubPath);
+    await fs.promises.access(hubPath);
     return true;
   } catch {
     return false;
   }
 }
 
-async function createMeshHub(path: string): Promise<void> {
-  const hubPath = join(path, MESH_HUB_DIR);
-  await mkdir(hubPath, { recursive: true });
+async function createMeshHub(pathStr: string): Promise<void> {
+  const hubPath = path.join(pathStr, MESH_HUB_DIR);
+  await fs.promises.mkdir(hubPath, { recursive: true });
 }
 
-async function countRomFiles(path: string): Promise<number> {
+async function countRomFiles(pathStr: string): Promise<number> {
   try {
     let count = 0;
     async function scanDirectory(dirPath: string) {
-      const entries = await readdir(dirPath, { withFileTypes: true });
+      const entries = await fs.promises.readdir(dirPath, {
+        withFileTypes: true,
+      });
       for (const entry of entries) {
-        const fullPath = join(dirPath, entry.name);
+        const fullPath = path.join(dirPath, entry.name);
         if (entry.isFile()) {
-          const ext = extname(entry.name).toLowerCase();
+          const ext = path.extname(entry.name).toLowerCase();
           if (ROM_EXTENSIONS.includes(ext)) {
             count++;
           }
@@ -97,7 +107,7 @@ async function countRomFiles(path: string): Promise<number> {
         }
       }
     }
-    await scanDirectory(path);
+    await scanDirectory(pathStr);
     return count;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -200,11 +210,13 @@ class CuratorClass {
 }
 
 /**
- * Static instance of the Curator manager.
+ * Returns the Curator singleton instance.
  *
- * @intent Provide a central entry point for library mount management.
- * @guarantee Always refers to the singleton CuratorClass instance.
+ * @intent Provide access to library mount management operations.
+ * @guarantee Returns a new CuratorClass instance on each call.
  */
-export const Curator = new CuratorClass();
+export function getCurator() {
+  return new CuratorClass();
+}
 export { Mount, MountStatus };
-export default Curator;
+export default getCurator;

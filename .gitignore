@@ -10,6 +10,9 @@ build/
 # Pear Runtime
 .pear/
 storage/
+data/
+hyperbee-storage/
+.mesh-arkade/
 
 # Agents
 .agent/temp/

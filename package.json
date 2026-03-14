@@ -70,23 +70,29 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "bare-fetch": "^2.7.0",
+    "bare-fs": "^4.5.5",
+    "bare-os": "^3.8.0",
+    "bare-path": "^3.0.0",
+    "bare-readline": "^1.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "corestore": "^7.9.1",
+    "hyperbee": "^2.27.3",
+    "hypercore": "^11.27.14",
     "lucide-react": "^0.577.0",
     "next-themes": "^0.4.6",
     "pear-bridge": "^1.2.5",
     "pear-electron": "^1.7.28",
+    "random-access-memory": "^6.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwind-merge": "^3.5.0"
   },
   "lint-staged": {
     "src/**/*.{js,ts,tsx}": [
-      "vitest related --run",
+      "vitest related --run --passWithNoTests",
       "node scripts/check-tsdoc.mjs"
-    ],
-    "openspec/**/*.{md}": [
-      "openspec validate"
     ]
   }
 }

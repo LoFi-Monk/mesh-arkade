@@ -3,9 +3,16 @@
  * @description Storage utilities for Curator mounts management using pear-electron storage.
  */
 
-import { readFile, writeFile, mkdir, access, rename } from "fs/promises";
-import { existsSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+let fs: any;
+let path: any;
+
+if (typeof Bare !== "undefined") {
+  fs = (await import("bare-fs")).default;
+  path = (await import("bare-path")).default;
+} else {
+  fs = await import("fs");
+  path = await import("path");
+}
 
 let storageMutex: Promise<void> = Promise.resolve();
 let currentHolder: { release: () => void } | null = null;
@@ -77,8 +84,8 @@ function getStoragePath(): string {
 export async function ensureStorageDir(): Promise<string> {
   const storagePath = getStoragePath();
 
-  if (!existsSync(storagePath)) {
-    mkdirSync(storagePath, { recursive: true });
+  if (!fs.existsSync(storagePath)) {
+    fs.mkdirSync(storagePath, { recursive: true });
   }
 
   return storagePath;
@@ -92,20 +99,20 @@ export async function ensureStorageDir(): Promise<string> {
  */
 export async function getMountsFilePath(): Promise<string> {
   const storagePath = await ensureStorageDir();
-  return join(storagePath, MOUNTS_FILE);
+  return path.join(storagePath, MOUNTS_FILE);
 }
 
 /**
- * Loads the list of library mounts from persistent storage.
+ * Loads the list of library mounts from storage.
  *
- * @intent Retrieve user-defined library paths for system initialization.
- * @guarantee Returns an array of Mount objects, or an empty array if storage is missing/corrupt.
+ * @intent Retrieve persisted mount configuration.
+ * @guarantee Returns an empty array if no mounts exist or file is corrupt.
  */
 export async function loadMounts(): Promise<Mount[]> {
   return withMutex(async () => {
     try {
       const mountsPath = await getMountsFilePath();
-      const data = await readFile(mountsPath, "utf-8");
+      const data = await fs.promises.readFile(mountsPath, "utf-8");
       return JSON.parse(data) as Mount[];
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -129,14 +136,18 @@ export async function saveMounts(mounts: Mount[]): Promise<void> {
   return withMutex(async () => {
     const mountsPath = await getMountsFilePath();
     const tmpPath = `${mountsPath}.tmp`;
-    const dir = dirname(mountsPath);
+    const dir = path.dirname(mountsPath);
 
-    if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true });
+    if (!fs.existsSync(dir)) {
+      await fs.promises.mkdir(dir, { recursive: true });
     }
 
-    await writeFile(tmpPath, JSON.stringify(mounts, null, 2), "utf-8");
-    await rename(tmpPath, mountsPath);
+    await fs.promises.writeFile(
+      tmpPath,
+      JSON.stringify(mounts, null, 2),
+      "utf-8",
+    );
+    await fs.promises.rename(tmpPath, mountsPath);
   });
 }
 
@@ -172,7 +183,7 @@ export enum MountStatus {
 export async function mountsFileExists(): Promise<boolean> {
   try {
     const mountsPath = await getMountsFilePath();
-    await access(mountsPath);
+    await fs.promises.access(mountsPath);
     return true;
   } catch {
     return false;

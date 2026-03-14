@@ -1,169 +1,141 @@
-# AGENTS.md - Agent Guidelines for mesh-arkade
+# MeshARKade — Shared Agent Context
+
+> This file is the shared memory for all agents (Claude, Gemini/Antigravity, Opencode, Devin).
+> Read this at the start of every session. Update it at the end of every session.
+
+---
 
 ## Project Overview
 
-This is mesh-arkade, a project in the `C:\ag-workspace\mesh-arkade` directory. When code is added, analyze existing patterns before making changes.
+**MeshARKade** is a decentralized, museum-quality, takedown-resistant game preservation platform built on Pear Runtime (P2P), IPFS, magnet torrents, and NostalgistJS for in-browser play.
 
-## Build, Lint, and Test Commands
+**Philosophy**: "Accessible Museum" — curator-first, verification-first. Nothing is museum quality until it is verified against a DAT.
 
-### Running the Project
+**Stack**: Pear Runtime (Bare + Electron), Hyperbee, Hyperswarm, IPFS, BitTorrent, NostalgistJS, React (UI layer, future).
 
-```bash
-# Install dependencies (check package.json or requirements.txt for tool)
-npm install    # Node/TypeScript
-pip install -r requirements.txt  # Python
-cargo build    # Rust
-go build       # Go
+---
 
-# Run the project
-npm start      # Node/TypeScript
-python main.py # Python
-cargo run      # Rust
-go run .       # Go
-```
+## Current Status — 2026-03-14
 
-### Running Tests
+### Active Branch: `feature/milestone-04-hyperbee-crawl`
 
-```bash
-# Run all tests
-npm test       # Node/TypeScript (often uses Jest, Vitest, or Mocha)
-pytest         # Python
-cargo test     # Rust
-go test ./...  # Go
+**Milestone 04 implementation is complete and pending PR merge.**
 
-# Run a single test
-npm test -- --testNamePattern="specific test name"  # Jest
-pytest -k "specific_test_name"                      # Python
-cargo test specific_test_name                       # Rust
-go test -run "TestSpecificName"                      # Go
+The CLI is fully functional:
+- `systems` — lists all available game systems from Libretro GitHub
+- `init --seed <id>` — fetches No-Intro DAT and seeds local Hyperbee with titles + hashes
+- `search <query>` — searches the local wishlist database
+- `search --system=<id>` — lists all games for a system
 
-# Run tests in watch mode
-npm test -- --watch  # Jest
-pytest -w           # Python (if pytest-watch installed)
-cargo test --watch  # Rust
-```
+### In Progress
+- Opencode fixing TSDoc violations and removing `openspec validate` from lint-staged
+- Once lint-staged passes → commit → push → CI → Devin PR review
 
-### Linting and Formatting
+### Pending
+- [ ] Lint-staged fixes land from Opencode
+- [ ] Commit and push `feature/milestone-04-hyperbee-crawl`
+- [ ] CI green
+- [ ] Devin PR review and remediation
+- [ ] Refactor `index.js` (growing large — extract handlers to `src/cli/commands/`) — separate PR after merge
 
-```bash
-# Lint
-npm run lint        # Node/TypeScript (ESLint)
-pylint .            # Python
-cargo clippy         # Rust
-golangci-lint run   # Go
+---
 
-# Format code
-npm run format      # Prettier
-black .             # Python
-cargo fmt           # Rust
-gofmt -w .          # Go
+## Milestone Status
 
-# Type checking
-npm run typecheck   # TypeScript
-mypy .              # Python
-cargo check         # Rust
-go vet ./...        # Go
-```
+| # | Name | Status |
+|---|------|--------|
+| 00 | Production Contribution Workflow (CI, Branch Protection) | ✅ Complete |
+| 01 | React UI & Branding Foundation | ⏸ Paused |
+| 02 | Core Engine (Headless/Bare) | ✅ Complete |
+| 03 | Curator CLI (Library Mount Manager) | ✅ Complete (PR #1 merged) |
+| 04 | Curation Bootstrap (DAT + Hyperbee) | 🔄 In PR |
+| 05 | Multi-Layer P2P Recovery (Fetch) | 📋 Backlog |
+| 06 | Normalization & TorrentZip (Rust) | 📋 Backlog |
+| 07 | Preservation Deck (Web/PWA Bridge) | 📋 Backlog |
+| 08 | Curator Tools: Exhibits & Social | 📋 Backlog |
+| 09 | Arcade View: Gamepad & 10-foot UI | 📋 Backlog |
+| 10 | Living Identity: Dynamic Tagline | ✅ Complete |
+| 11 | Background Seeder: Tray & Startup | 📋 Backlog |
 
-## Code Style Guidelines
+---
 
-### General Principles
+## Architecture Decisions
 
-- Write clean, readable code over clever code
-- Keep functions small and focused (single responsibility)
-- Use meaningful variable and function names
-- Comment the "why", not the "what"
-- Avoid premature optimization
+> Full ADRs at `.agent/adr/` — single source of truth. Do not duplicate here.
 
-### Imports and Dependencies
+- **ADR-0001**: Use MADR format for architecture decisions
+- **ADR-0002**: Hyperbee over SQLite for metadata storage (Bare-friendly, P2P portable, no native binding issues on Windows)
 
-- Use absolute imports over relative when possible
-- Group imports: stdlib, third-party, local
-- Prefer explicit imports over wildcard (`from x import *`)
-- Keep dependencies minimal - avoid pulling in libraries unnecessarily
+### Core Principles
+- **Terminal-First**: CLI is the universal interface. GUI is a skin on top. Friendly for humans and AI agents alike.
+- **Engine-First**: Core logic must be runtime-agnostic (Pure JS/Bare). No DOM/Node assumptions.
+- **Curator-First**: Verification (DAT hash match) must precede playback. Nothing enters the swarm unverified.
+- **Two-World Execution**: Bare for P2P/Hypercore logic, React for UI — isolated via `pear-bridge`.
+- **On-Demand Distribution**: Users download what they interact with. Mandatory sharing is the baseline for swarm health.
 
-### Formatting
+### Preservation Standards
+- Source of truth: No-Intro (cartridge) and Redump (disc) DAT files
+- Normalization: TorrentZip (T0Z) for bit-perfect identity across peers
+- Anti-spoofing: Ed25519 signed Hypercores, Multi-sig Guardians for canonical DAT updates
 
-- Use 2 or 4 spaces for indentation (match existing project)
-- Max line length: 80-120 characters
-- Add trailing commas where supported
-- Use consistent quote style (single vs double)
+---
 
-### Types
+## Technical Gotchas (Lessons Learned)
 
-- Use explicit types for function parameters and return values
-- Avoid `any` type - use proper generics or union types
-- Enable strict type checking
-- Prefer interfaces over types for object shapes
+- **Atomic File Operations**: Always write to `.tmp` then `rename()`. `saveMounts` in `src/core/storage.ts` is the gold standard.
+- **CLI Serialization**: Use `rl.pause()` / `rl.resume()` inside `rl.on("line")` for sequential async commands.
+- **JSON Framing**: External consumers expect JSONL (newline-delimited JSON).
+- **Recursive Guards**: Always filter `.mesh-hub` during library scans to prevent metadata-as-content indexing.
+- **Pear Teardown**: Use `Pear.teardown()` not `process.on('exit')` for P2P resource cleanup.
+- **Pear-Electron Init**: Always include `"pre": "pear-electron/pre"` in `package.json`.
+- **`.git` ignore**: If a custom `pear.stage.ignore` list exists, add `.git` explicitly — it is NOT auto-ignored.
+- **DAT Parser**: CLRMamePro `rom (...)` blocks use quoted strings for names with parentheses. Regex must handle `"[^"]*"` to avoid early termination on `)` inside game names.
+- **CLI Flag Parsing**: Only strip top-level app flags (`--silent`, `--json`, `--bare`, `--headless`, `--help`) before passing args to command handlers. Command-specific flags (e.g. `--seed=nes`) must pass through.
 
-### Naming Conventions
+---
 
-- `camelCase` - variables, functions, methods
-- `PascalCase` - classes, components, types, interfaces
-- `SCREAMING_SNAKE_CASE` - constants, env variables
-- `kebab-case` - file names, URLs
-- Use descriptive names: `calculateTotalPrice()` not `calc()`
-
-### Error Handling
-
-- Use typed errors, not generic exceptions where possible
-- Don't silently swallow errors - log or re-raise appropriately
-- Handle errors at the appropriate level
-- Prefer Result/Either types over exceptions when idiomatic
-
-### Git Conventions
-
-- Use meaningful commit messages: "Add user authentication" not "fix"
-- Keep commits atomic and focused
-- Create feature branches for new work
-- Run lint/typecheck before committing
-
-### Testing Guidelines
-
-- Write tests for new features and bug fixes
-- Use descriptive test names: `test_returns_empty_list_when_no_items`
-- Follow AAA pattern: Arrange, Act, Assert
-- Mock external dependencies
-- Aim for meaningful test coverage, not just high percentage
-
-## Common Patterns
-
-### File Organization
-
-```
-src/
-  components/     # UI components
-  services/       # Business logic, API clients
-  utils/          # Helper functions
-  types/          # TypeScript types/interfaces
-  models/         # Data models
-  __tests__/      # Test files (co-located or separate)
-```
-
-### Configuration
-
-- Store secrets in environment variables, never in code
-- Use config files for environment-specific settings
-- Include `.env.example` for required variables
-
-### Logging
-
-- Use appropriate log levels: DEBUG, INFO, WARN, ERROR
-- Don't log sensitive data (passwords, tokens, PII)
-- Include context in log messages
-
-## Running Full CI Checks
-
-Before submitting changes:
+## Build & Test Commands
 
 ```bash
-# Full lint + typecheck + test
-npm run lint && npm run typecheck && npm test  # Node
-pylint . && mypy . && pytest                    # Python
-cargo clippy && cargo test                      # Rust
-golangci-lint run && go test ./...             # Go
+npm install          # install dependencies
+npm test             # run all tests (Vitest)
+npm run typecheck    # TypeScript strict check
+npx lint-staged      # run pre-commit checks manually
+node index.js --silent systems            # list game systems
+node index.js --silent init --seed=nes   # seed NES DAT
+node index.js --silent search "Mario"    # search wishlist
 ```
 
 ---
 
-When in doubt, follow the existing code style in the project. Consistency is more important than personal preference.
+## Agent Roles
+
+| Agent | Role | Config |
+|-------|------|--------|
+| **Claude** | Pair programmer, architect, OpenSpec coordinator, code reviewer | `CLAUDE.md`, `.claude/` |
+| **Gemini / Antigravity** | Pair programmer (being phased out) | `GEMINI.md`, `.agent/` |
+| **Opencode** | Code execution — implements tasks from OpenSpec | `.opencode/` |
+| **Devin** | Automated PR code review | GitHub PR integration |
+
+---
+
+## Workflow
+
+1. Claude + Lofi brainstorm → agree on approach
+2. Claude creates OpenSpec change (`/opsx/propose`)
+3. Claude generates artifacts (proposal, design, tasks)
+4. Opencode implements tasks (`/opsx/apply`)
+5. Claude verifies output, runs tests
+6. Commit + push → CI → Devin review
+7. Claude triages Devin feedback (`/devin-remediate`) → delegates fixes to Opencode
+8. Repeat until green → merge
+
+---
+
+## Resources
+
+- **Roadmap**: `.agent/roadmap.md`
+- **Preservation Standards**: `.agent/agents-notes/preservation-standards.md`
+- **Pear Runtime Skill**: `.claude/skills/pear-runtime/SKILL.md`
+- **ROM Expert Skill**: `.claude/skills/rom-expert/SKILL.md`
+- **DeepWiki**: Ask user to relay questions for deep Holepunch/Pear ecosystem research

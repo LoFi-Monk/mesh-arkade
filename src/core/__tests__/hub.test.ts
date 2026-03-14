@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CoreHub, hub } from "../hub.js";
-import { Curator, MountStatus } from "../curator.js";
+import { CoreHub, getEngineHub } from "../hub.js";
+import { MountStatus } from "../curator.js";
+const mockCurator = {
+  mount: vi.fn(),
+  unmount: vi.fn(),
+  listMounts: vi.fn(),
+  getMount: vi.fn(),
+};
 
-vi.mock("../curator.js", () => ({
-  Curator: {
-    mount: vi.fn(),
-    unmount: vi.fn(),
-    listMounts: vi.fn(),
-    getMount: vi.fn(),
-  },
-  MountStatus: {
-    Active: "active",
-    Inactive: "inactive",
-    Error: "error",
-  },
-}));
+vi.mock("../curator.js", async () => {
+  const actual = await vi.importActual("../curator.js");
+  return {
+    ...actual,
+    getCurator: () => mockCurator,
+  };
+});
 
 vi.stubGlobal("Pear", {
   app: {
@@ -41,7 +41,7 @@ describe("CoreHub JSON-RPC", () => {
         lastIndexed: "2024-01-01T00:00:00.000Z",
       };
 
-      vi.mocked(Curator.mount).mockResolvedValueOnce(mockMount);
+      vi.mocked(mockCurator.mount).mockResolvedValueOnce(mockMount);
 
       const request = {
         method: "curator:mount",
@@ -49,14 +49,15 @@ describe("CoreHub JSON-RPC", () => {
         id: 1,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toEqual(mockMount);
-      expect(Curator.mount).toHaveBeenCalledWith("/test/library");
+      expect(mockCurator.mount).toHaveBeenCalledWith("/test/library");
     });
 
     it("should handle curator:mount with error", async () => {
-      vi.mocked(Curator.mount).mockRejectedValueOnce(new Error("Invalid path"));
+      vi.mocked(mockCurator.mount).mockRejectedValueOnce(new Error("Invalid path"));
 
       const request = {
         method: "curator:mount",
@@ -64,7 +65,8 @@ describe("CoreHub JSON-RPC", () => {
         id: 1,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.error).toBeDefined();
       expect(response.error?.message).toBe("Invalid path");
@@ -73,7 +75,7 @@ describe("CoreHub JSON-RPC", () => {
 
   describe("curator:unmount", () => {
     it("should handle curator:unmount request", async () => {
-      vi.mocked(Curator.unmount).mockResolvedValueOnce(undefined);
+      vi.mocked(mockCurator.unmount).mockResolvedValueOnce(undefined);
 
       const request = {
         method: "curator:unmount",
@@ -81,14 +83,15 @@ describe("CoreHub JSON-RPC", () => {
         id: 2,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toEqual({ success: true });
-      expect(Curator.unmount).toHaveBeenCalledWith("/test/library");
+      expect(mockCurator.unmount).toHaveBeenCalledWith("/test/library");
     });
 
     it("should handle curator:unmount with error", async () => {
-      vi.mocked(Curator.unmount).mockRejectedValueOnce(
+      vi.mocked(mockCurator.unmount).mockRejectedValueOnce(
         new Error("Mount not found"),
       );
 
@@ -98,7 +101,8 @@ describe("CoreHub JSON-RPC", () => {
         id: 2,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.error).toBeDefined();
       expect(response.error?.message).toBe("Mount not found");
@@ -120,28 +124,30 @@ describe("CoreHub JSON-RPC", () => {
         },
       ];
 
-      vi.mocked(Curator.listMounts).mockResolvedValueOnce(mockMounts);
+      vi.mocked(mockCurator.listMounts).mockResolvedValueOnce(mockMounts);
 
       const request = {
         method: "curator:list",
         id: 3,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toEqual(mockMounts);
-      expect(Curator.listMounts).toHaveBeenCalled();
+      expect(mockCurator.listMounts).toHaveBeenCalled();
     });
 
     it("should return empty array when no mounts exist", async () => {
-      vi.mocked(Curator.listMounts).mockResolvedValueOnce([]);
+      vi.mocked(mockCurator.listMounts).mockResolvedValueOnce([]);
 
       const request = {
         method: "curator:list",
         id: 3,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toEqual([]);
     });
@@ -152,7 +158,8 @@ describe("CoreHub JSON-RPC", () => {
         params: {},
         id: 4,
       };
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
       expect(response.error).toBeDefined();
       expect(response.error?.message).toContain("Missing required parameter: path");
     });
@@ -163,7 +170,8 @@ describe("CoreHub JSON-RPC", () => {
         params: {},
         id: 5,
       };
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
       expect(response.error).toBeDefined();
       expect(response.error?.message).toContain("Missing required parameter: path");
     });
@@ -173,7 +181,8 @@ describe("CoreHub JSON-RPC", () => {
         method: "unknown",
         id: 6,
       };
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
       expect(response.error).toBeDefined();
       expect(response.error?.message).toContain("Unknown method");
     });
@@ -220,7 +229,8 @@ describe("CoreHub JSON-RPC", () => {
         id: 4,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toHaveProperty("running");
       expect(response.result).toHaveProperty("socketPath");
@@ -233,7 +243,8 @@ describe("CoreHub JSON-RPC", () => {
         id: 5,
       };
 
-      const response = await hub.handleRequest(request);
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
 
       expect(response.result).toEqual({ pong: true });
     });
