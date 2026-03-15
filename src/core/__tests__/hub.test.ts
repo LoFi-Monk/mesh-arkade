@@ -423,4 +423,63 @@ describe("CoreHub JSON-RPC", () => {
       expect(response.result).toBeInstanceOf(Array);
     });
   });
+
+  describe("curation:lookup-sha1", () => {
+    it("should handle curation:lookup-sha1 with missing sha1 param", async () => {
+      const request = {
+        method: "curation:lookup-sha1",
+        params: {},
+        id: 19,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain(
+        "Missing required parameter: sha1",
+      );
+    });
+
+    it("should handle curation:lookup-sha1 with valid sha1 returning null", async () => {
+      const request = {
+        method: "curation:lookup-sha1",
+        params: { sha1: "abc123def456789012345678901234567890abcd" },
+        id: 20,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.result).toBeNull();
+    });
+  });
+
+  describe("handleRequest id propagation", () => {
+    it("should propagate id field in response", async () => {
+      const request = {
+        method: "ping",
+        id: "test-123",
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.id).toBe("test-123");
+    });
+
+    it("should return error response for unknown method without throwing", async () => {
+      const request = {
+        method: "unknown-method-xyz",
+        id: 999,
+      };
+
+      const engineHub = getEngineHub();
+      const response = await engineHub.handleRequest(request);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.message).toContain("Unknown method");
+      expect(response.id).toBe(999);
+    });
+  });
 });

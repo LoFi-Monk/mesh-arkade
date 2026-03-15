@@ -49,6 +49,7 @@ describe("Database Module - with random-access-memory", () => {
   let resetDatabase: () => Promise<void>;
   let closeDatabase: () => Promise<void>;
   let getSystem: (systemId: string) => Promise<any>;
+  let getWishlistBySha1: (sha1: string) => Promise<any>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -61,6 +62,7 @@ describe("Database Module - with random-access-memory", () => {
     resetDatabase = db.resetDatabase;
     closeDatabase = db.closeDatabase;
     getSystem = db.getSystem;
+    getWishlistBySha1 = db.getWishlistBySha1;
   });
 
   afterEach(async () => {
@@ -280,6 +282,45 @@ describe("Database Module - with random-access-memory", () => {
     it("should return empty array for no matches", async () => {
       const results = await searchWishlist("nonexistentgame12345");
       expect(results).toEqual([]);
+    });
+  });
+
+  describe("getWishlistBySha1", () => {
+    it("should return null for SHA1 that does not exist", async () => {
+      await insertWishlistBatch([
+        {
+          system_id: "nes",
+          title: "UniqueNullTest123",
+          sha1: "abc123def456789012345678901234567890abcd",
+          crc: "",
+          md5: "",
+          region: "USA",
+        },
+      ]);
+
+      const result = await getWishlistBySha1(
+        "0000000000000000000000000000000000000000",
+      );
+      expect(result).toBeNull();
+    });
+
+    it("should return record for matching SHA1", async () => {
+      await insertWishlistBatch([
+        {
+          system_id: "nes",
+          title: "UniqueMarioTest456",
+          sha1: "abcd123456789012345678901234567890abcdef",
+          crc: "12345678",
+          md5: "abcd1234567890abcd1234567890abcd",
+          region: "USA",
+        },
+      ]);
+
+      const result = await getWishlistBySha1(
+        "abcd123456789012345678901234567890abcdef",
+      );
+      expect(result).not.toBeNull();
+      expect(result.title).toBe("UniqueMarioTest456");
     });
   });
 
