@@ -26,6 +26,8 @@ export default defineConfig({
         "src/**/*.test.tsx",
         "src/__tests__/**",
         "src/core/__tests__/**",
+        "src/fetch/__tests__/**",
+        "src/cli/__tests__/**",
       ],
       thresholds: {
         lines: 80,

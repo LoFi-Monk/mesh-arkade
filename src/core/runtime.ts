@@ -76,3 +76,62 @@ export async function getFetch(): Promise<typeof fetch> {
   fetchResolved = true;
   return cachedFetch;
 }
+
+/**
+ * Crypto module interface for dual-runtime (Bare/Node) abstraction.
+ * Only the single-chain pattern createHash(algo).update(data).digest(encoding) is supported.
+ * Multi-step update() chaining is not supported.
+ */
+type CryptoModule = {
+  createHash: (algo: string) => {
+    update: (data: Buffer | Uint8Array | string) => {
+      digest: (encoding: string) => string;
+    };
+  };
+};
+
+let cachedCrypto: CryptoModule | null = null;
+let cryptoResolved = false;
+
+/**
+ * @intent Returns a crypto module appropriate for the current runtime (bare-crypto in Bare, Node crypto otherwise).
+ * @guarantee Result is cached after first resolution — subsequent calls return the same reference without re-importing.
+ */
+export async function getCrypto(): Promise<CryptoModule> {
+  if (cryptoResolved && cachedCrypto) return cachedCrypto;
+
+  if (typeof Bare !== "undefined") {
+    const bareCrypto = (await import("bare-crypto")).default;
+    cachedCrypto = {
+      createHash: (algo: string) => {
+        const hash = bareCrypto.createHash(algo);
+        return {
+          update: (data: Buffer | Uint8Array | string) => {
+            hash.update(data);
+            return {
+              digest: (encoding: string) => hash.digest(encoding),
+            };
+          },
+        };
+      },
+    };
+  } else {
+    const nodeCrypto = await import("crypto");
+    cachedCrypto = {
+      createHash: (algo: string) => {
+        const hash = nodeCrypto.createHash(algo);
+        return {
+          update: (data: Buffer | Uint8Array | string) => {
+            hash.update(data);
+            return {
+              digest: (encoding: string) => hash.digest(encoding as "hex"),
+            };
+          },
+        };
+      },
+    };
+  }
+
+  cryptoResolved = true;
+  return cachedCrypto;
+}

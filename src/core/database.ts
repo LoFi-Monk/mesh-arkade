@@ -200,6 +200,30 @@ export async function searchWishlist(
 }
 
 /**
+ * @intent Looks up a wishlist record by SHA1 hash.
+ * @guarantee Returns the record if found, or null if no match.
+ * @param sha1 The full 40-character SHA1 hash to look up.
+ */
+export async function getWishlistBySha1(
+  sha1: string,
+): Promise<WishlistRecord | null> {
+  const db = await getDatabase();
+  const wishlist = db.sub("wishlist");
+
+  const normalizedSha1 = sha1.toLowerCase();
+
+  for await (const entry of wishlist.createReadStream()) {
+    if (!entry.value) continue;
+    const record = entry.value as WishlistRecord;
+    if (record.sha1 && record.sha1.toLowerCase() === normalizedSha1) {
+      return record;
+    }
+  }
+
+  return null;
+}
+
+/**
  * @intent Closes all Hyperbee and Corestore connections and nulls the module-level singletons.
  * @guarantee Safe to call when already closed; a subsequent getDatabase call will reinitialize cleanly.
  */
@@ -226,7 +250,8 @@ export async function resetDatabase(): Promise<void> {
   const path = await getPath();
   await closeDatabase();
   const storageBase = getStorageBasePath();
-  const storagePath = STORAGE_PATH || path.join(storageBase, "hyperbee-storage");
+  const storagePath =
+    STORAGE_PATH || path.join(storageBase, "hyperbee-storage");
   console.log(`Resetting database at ${storagePath}...`);
   if (fs.existsSync(storagePath)) {
     fs.rmSync(storagePath, { recursive: true, force: true });

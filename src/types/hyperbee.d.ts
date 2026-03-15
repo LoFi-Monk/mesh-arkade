@@ -84,6 +84,70 @@ declare module "bare-fetch" {
   export default fetch;
 }
 
+declare module "hyperswarm" {
+  class Hyperswarm {
+    constructor(options?: {
+      keyPair?: unknown;
+      seed?: Buffer;
+      maxPeers?: number;
+    });
+    join(
+      topic: Buffer,
+      options?: { client?: boolean; server?: boolean; limit?: number },
+    ): HyperswarmDiscovery;
+    readonly connections: Set<HyperswarmConnection>;
+    readonly peers: Map<string, unknown>;
+    on(
+      event: "connection",
+      callback: (conn: HyperswarmConnection, info: PeerInfo) => void,
+    ): void;
+    on(event: "update", callback: () => void): void;
+    destroy(): Promise<void>;
+  }
+
+  interface PeerInfo {
+    readonly publicKey: Buffer;
+    readonly topics: Buffer[];
+  }
+
+  interface HyperswarmDiscovery {
+    flushed(): Promise<void>;
+  }
+
+  interface HyperswarmConnection {
+    on(event: "data", callback: (data: Buffer) => void): void;
+    on(event: "end", callback: () => void): void;
+    on(event: "error", callback: (err: Error) => void): void;
+    write(data: Buffer): void;
+    end(): void;
+  }
+
+  export default Hyperswarm;
+}
+
+declare module "bittorrent-dht" {
+  class DHT {
+    constructor(options?: {
+      nodeId?: string | Buffer;
+      bootstrap?: string[];
+      host?: string | false;
+      concurrency?: number;
+    });
+    on(
+      event: "peer",
+      callback: (
+        peer: { host: string; port: number },
+        infoHash: string,
+        from: { address: string; port: number },
+      ) => void,
+    ): void;
+    lookup(infoHash: string): void;
+    destroy(): Promise<void>;
+  }
+
+  export default DHT;
+}
+
 declare const Bare: {
   app: {
     args: string[];
@@ -93,3 +157,14 @@ declare const Bare: {
   };
   teardown: (fn: () => Promise<void> | void) => void;
 };
+
+declare module "bare-crypto" {
+  function createHash(algorithm: string): {
+    update(data: Buffer | Uint8Array | string): {
+      digest(encoding: string): string;
+    };
+    digest(encoding: string): string;
+  };
+  export { createHash };
+  export default { createHash };
+}

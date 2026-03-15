@@ -30,6 +30,7 @@ const commands = {
   search: () => import("./dist/src/cli/commands/search.js"),
   reset: () => import("./dist/src/cli/commands/reset.js"),
   status: () => import("./dist/src/cli/commands/status.js"),
+  fetch: () => import("./dist/src/cli/commands/fetch.js"),
   help: () => import("./dist/src/cli/commands/help.js"),
   "--help": () => import("./dist/src/cli/commands/help.js"),
   "-h": () => import("./dist/src/cli/commands/help.js"),
@@ -45,12 +46,13 @@ const commandHandlers = {
   search: "handleSearch",
   reset: "handleReset",
   status: "handleStatus",
+  fetch: "handleFetch",
   help: "handleHelp",
   "--help": "handleHelp",
   "-h": "handleHelp",
 };
 
-async function handleCommand(input, isJson, mode, rl) {
+async function handleCommand(input, isJson, isSilent, mode, rl) {
   const trimmedInput = input.trim();
   if (!trimmedInput) return;
 
@@ -77,7 +79,7 @@ async function handleCommand(input, isJson, mode, rl) {
       const mod = await commandLoader();
       const handlerName = commandHandlers[cmd];
       const handler = mod[handlerName];
-      await handler(arg, hubInstance, { isJson, isSilent: false, mode }, rl);
+      await handler(arg, hubInstance, { isJson, isSilent, mode }, rl);
     } catch (err) {
       if (isJson) {
         console.log(JSON.stringify({ error: err.message }));
@@ -209,7 +211,7 @@ async function bootBare(options) {
   }
 
   if (args.length > 0 && args[0] !== "help") {
-    await handleCommand(args.join(" "), isJson, mode, rl);
+    await handleCommand(args.join(" "), isJson, isSilent, mode, rl);
     rl.close();
     return;
   }
@@ -226,7 +228,7 @@ async function bootBare(options) {
     rl.on("line", async (input) => {
       rl.pause();
       try {
-        await handleCommand(input, isJson, mode, rl);
+        await handleCommand(input, isJson, isSilent, mode, rl);
       } finally {
         rl.resume();
       }
