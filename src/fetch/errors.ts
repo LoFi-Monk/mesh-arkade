@@ -25,13 +25,11 @@ export class FetchLayerTimeoutError extends Error {
  */
 export class FetchLayerError extends Error {
   public readonly layer: string;
-  public readonly cause: Error | unknown;
 
-  constructor(layer: string, message: string, cause?: Error | unknown) {
-    super(`Fetch layer '${layer}' failed: ${message}`);
+  constructor(layer: string, message: string, cause?: unknown) {
+    super(`Fetch layer '${layer}' failed: ${message}`, cause ? { cause } : undefined);
     this.name = "FetchLayerError";
     this.layer = layer;
-    this.cause = cause;
   }
 }
 
