@@ -1,31 +1,36 @@
 # Claude Notes (MeshARKade)
 
-## Status: Onboarding Complete, Picking Up Milestone 04
+## Status
+Milestone 04a complete and merged (PR #5). Devin review cycle finished — all threads resolved. Session focused on building `scripts/devin-review.sh` and establishing start/end session workflow.
 
-### Current Branch: `feature/milestone-04-hyperbee-crawl`
+## Current Branch
+`main` — clean, up to date with remote.
 
-### Context
-- Taking over from Antigravity (Gemini) which hit API limit mid-PR.
-- All 17 OpenSpec tasks for this milestone are checked off.
-- Tests pass (76/76). TypeScript compiles clean.
-- CLI commands verified working: `systems`, `init --seed`, `search`.
+## In Progress
+Nothing. Clean slate for next session.
 
-### In Progress
-- Two bugs found and fixed by Opencode (askQuestion scope, CLI arg stripping).
-- Two issues delegated to Opencode (DAT parser not extracting hashes, debug logging in search).
-- PR not yet committed/pushed.
+## Deferred Items
+- Hub `stop()` should close Hyperbee/Corestore (resource leak) — refactor PR
+- `getSystemDefinition` loose `.includes()` matching — refactor PR
+- Dead `askQuestion` function cleanup — index.js refactor PR
+- `drawProgressBar` unused — wire up in milestone-05
+- CLI test mocks use `as any` — tighten to typed stubs post-milestone-05
 
-### Pending Before PR
-- [ ] Confirm hash extraction fix from Opencode
-- [ ] Confirm debug logging cleanup from Opencode
-- [ ] Commit and push to feature branch
-- [ ] PR review by Devin
+## Tooling
+- `scripts/devin-review.sh` — automates Devin review cycles
+  - Subcommands: `fetch [PR]`, `reply <comment_id> <body_file> <pr>`, `resolve [PR]`
+  - GraphQL-only fetch (no REST+join), backtick-safe replies via `--input`
+  - Requires `jq` (installed via winget — restart terminal for PATH to pick it up)
+  - Devin's GraphQL login: `devin-ai-integration` (no `[bot]` suffix)
+- Session commands: `/start-session`, `/end-session` in `.claude/commands/`
 
-### Architecture Notes
-- ADRs live at `.agent/adr/` — single source of truth, do not duplicate.
-- ADR-0002: Hyperbee chosen over SQLite for metadata storage (Bare-friendly, P2P portable).
-- Roadmap lives at `.agent/roadmap.md`.
+## Architecture Notes
+- ADRs: `.agent/adr/`
+- OpenSpecs: `openspec/specs/`
+- ADR-0002: Hyperbee for metadata storage (Bare-friendly, P2P portable)
+- Roadmap: `.agent/roadmap.md`
 
-### Observations
-- Systems list includes some oddities (Sony - PlayStation 3 shows as `- playstation 3` with leading dash). ID generation may need cleanup in a future pass.
-- Region detection returns "Unknown" for many entries — parser could be smarter about extracting region from title parentheticals.
+## Observations
+- Game Gear and Master System alias fix is in place (`SYSTEM_ALIASES`) but can't be end-to-end tested — they're not in the Libretro systems list yet
+- Some system IDs have a leading dash oddity (e.g. `- playstation 3`) — future cleanup pass
+- Region detection returns "Unknown" for many entries — parser could be smarter about title parentheticals

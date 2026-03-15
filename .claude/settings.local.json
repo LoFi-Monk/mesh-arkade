@@ -1,9 +1,51 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git:*)",
+      "Bash(git *)",
+      "Bash(cd *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(gh *)",
+      "Bash(bash *)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(file *)",
+      "Bash(echo *)",
+      "WebSearch",
+      "Bash(cat:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:vibekanban.com)",
+      "mcp__vibe_kanban__list_organizations",
+      "mcp__vibe_kanban__list_repos",
+      "mcp__vibe_kanban__list_workspaces",
+      "mcp__vibe_kanban__list_projects",
+      "mcp__vibe_kanban__list_issues",
+      "mcp__vibe_kanban__list_issue_priorities",
+      "mcp__vibe_kanban__list_org_members",
+      "mcp__vibe_kanban__list_tags",
+      "mcp__vibe_kanban__create_issue",
+      "WebFetch(domain:api.github.com)",
+      "Bash(find:*)",
+      "WebFetch(domain:docs.devin.ai)",
+      "mcp__deepwiki__ask_question",
+      "mcp__vibe_kanban__delete_issue",
+      "mcp__vibe_kanban__start_workspace",
+      "Bash(find src:*)",
+      "Bash(git fetch:*)",
+      "mcp__deepwiki__read_wiki_structure",
+      "mcp__deepwiki__read_wiki_contents",
       "Bash(cd:*)",
-      "Bash(cd:*C:/ag-workspace/mesh-arkade && node index.js --silent init --seed=nes 2>&1)"
+      "Bash(node:*)",
+      "Bash(WDIR=\"C:/Users/lofim/AppData/Local/Temp/vibe-kanban/worktrees/a2ec-implement-milest/mesh-arkade\")",
+      "Read(//c/ag-workspace/mesh-arkade/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
     ]
   }
 }

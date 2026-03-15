@@ -38,6 +38,9 @@ This file contains specific instructions for Devin Review to ensure pull request
 - Look for logic that can be extracted into a CLI utility if it's currently coupled to the UI.
 - Check that `Husky` hooks haven't been bypassed.
 - Verify that no sensitive data is logged in background processes.
+- **P2P Security**: Verify that Hyperswarm topics are exactly 32 bytes — truncated/padded topics can leak data to unintended peers.
+- **Content Trust**: Any code that fetches or persists data from the network must verify content hashes before acting on it. Untrusted bytes must never be written to disk without verification.
+- **CLI Input Boundaries**: SHA1 arguments and any user-supplied identifiers must be validated (length + hex charset) before being passed to network or filesystem operations.
 
 ## 🚫 Ignored Paths
 
