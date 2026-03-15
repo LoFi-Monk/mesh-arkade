@@ -248,6 +248,21 @@ class CoreHub {
   }
 
   /**
+   * @intent Look up a wishlist record by its SHA1 hash.
+   * @guarantee Returns the matching WishlistRecord or null if not found.
+   * @param params Must contain a `sha1` string (40 hex chars).
+   */
+  private async handleCurationLookupSha1(
+    params: Record<string, unknown> | undefined,
+  ): Promise<import("./database.js").WishlistRecord | null> {
+    if (!params || typeof params.sha1 !== "string") {
+      throw new Error("Missing required parameter: sha1");
+    }
+    const { getWishlistBySha1 } = await import("./database.js");
+    return getWishlistBySha1(params.sha1);
+  }
+
+  /**
    * Processes an incoming JSON-RPC request.
    *
    * @intent Handle commands sent via the local socket bridge.
@@ -283,6 +298,9 @@ class CoreHub {
           break;
         case "curation:systems":
           result = await this.handleCurationSystems(params);
+          break;
+        case "curation:lookup-sha1":
+          result = await this.handleCurationLookupSha1(params);
           break;
         case "database:reset": {
           const { resetDatabase } = await import("./database.js");

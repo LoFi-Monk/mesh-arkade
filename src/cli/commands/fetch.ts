@@ -9,7 +9,7 @@ import { output, error } from "../formatter.js";
 import { FetchManager } from "../../fetch/fetch-manager.js";
 import { AllLayersFailedError, FetchLayerError } from "../../fetch/errors.js";
 import { getFs, getPath } from "../../core/runtime.js";
-import { getWishlistBySha1, WishlistRecord } from "../../core/database.js";
+import type { WishlistRecord } from "../../core/database.js";
 
 const SHA1_REGEX = /^[0-9a-fA-F]{40}$/;
 
@@ -95,7 +95,11 @@ export const handleFetch: CommandHandler = async (
       });
     }
 
-    const record = await getWishlistBySha1(normalizedSha1);
+    const lookupResult = await hub.handleRequest({
+      method: "curation:lookup-sha1",
+      params: { sha1: normalizedSha1 },
+    });
+    const record = lookupResult.result as WishlistRecord | null;
     const records: WishlistRecord[] = record ? [record] : [];
     const filename = await fetchManager.fetchAndStage(
       normalizedSha1,

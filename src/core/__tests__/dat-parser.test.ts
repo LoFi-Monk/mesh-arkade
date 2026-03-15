@@ -240,7 +240,7 @@ game (
   describe("resolveByShortSha1", () => {
     const records: DatGame[] = [
       { name: "Game 1", sha1: "abc123def456789012345678901234567890abcd" },
-      { name: "Game 2", sha1: "DEF456ABC789012345678901234567890123456789" },
+      { name: "Game 2", sha1: "DEF456ABC7890123456789012345678901234567" },
       { name: "Game 3", sha1: "1111111111111111111111111111111111111111" },
       { name: "Game No Hash", crc: "12345678" },
     ];
