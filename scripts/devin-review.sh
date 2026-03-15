@@ -194,7 +194,8 @@ cmd_resolve() {
   fi
 
   local count=0
-  while IFS= read -r id; do
+  while IFS= read -r id || [[ -n "$id" ]]; do
+    id="${id%%[[:space:]]}"  # strip trailing whitespace/newline
     [[ -z "$id" ]] && continue
     echo "Resolving thread ${id}..."
     gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"${id}\"}) { thread { isResolved } } }" \
