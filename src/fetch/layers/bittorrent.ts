@@ -33,6 +33,11 @@ export async function fetchFromBittorrent(
   sha1: string,
   options: BittorrentFetchOptions = {},
 ): Promise<Uint8Array> {
+  throw new FetchLayerError(
+    "bittorrent",
+    "BitTorrent wire protocol not yet implemented — layer disabled until milestone 06",
+  );
+
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
   const normalizedSha1 = sha1.toLowerCase();
 

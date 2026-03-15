@@ -9,7 +9,6 @@ import { output, error } from "../formatter.js";
 import { FetchManager } from "../../fetch/fetch-manager.js";
 import { AllLayersFailedError, FetchLayerError } from "../../fetch/errors.js";
 import { getFs, getPath } from "../../core/runtime.js";
-import { getStorageBasePath } from "../../core/paths.js";
 import { getWishlistBySha1, WishlistRecord } from "../../core/database.js";
 
 const SHA1_REGEX = /^[0-9a-fA-F]{40}$/;
@@ -46,16 +45,8 @@ export const handleFetch: CommandHandler = async (
   }
 
   try {
-    const hubStatus = hub.getStatus();
-    const storagePath = hubStatus.storagePath || getStorageBasePath();
     const fs = await getFs();
     const path = await getPath();
-
-    const libraryPath = path.join(storagePath, "library");
-    if (!fs.existsSync(libraryPath)) {
-      error("No library mounted. Run 'mount' first to add a library.", options);
-      return;
-    }
 
     const mountsResult = await hub.handleRequest({
       method: "curator:list",

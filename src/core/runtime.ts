@@ -101,7 +101,7 @@ export async function getCrypto(): Promise<CryptoModule> {
   if (cryptoResolved && cachedCrypto) return cachedCrypto;
 
   if (typeof Bare !== "undefined") {
-    const bareCrypto = await import("bare-crypto");
+    const bareCrypto = (await import("bare-crypto")).default;
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = bareCrypto.createHash(algo);

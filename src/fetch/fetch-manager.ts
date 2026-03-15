@@ -4,20 +4,11 @@
  */
 
 import { getFs, getPath } from "../core/runtime.js";
+import type { WishlistRecord } from "../core/database.js";
 import { FetchLayerError, AllLayersFailedError } from "./errors.js";
 import { fetchFromHyperswarm } from "./layers/hyperswarm.js";
 import { fetchFromIpfs } from "./layers/ipfs.js";
 import { fetchFromBittorrent } from "./layers/bittorrent.js";
-
-interface WishlistRecord {
-  id?: number;
-  system_id: string;
-  title: string;
-  sha1: string;
-  crc: string;
-  md5: string;
-  region: string;
-}
 
 /**
  * @intent Represents progress updates during P2P fetch operations.

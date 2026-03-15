@@ -78,7 +78,6 @@ export async function fetchDatFromTrustedSource(
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // For now, accept empty expected hash (placeholder until real hashes are configured)
     if (source.expectedHash) {
       const crypto = await getCrypto();
       const hash = crypto.createHash("sha1").update(buffer).digest("hex");
@@ -88,6 +87,10 @@ export async function fetchDatFromTrustedSource(
           `Hash mismatch: expected ${source.expectedHash}, got ${hash}`,
         );
       }
+    } else {
+      console.warn(
+        `[trust] Hash verification DISABLED for source "${source.description}" — expectedHash not populated (task 12.4)`,
+      );
     }
 
     return buffer;
