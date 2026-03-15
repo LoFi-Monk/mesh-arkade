@@ -45,6 +45,12 @@ vi.mock("../curation.js", async () => {
   };
 });
 
+vi.mock("../database.js", () => ({
+  closeDatabase: vi.fn().mockResolvedValue(undefined),
+  resetDatabase: vi.fn().mockResolvedValue(undefined),
+  getWishlistBySha1: vi.fn().mockResolvedValue(null),
+}));
+
 vi.stubGlobal("Pear", {
   app: {
     args: ["--bare"],
