@@ -49,6 +49,7 @@ export const handleInit: CommandHandler = async (
         totalGames: number;
       };
 
+      console.log("");
       console.log(`Successfully seeded ${systemTitle}`);
       console.log(`  Games added: ${gamesAdded}`);
       console.log(`  Total in database: ${totalGames}`);

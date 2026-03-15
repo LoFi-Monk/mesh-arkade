@@ -191,23 +191,21 @@ async function bootBare(options) {
   }
 
   const hubStatus = hubInstance.getStatus();
-  if (!isSilent) {
-    if (isJson) {
-      console.log(
-        JSON.stringify({
-          status: "ready",
-          mode,
-          socketPath: hubStatus.socketPath,
-          storagePath: hubStatus.storagePath,
-        }),
-      );
-    } else {
-      console.log("  Mesh ARKade Core Hub initialized");
-      console.log(`  Socket: ${hubStatus.socketPath}`);
-      console.log(`  Storage: ${hubStatus.storagePath}`);
-      console.log("  Type 'help' for available commands");
-      console.log("");
-    }
+  if (isJson) {
+    console.log(
+      JSON.stringify({
+        status: "ready",
+        mode,
+        socketPath: hubStatus.socketPath,
+        storagePath: hubStatus.storagePath,
+      }),
+    );
+  } else if (!isSilent) {
+    console.log("  Mesh ARKade Core Hub initialized");
+    console.log(`  Socket: ${hubStatus.socketPath}`);
+    console.log(`  Storage: ${hubStatus.storagePath}`);
+    console.log("  Type 'help' for available commands");
+    console.log("");
   }
 
   if (args.length > 0 && args[0] !== "help") {
