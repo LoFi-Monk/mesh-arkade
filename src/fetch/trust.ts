@@ -95,7 +95,11 @@ export async function fetchDatFromTrustedSource(
 
     return buffer;
   } catch (err) {
-    if (err instanceof Error && err.message.includes("Hash mismatch")) {
+    if (
+      err instanceof Error &&
+      (err.message.includes("Hash mismatch") ||
+        err.message.startsWith("Failed to fetch DAT:"))
+    ) {
       throw err;
     }
     throw new Error(`Failed to fetch verified DAT: ${(err as Error).message}`);

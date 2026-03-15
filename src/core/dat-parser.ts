@@ -138,6 +138,7 @@ export function resolveByShortSha1(
   sha1: string,
 ): DatGame | null {
   const normalizedSha1 = sha1.toLowerCase();
+  if (!normalizedSha1) return null;
   for (const record of records) {
     if (!record.sha1) continue;
     const recordSha1 = record.sha1.toLowerCase();
