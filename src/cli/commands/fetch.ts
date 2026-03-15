@@ -58,8 +58,13 @@ export const handleFetch: CommandHandler = async (
     }
 
     const mountsResult = await hub.handleRequest({
-      method: "curation:list",
+      method: "curator:list",
     });
+
+    if (mountsResult.error) {
+      error(mountsResult.error.message, options);
+      return;
+    }
 
     const mounts = (mountsResult.result || []) as Array<{
       path: string;

@@ -77,6 +77,11 @@ export async function getFetch(): Promise<typeof fetch> {
   return cachedFetch;
 }
 
+/**
+ * Crypto module interface for dual-runtime (Bare/Node) abstraction.
+ * Only the single-chain pattern createHash(algo).update(data).digest(encoding) is supported.
+ * Multi-step update() chaining is not supported.
+ */
 type CryptoModule = {
   createHash: (algo: string) => {
     update: (data: Buffer | Uint8Array | string) => {
@@ -96,7 +101,7 @@ export async function getCrypto(): Promise<CryptoModule> {
   if (cryptoResolved && cachedCrypto) return cachedCrypto;
 
   if (typeof Bare !== "undefined") {
-    const bareCrypto: any = await import("bare-crypto");
+    const bareCrypto = await import("bare-crypto");
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = bareCrypto.createHash(algo);

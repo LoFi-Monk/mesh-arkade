@@ -137,7 +137,7 @@ export class FetchManager {
       );
       if (record && record.title) {
         const sanitizedName = record.title.replace(/[<>:"/\\|?*]/g, "_");
-        finalFilename = `${sanitizedName}.zip`;
+        finalFilename = sanitizedName || `${sha1}.bin`;
       } else {
         finalFilename = `${sha1}.bin`;
       }

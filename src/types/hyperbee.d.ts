@@ -163,6 +163,7 @@ declare module "bare-crypto" {
     update(data: Buffer | Uint8Array | string): {
       digest(encoding: string): string;
     };
+    digest(encoding: string): string;
   };
   export { createHash };
   export default { createHash };

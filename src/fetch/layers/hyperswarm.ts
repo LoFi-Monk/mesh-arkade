@@ -74,23 +74,29 @@ export async function fetchFromHyperswarm(
     let bytesReceived = 0;
 
     await new Promise<void>((resolve, reject) => {
-      const dataTimeoutId = setTimeout(() => {
-        reject(new FetchLayerTimeoutError("hyperswarm", timeout));
-      }, timeout);
+      let idleTimeout: ReturnType<typeof setTimeout>;
+      const resetIdleTimeout = () => {
+        clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(() => {
+          reject(new FetchLayerTimeoutError("hyperswarm", timeout));
+        }, timeout);
+      };
+      resetIdleTimeout();
 
       peer.on("data", (chunk: Buffer) => {
+        resetIdleTimeout();
         chunks.push(chunk);
         bytesReceived += chunk.length;
         options.onProgress?.(bytesReceived);
       });
 
       peer.on("end", () => {
-        clearTimeout(dataTimeoutId);
+        clearTimeout(idleTimeout);
         resolve();
       });
 
       peer.on("error", (err: Error) => {
-        clearTimeout(dataTimeoutId);
+        clearTimeout(idleTimeout);
         reject(new FetchLayerError("hyperswarm", "Peer stream error", err));
       });
     });
