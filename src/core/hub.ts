@@ -148,8 +148,13 @@ class CoreHub {
       return;
     }
 
-    this._running = false;
-    this._socketPath = null;
+    const { closeDatabase } = await import("./database.js");
+    try {
+      await closeDatabase();
+    } finally {
+      this._running = false;
+      this._socketPath = null;
+    }
   }
 
   /**

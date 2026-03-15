@@ -17,30 +17,21 @@
 
 ## Current Status — 2026-03-14
 
-### Active Branch: `feature/milestone-04-hyperbee-crawl`
+### Active Branch: `master`
 
-**Milestone 04 implementation is complete and PR review fixes have been applied.**
+**Milestone 04 is complete. PR #3 merged 2026-03-14.**
 
 The CLI is fully functional:
 - `systems` — lists all available game systems from Libretro GitHub
-- `init --seed <id>` — fetches No-Intro DAT and seeds local Hyperbee with titles + hashes
+- `init --seed=<id>` — fetches No-Intro DAT and seeds local Hyperbee with titles + hashes
 - `search <query>` — searches the local wishlist database
 - `search --system=<id>` — lists all games for a system
 
-### Completed
-- All 6 issues from Devin's PR #3 review addressed directly by Antigravity.
-- Verified all 119 tests pass.
-- Verified typecheck clean.
-
-### In Progress
-- Opencode fixing remaining TSDoc violations and removing `openspec validate` from lint-staged
-
-### Pending
-- [ ] Lint-staged fixes land from Opencode
-- [ ] Commit and push `feature/milestone-04-hyperbee-crawl`
-- [ ] CI green
-- [ ] Devin PR review and remediation
-- [ ] Refactor `index.js` (growing large — extract handlers to `src/cli/commands/`) — separate PR after merge
+### Up Next
+- [ ] Refactor `index.js` (extract handlers to `src/cli/commands/`) — separate PR
+- [ ] Fix Hub `stop()` resource leak (close Hyperbee/Corestore on shutdown)
+- [ ] Fix `getSystemDefinition` loose `.includes()` matching (`nes` matches `snes`)
+- [ ] Milestone 05: Multi-Layer P2P Recovery (Fetch)
 
 ---
 
@@ -52,7 +43,7 @@ The CLI is fully functional:
 | 01 | React UI & Branding Foundation | ⏸ Paused |
 | 02 | Core Engine (Headless/Bare) | ✅ Complete |
 | 03 | Curator CLI (Library Mount Manager) | ✅ Complete (PR #1 merged) |
-| 04 | Curation Bootstrap (DAT + Hyperbee) | 🔄 In PR |
+| 04 | Curation Bootstrap (DAT + Hyperbee) | ✅ Complete (PR #3 merged) |
 | 05 | Multi-Layer P2P Recovery (Fetch) | 📋 Backlog |
 | 06 | Normalization & TorrentZip (Rust) | 📋 Backlog |
 | 07 | Preservation Deck (Web/PWA Bridge) | 📋 Backlog |
