@@ -41,33 +41,32 @@ export async function fetchFromIpfs(
 
   try {
     const fetch = await getFetch();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const response = await fetch(url, {
-      signal: controller.signal,
+    // Use Promise.race for timeout to avoid AbortController compatibility issues in Bare
+    const fetchPromise = fetch(url).then(async (response) => {
+      if (!response.ok) {
+        throw new FetchLayerError(
+          "ipfs",
+          `Gateway returned ${response.status} ${response.statusText}`,
+        );
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      return new Uint8Array(arrayBuffer);
     });
 
-    clearTimeout(timeoutId);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new FetchLayerTimeoutError("ipfs", timeout));
+      }, timeout);
+    });
 
-    if (!response.ok) {
-      throw new FetchLayerError(
-        "ipfs",
-        `Gateway returned ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
+    return await Promise.race([fetchPromise, timeoutPromise]);
   } catch (err) {
     if (
       err instanceof FetchLayerError ||
       err instanceof FetchLayerTimeoutError
     ) {
       throw err;
-    }
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new FetchLayerTimeoutError("ipfs", timeout);
     }
     throw new FetchLayerError("ipfs", "Failed to fetch from gateway", err);
   }

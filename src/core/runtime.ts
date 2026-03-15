@@ -76,3 +76,29 @@ export async function getFetch(): Promise<typeof fetch> {
   fetchResolved = true;
   return cachedFetch;
 }
+
+let cachedCrypto: any = null;
+let cryptoResolved = false;
+
+/**
+ * @intent Returns a crypto module appropriate for the current runtime (bare-crypto in Bare, Node crypto otherwise).
+ * @guarantee Result is cached after first resolution — subsequent calls return the same reference without re-importing.
+ */
+export async function getCrypto(): Promise<{
+  createHash: (algo: string) => {
+    update: (data: Buffer | Uint8Array | string) => {
+      digest: (encoding: string) => string;
+    };
+  };
+}> {
+  if (cryptoResolved) return cachedCrypto;
+
+  if (typeof Bare !== "undefined") {
+    cachedCrypto = await import("bare-crypto");
+  } else {
+    cachedCrypto = await import("crypto");
+  }
+
+  cryptoResolved = true;
+  return cachedCrypto;
+}

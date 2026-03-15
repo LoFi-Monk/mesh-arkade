@@ -38,36 +38,30 @@ export async function fetchFromHyperswarm(
     const topicBuffer = Buffer.alloc(32);
     sha1Buf.copy(topicBuffer);
 
-    const discovery = swarm.join(topicBuffer, { client: true, server: true });
+    // Join as client only (receive-only per design spec)
+    const discovery = swarm.join(topicBuffer, { client: true, server: false });
 
+    // Wait for discovery to flush (announce to DHT)
+    await discovery.flushed();
+
+    // Use Promise.race for timeout
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    await new Promise<void>((resolve, reject) => {
-      discovery.on("peer", () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        resolve();
-      });
+    const connectionPromise = new Promise<any>((resolve, reject) => {
       timeoutId = setTimeout(() => {
         reject(new FetchLayerTimeoutError("hyperswarm", timeout));
       }, timeout);
 
-      discovery.on("ready", () => {
+      swarm.on("connection", (conn, info) => {
         if (timeoutId) clearTimeout(timeoutId);
-        if (!discovery.connected) {
-          reject(new FetchLayerTimeoutError("hyperswarm", timeout));
-        }
+        resolve(conn);
       });
     });
 
-    const peer = swarm.getConnections()[0];
-    if (!peer) {
-      throw new FetchLayerError(
-        "hyperswarm",
-        "No peers available after discovery",
-      );
-    }
+    const peer = await connectionPromise;
 
     const chunks: Buffer[] = [];
+    let bytesReceived = 0;
 
     await new Promise<void>((resolve, reject) => {
       const dataTimeoutId = setTimeout(() => {
@@ -77,7 +71,8 @@ export async function fetchFromHyperswarm(
 
       peer.on("data", (chunk: Buffer) => {
         chunks.push(chunk);
-        options.onProgress?.(chunks.reduce((acc, c) => acc + c.length, 0));
+        bytesReceived += chunk.length;
+        options.onProgress?.(bytesReceived);
       });
 
       peer.on("end", () => {

@@ -93,15 +93,25 @@ declare module "hyperswarm" {
     });
     join(
       topic: Buffer,
-      options?: { client?: boolean; server?: boolean },
+      options?: { client?: boolean; server?: boolean; limit?: number },
     ): HyperswarmDiscovery;
-    getConnections(): HyperswarmConnection[];
+    readonly connections: Set<HyperswarmConnection>;
+    readonly peers: Map<string, unknown>;
+    on(
+      event: "connection",
+      callback: (conn: HyperswarmConnection, info: PeerInfo) => void,
+    ): void;
+    on(event: "update", callback: () => void): void;
     destroy(): Promise<void>;
   }
 
+  interface PeerInfo {
+    readonly publicKey: Buffer;
+    readonly topics: Buffer[];
+  }
+
   interface HyperswarmDiscovery {
-    on(event: "peer" | "ready", callback: () => void): void;
-    connected: boolean;
+    flushed(): Promise<void>;
   }
 
   interface HyperswarmConnection {

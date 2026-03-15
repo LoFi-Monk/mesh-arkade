@@ -61,7 +61,7 @@ export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
     throw new Error(`No trusted source configured for system: ${systemId}`);
   }
 
-  const { getFetch } = await import("../core/runtime.js");
+  const { getFetch, getCrypto } = await import("../core/runtime.js");
   const fetch = await getFetch();
 
   try {
@@ -78,8 +78,8 @@ export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
 
     // For now, accept empty expected hash (placeholder until real hashes are configured)
     if (source.expectedHash) {
-      const bareCrypto = await import("bare-crypto");
-      const hash = bareCrypto.createHash("sha1").update(buffer).digest("hex");
+      const crypto = await getCrypto();
+      const hash = crypto.createHash("sha1").update(buffer).digest("hex");
 
       if (hash.toLowerCase() !== source.expectedHash.toLowerCase()) {
         throw new Error(
