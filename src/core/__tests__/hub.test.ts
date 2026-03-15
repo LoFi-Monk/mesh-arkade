@@ -12,13 +12,13 @@ vi.mock("../curator.js", async () => {
   const actual = await vi.importActual("../curator.js");
   return {
     ...actual,
-    getCurator: () => mockCurator,
+    createCurator: () => mockCurator,
   };
 });
 
 vi.mock("../curation.js", async () => {
   return {
-    getCurationManager: () => ({
+    createCurationManager: () => ({
       seedSystem: vi.fn().mockResolvedValue({
         systemId: "nes",
         systemTitle: "Nintendo Entertainment System",

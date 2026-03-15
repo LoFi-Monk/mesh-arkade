@@ -31,6 +31,7 @@
         ".git/",
         ".agent/",
         ".opencode/",
+        ".claude/",
         "src/",
         "tests/",
         "openspec/",

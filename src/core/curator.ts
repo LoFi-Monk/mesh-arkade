@@ -11,16 +11,7 @@ import {
   MESH_HUB_DIR,
   withMutex,
 } from "./storage.js";
-let fs: any;
-let path: any;
-
-if (typeof Bare !== "undefined") {
-  fs = (await import("bare-fs")).default;
-  path = (await import("bare-path")).default;
-} else {
-  fs = await import("fs");
-  path = await import("path");
-}
+import { getFs, getPath } from "./runtime.js";
 
 const ROM_EXTENSIONS = [
   ".zip",
@@ -63,6 +54,7 @@ const ROM_EXTENSIONS = [
 ];
 
 async function isValidDirectory(pathStr: string): Promise<boolean> {
+  const fs = await getFs();
   try {
     const stats = await fs.promises.stat(pathStr);
     return stats.isDirectory();
@@ -72,6 +64,8 @@ async function isValidDirectory(pathStr: string): Promise<boolean> {
 }
 
 async function meshHubExists(pathStr: string): Promise<boolean> {
+  const fs = await getFs();
+  const path = await getPath();
   const hubPath = path.join(pathStr, MESH_HUB_DIR);
   try {
     await fs.promises.access(hubPath);
@@ -82,11 +76,15 @@ async function meshHubExists(pathStr: string): Promise<boolean> {
 }
 
 async function createMeshHub(pathStr: string): Promise<void> {
+  const fs = await getFs();
+  const path = await getPath();
   const hubPath = path.join(pathStr, MESH_HUB_DIR);
   await fs.promises.mkdir(hubPath, { recursive: true });
 }
 
 async function countRomFiles(pathStr: string): Promise<number> {
+  const fs = await getFs();
+  const path = await getPath();
   try {
     let count = 0;
     async function scanDirectory(dirPath: string) {
@@ -116,19 +114,7 @@ async function countRomFiles(pathStr: string): Promise<number> {
   }
 }
 
-/**
- * Curator manages library mounts and directory lifecycle.
- *
- * @intent Provide a central controller for library discovery and indexing.
- * @guarantee Methods are idempotent or throw clear errors on failure.
- */
 class CuratorClass {
-  /**
-   * Mounts a local directory as a game library.
-   *
-   * @intent Register a new library path and initialize its mesh-hub index.
-   * @guarantee Returns a Mount object on success. Throws if path is invalid or already mounted.
-   */
   async mount(path: string): Promise<Mount> {
     return withMutex(async () => {
       if (!(await isValidDirectory(path))) {
@@ -167,12 +153,6 @@ class CuratorClass {
     });
   }
 
-  /**
-   * Unmounts a library path.
-   *
-   * @intent Remove a library from the system management.
-   * @guarantee Removes the mount entry from persistent storage. Throws if mount not found.
-   */
   async unmount(path: string): Promise<void> {
     return withMutex(async () => {
       const mounts = await loadMounts();
@@ -187,22 +167,10 @@ class CuratorClass {
     });
   }
 
-  /**
-   * Lists all registered library mounts.
-   *
-   * @intent Provide visibility into all mounted collections.
-   * @guarantee Returns an array of Mount objects from persistent storage.
-   */
   async listMounts(): Promise<Mount[]> {
     return loadMounts();
   }
 
-  /**
-   * Retrieves a specific mount by path.
-   *
-   * @intent Fetch metadata for a single known library.
-   * @guarantee Returns the Mount object if found, otherwise null.
-   */
   async getMount(path: string): Promise<Mount | null> {
     const mounts = await loadMounts();
     return mounts.find((m) => m.path === path) ?? null;
@@ -210,13 +178,11 @@ class CuratorClass {
 }
 
 /**
- * Returns a new Curator instance.
- *
- * @intent Provide access to library mount management operations.
- * @guarantee Returns a new CuratorClass instance on each call.
+ * @intent Factory that creates a new Curator instance for managing ROM library mounts.
+ * @guarantee Returns a fully-operational CuratorClass with mount, unmount, listMounts, and getMount capabilities.
  */
-export function getCurator() {
+export function createCurator() {
   return new CuratorClass();
 }
 export { Mount, MountStatus };
-export default getCurator;
+export default createCurator;
