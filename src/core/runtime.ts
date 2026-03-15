@@ -3,9 +3,12 @@
  * @description Runtime abstraction layer for Bare and Node.js environments.
  */
 
-let cachedFs: typeof import("fs") | null = null;
-let cachedPath: typeof import("path") | null = null;
-let cachedOs: typeof import("os") | null = null;
+// Cache variables use `any` because bare-fs/bare-path/bare-os have narrower
+// type surfaces than Node's built-ins. Strict typing would require union types
+// that don't exist yet in the Bare ecosystem. Will tighten as Bare types mature.
+let cachedFs: any = null;
+let cachedPath: any = null;
+let cachedOs: any = null;
 let runtimeResolved = false;
 
 async function ensureRuntime(): Promise<void> {
@@ -51,7 +54,8 @@ export async function getOs(): Promise<typeof import("os")> {
   return cachedOs;
 }
 
-let cachedFetch: typeof fetch | null = null;
+// Same dual-runtime constraint as above — node-fetch's type signature differs from globalThis.fetch.
+let cachedFetch: any = null;
 let fetchResolved = false;
 
 /**
