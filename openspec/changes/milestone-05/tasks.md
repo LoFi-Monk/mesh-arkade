@@ -64,3 +64,13 @@
 - [ ] 11.1 Add TSDoc to all public exports in `src/fetch/` following the Intent → Guarantees → Constraints/Warnings convention
 - [ ] 11.2 Update `README.md` (or relevant CLI help text) with `mesh fetch <sha1>` usage and example
 - [ ] 11.3 Update roadmap entry `[05]` status to `Completed ✓`
+
+## 12. DAT Trust & Bootstrap Verification
+
+- [ ] 12.1 Define a `TrustedSource` interface in `src/fetch/trust.ts` with fields: `url`, `publicKey` (optional), `description`
+- [ ] 12.2 Hardcode a `TRUSTED_DAT_SOURCES` constant listing known-good No-Intro DAT endpoints (e.g. Libretro GitHub mirror) with their expected content hashes
+- [ ] 12.3 Implement `fetchVerifiedDat(systemId: string): Promise<Buffer>` — fetch DAT from trusted source, verify content hash matches expected value before returning
+- [ ] 12.4 On first-run DAT bootstrap (`mesh init --seed`), route through `fetchVerifiedDat` instead of raw fetch — reject and warn if hash mismatch
+- [ ] 12.5 Implement content-addressed pinning: after a DAT is verified, announce its SHA1 hash on Hyperswarm so future peers can retrieve it from the swarm instead of the origin
+- [ ] 12.6 Write unit tests for `fetchVerifiedDat`: hash match (accept), hash mismatch (reject), network error
+- [ ] 12.7 Document the trust model in `openspec/changes/milestone-05/specs/dat-trust/spec.md`
