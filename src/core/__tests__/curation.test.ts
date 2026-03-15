@@ -216,10 +216,10 @@ describe("CurationManager", () => {
         ],
       });
 
-      const { getCurationManager, clearSystemCache } =
+      const { createCurationManager, clearSystemCache } =
         await import("../curation.js");
       clearSystemCache?.();
-      const systems = await getCurationManager().getSupportedSystems();
+      const systems = await createCurationManager().getSupportedSystems();
 
       expect(systems.length).toBeGreaterThan(0);
     });
@@ -227,8 +227,8 @@ describe("CurationManager", () => {
 
   describe("searchWishlist", () => {
     it("should search wishlist and return results", async () => {
-      const { getCurationManager } = await import("../curation.js");
-      const manager = getCurationManager();
+      const { createCurationManager } = await import("../curation.js");
+      const manager = createCurationManager();
 
       vi.spyOn(manager, "searchWishlist").mockResolvedValueOnce([
         {
@@ -248,8 +248,8 @@ describe("CurationManager", () => {
     });
 
     it("should filter by system ID", async () => {
-      const { getCurationManager } = await import("../curation.js");
-      const manager = getCurationManager();
+      const { createCurationManager } = await import("../curation.js");
+      const manager = createCurationManager();
 
       vi.spyOn(manager, "searchWishlist").mockResolvedValueOnce([
         {
@@ -271,8 +271,8 @@ describe("CurationManager", () => {
 
   describe("getSystemInfo", () => {
     it("should return system info", async () => {
-      const { getCurationManager } = await import("../curation.js");
-      const manager = getCurationManager();
+      const { createCurationManager } = await import("../curation.js");
+      const manager = createCurationManager();
 
       vi.spyOn(manager, "getSystemInfo").mockResolvedValueOnce({
         id: "nes",
@@ -288,8 +288,8 @@ describe("CurationManager", () => {
     });
 
     it("should return null for non-existent system", async () => {
-      const { getCurationManager } = await import("../curation.js");
-      const manager = getCurationManager();
+      const { createCurationManager } = await import("../curation.js");
+      const manager = createCurationManager();
 
       vi.spyOn(manager, "getSystemInfo").mockResolvedValueOnce(null);
 
@@ -301,10 +301,9 @@ describe("CurationManager", () => {
 });
 
 describe("Database Module Exports", () => {
-  it("should export STORAGE_PATH and STORAGE_BASE", async () => {
-    const { STORAGE_PATH, STORAGE_BASE } = await import("../database.js");
+  it("should export STORAGE_PATH", async () => {
+    const { STORAGE_PATH } = await import("../database.js");
     expect(STORAGE_PATH).toBeDefined();
-    expect(STORAGE_BASE).toBeDefined();
   });
 
   it("should export DATABASE_PATH as alias for backwards compatibility", async () => {
@@ -347,11 +346,11 @@ describe("CurationManager methods", () => {
           text: async () => mockDatContent,
         });
 
-      const { getCurationManager, clearSystemCache } =
+      const { createCurationManager, clearSystemCache } =
         await import("../curation.js");
       clearSystemCache?.();
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const result = await manager.seedSystem("nes");
 
       expect(result.systemId).toBe("nes");
@@ -379,11 +378,11 @@ describe("CurationManager methods", () => {
           text: async () => mockDatContent,
         });
 
-      const { getCurationManager, clearSystemCache } =
+      const { createCurationManager, clearSystemCache } =
         await import("../curation.js");
       clearSystemCache?.();
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const progressFn = vi.fn();
 
       await manager.seedSystem("nes", progressFn);
@@ -394,7 +393,7 @@ describe("CurationManager methods", () => {
 
   describe("searchWishlist", () => {
     it("should search wishlist", async () => {
-      const { getCurationManager } = await import("../curation.js");
+      const { createCurationManager } = await import("../curation.js");
       const { searchWishlist } = await import("../database.js");
 
       vi.mocked(searchWishlist).mockResolvedValueOnce([
@@ -408,7 +407,7 @@ describe("CurationManager methods", () => {
         },
       ]);
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const results = await manager.searchWishlist("Mario");
 
       expect(results.length).toBe(1);
@@ -416,7 +415,7 @@ describe("CurationManager methods", () => {
     });
 
     it("should filter by system ID", async () => {
-      const { getCurationManager } = await import("../curation.js");
+      const { createCurationManager } = await import("../curation.js");
       const { searchWishlist } = await import("../database.js");
 
       vi.mocked(searchWishlist).mockResolvedValueOnce([
@@ -430,7 +429,7 @@ describe("CurationManager methods", () => {
         },
       ]);
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const results = await manager.searchWishlist("Mario", "gb");
 
       expect(results.length).toBe(1);
@@ -440,7 +439,7 @@ describe("CurationManager methods", () => {
 
   describe("getSystemInfo", () => {
     it("should return system info", async () => {
-      const { getCurationManager } = await import("../curation.js");
+      const { createCurationManager } = await import("../curation.js");
       const { getSystem } = await import("../database.js");
 
       vi.mocked(getSystem).mockResolvedValueOnce({
@@ -450,7 +449,7 @@ describe("CurationManager methods", () => {
         last_updated: "2024-01-01T00:00:00.000Z",
       });
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const info = await manager.getSystemInfo("nes");
 
       expect(info).toBeDefined();
@@ -458,12 +457,12 @@ describe("CurationManager methods", () => {
     });
 
     it("should return null for non-existent system", async () => {
-      const { getCurationManager } = await import("../curation.js");
+      const { createCurationManager } = await import("../curation.js");
       const { getSystem } = await import("../database.js");
 
       vi.mocked(getSystem).mockResolvedValueOnce(null);
 
-      const manager = getCurationManager();
+      const manager = createCurationManager();
       const info = await manager.getSystemInfo("nonexistent");
 
       expect(info).toBeNull();
@@ -528,11 +527,11 @@ describe("DAT Parsing - branch coverage", () => {
         text: async () => mockDatContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     await manager.seedSystem("nes");
   });
 
@@ -561,11 +560,11 @@ game (
         text: async () => mockDatContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     const result = await manager.seedSystem("nes");
     expect(result.totalGames).toBe(2);
   });
@@ -590,11 +589,11 @@ game (
         text: async () => xmlContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     const result = await manager.seedSystem("test");
     expect(result.totalGames).toBe(1);
   });
@@ -619,11 +618,11 @@ game (
         text: async () => xmlContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     const result = await manager.seedSystem("test");
     expect(result.totalGames).toBe(1);
   });
@@ -648,11 +647,11 @@ game (
         text: async () => xmlContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     const result = await manager.seedSystem("test");
     expect(result.totalGames).toBe(1);
   });
@@ -676,11 +675,11 @@ game (
         text: async () => mockDatContent,
       });
 
-    const { getCurationManager, clearSystemCache } =
+    const { createCurationManager, clearSystemCache } =
       await import("../curation.js");
     clearSystemCache?.();
 
-    const manager = getCurationManager();
+    const manager = createCurationManager();
     const result = await manager.seedSystem("nes");
     expect(result.totalGames).toBeGreaterThanOrEqual(1);
   });

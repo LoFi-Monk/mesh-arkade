@@ -37,7 +37,7 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 ---
 
 ## **[04a] Refactor Phase 1: Extract CLI Layer**
-**Status**: NEXT 🚀
+**Status**: Completed ✓ (PR #5 merged 2026-03-15)
 **Context**: `index.js` is a 789-line God File handling CLI parsing, command dispatch, REPL, GUI boot, help rendering, first-run wizard, and output formatting — with zero tests. This is the highest-risk, hardest-to-maintain file in the project. Extracting the CLI layer enables independent command testing and clean boundaries for milestone-05's new `fetch` command.
 
 ### **Scope:**
@@ -73,7 +73,7 @@ src/cli/
 ---
 
 ## **[04b] Refactor Phase 2: Centralize Runtime Utilities**
-**Status**: Backlog (follows 04a)
+**Status**: NEXT 🚀 (follows 04a)
 **Context**: Three core modules (`database.ts`, `curator.ts`, `storage.ts`) duplicate identical Bare/Node conditional import logic for `fs`, `path`, and `os`. Storage path resolution is duplicated between `hub.ts` and `storage.ts`. This violates DRY and makes runtime changes error-prone.
 
 ### **Scope:**

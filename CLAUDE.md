@@ -27,6 +27,13 @@ OS: Windows 11
 - **Terminal First**: Prioritize building headless, CLI-native tools over UI-first components unless explicitly told otherwise.
 - **Bare Compatibility**: All core logic must be compatible with the Pear `Bare` runtime (no DOM/Node assumptions where avoidable).
 
+## Engineering Principles
+
+All proposals and implementations MUST follow:
+- **SOLID**: Single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion
+- **DRY**: No duplicated logic — extract shared behavior before implementing
+- **TDD**: Tests written before or alongside implementation — no untested production code
+
 ## Git Discipline
 - Never use `git add .` — manually specify files.
 - Never force push — ask the user for help if a push fails.

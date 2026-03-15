@@ -5,13 +5,7 @@
 
 import type { Mount } from "./curator.js";
 import type { SeedResult, SearchResult } from "./curation.js";
-
-interface PearAppWithStorage {
-  args: string[];
-  key: string | null;
-  dev: boolean;
-  storage?: string;
-}
+import { getStorageBasePath } from "./paths.js";
 
 /**
  * Core Hub status information.
@@ -164,12 +158,7 @@ class CoreHub {
    * @guarantee Returns a valid path string.
    */
   private getStorageLocation(): string {
-    const pearApp =
-      typeof Pear !== "undefined" ? (Pear.app as PearAppWithStorage) : null;
-    if (pearApp?.storage) {
-      return pearApp.storage;
-    }
-    return "./data";
+    return getStorageBasePath();
   }
 
   /**
@@ -193,8 +182,8 @@ class CoreHub {
     if (typeof path !== "string") {
       throw new Error("Missing required parameter: path");
     }
-    const { getCurator } = await import("./curator.js");
-    return getCurator().mount(path);
+    const { createCurator } = await import("./curator.js");
+    return createCurator().mount(path);
   }
 
   private async handleCuratorUnmount(
@@ -207,16 +196,16 @@ class CoreHub {
     if (typeof path !== "string") {
       throw new Error("Missing required parameter: path");
     }
-    const { getCurator } = await import("./curator.js");
-    await getCurator().unmount(path);
+    const { createCurator } = await import("./curator.js");
+    await createCurator().unmount(path);
     return { success: true };
   }
 
   private async handleCuratorList(
     _params: Record<string, unknown> | undefined,
   ): Promise<Mount[]> {
-    const { getCurator } = await import("./curator.js");
-    return getCurator().listMounts();
+    const { createCurator } = await import("./curator.js");
+    return createCurator().listMounts();
   }
 
   private async handleCurationSeed(
@@ -229,8 +218,8 @@ class CoreHub {
     if (typeof system !== "string") {
       throw new Error("Missing required parameter: system");
     }
-    const { getCurationManager } = await import("./curation.js");
-    return getCurationManager().seedSystem(system);
+    const { createCurationManager } = await import("./curation.js");
+    return createCurationManager().seedSystem(system);
   }
 
   private async handleCurationSearch(
@@ -243,8 +232,8 @@ class CoreHub {
     if (typeof query !== "string") {
       throw new Error("Missing required parameter: query");
     }
-    const { getCurationManager } = await import("./curation.js");
-    return getCurationManager().searchWishlist(
+    const { createCurationManager } = await import("./curation.js");
+    return createCurationManager().searchWishlist(
       query,
       typeof system === "string" ? system : undefined,
       typeof limit === "number" ? limit : 50,
@@ -254,8 +243,8 @@ class CoreHub {
   private async handleCurationSystems(
     _params: Record<string, unknown> | undefined,
   ): Promise<{ id: string; title: string; datUrl: string }[]> {
-    const { getCurationManager } = await import("./curation.js");
-    return getCurationManager().getSupportedSystems();
+    const { createCurationManager } = await import("./curation.js");
+    return createCurationManager().getSupportedSystems();
   }
 
   /**

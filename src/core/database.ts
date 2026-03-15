@@ -3,43 +3,14 @@
  * @description Database module for managing Hyperbee storage and namespaces.
  */
 
-let fs: any;
-let path: any;
-let os: any;
-let STORAGE_BASE: string = "./data";
-let STORAGE_PATH: string = "./data/hyperbee-storage";
-
-async function ensureEnv() {
-  if (fs && path && os) return;
-  if (typeof Bare !== "undefined") {
-    fs = (await import("bare-fs")).default;
-    path = (await import("bare-path")).default;
-    os = (await import("bare-os")).default;
-  } else {
-    fs = await import("fs");
-    path = await import("path");
-    os = await import("os");
-  }
-
-  STORAGE_BASE = (() => {
-    const pearApp = typeof Pear !== "undefined" ? (Pear.app as any) : null;
-    if (pearApp?.storage) {
-      return pearApp.storage;
-    }
-    return "./data";
-  })();
-
-  STORAGE_PATH = path.join(STORAGE_BASE, "hyperbee-storage");
-}
-
+import { getFs, getPath } from "./runtime.js";
+import { getStorageBasePath } from "./paths.js";
 import Corestore from "corestore";
 import Hyperbee from "hyperbee";
 
 /**
- * Represents a game system stored in the database.
- *
- * @intent Provide a data structure for persisted system metadata.
- * @guarantee Contains all fields required for system identification.
+ * @intent Represents a retro system entry (e.g. Nintendo NES) stored in the Hyperbee systems namespace.
+ * @guarantee All fields are always present; last_updated is an ISO 8601 timestamp string.
  */
 export interface SystemRecord {
   id: string;
@@ -49,10 +20,8 @@ export interface SystemRecord {
 }
 
 /**
- * Represents a wishlist entry for a ROM game.
- *
- * @intent Provide a data structure for persisted game metadata.
- * @guarantee Contains all fields required for game identification and verification.
+ * @intent Represents a single game entry in the wishlist, keyed by system and hash for deduplication.
+ * @guarantee system_id, title, sha1, crc, md5, and region are always defined; empty string when absent in the source DAT.
  */
 export interface WishlistRecord {
   id?: number;
@@ -64,28 +33,35 @@ export interface WishlistRecord {
   region: string;
 }
 
-type HyperbeeDB = InstanceType<typeof Hyperbee>;
-
 let store: Corestore | null = null;
 let bee: Hyperbee | null = null;
 let systemsBee: Hyperbee | null = null;
 let wishlistBee: Hyperbee | null = null;
+let initialized = false;
+let STORAGE_PATH: string = "";
 
 async function ensureStorageDir(): Promise<void> {
-  await ensureEnv();
-  if (!fs.existsSync(STORAGE_BASE)) {
-    fs.mkdirSync(STORAGE_BASE, { recursive: true });
+  if (initialized) return;
+
+  const fs = await getFs();
+  const path = await getPath();
+  const storageBase = getStorageBasePath();
+  const storagePath = path.join(storageBase, "hyperbee-storage");
+
+  if (!fs.existsSync(storageBase)) {
+    fs.mkdirSync(storageBase, { recursive: true });
   }
-  if (!fs.existsSync(STORAGE_PATH)) {
-    fs.mkdirSync(STORAGE_PATH, { recursive: true });
+  if (!fs.existsSync(storagePath)) {
+    fs.mkdirSync(storagePath, { recursive: true });
   }
+
+  STORAGE_PATH = storagePath;
+  initialized = true;
 }
 
 /**
- * Returns the Hyperbee database instance, initializing on first call.
- *
- * @intent Provide access to the Hyperbee database.
- * @guarantee Returns an initialized database ready for operations.
+ * @intent Returns the singleton Hyperbee root instance, initializing Corestore and storage directories on first call.
+ * @guarantee Always returns the same instance after first initialization; creates storage directories if absent.
  */
 export async function getDatabase(): Promise<Hyperbee> {
   if (bee) {
@@ -122,13 +98,8 @@ export async function getDatabase(): Promise<Hyperbee> {
 }
 
 /**
- * Retrieves a system record by ID.
- *
- * @intent Fetch a specific system from the database.
- * @guarantee Returns null if the system does not exist.
- *
- * @param systemId - The system identifier.
- * @returns The SystemRecord if found, null otherwise.
+ * @intent Retrieves a system record by ID from the Hyperbee systems namespace.
+ * @guarantee Returns null when the system does not exist; never throws on a missing key.
  */
 export async function getSystem(
   systemId: string,
@@ -140,12 +111,8 @@ export async function getSystem(
 }
 
 /**
- * Inserts or updates a system record.
- *
- * @intent Persist system metadata to the database.
- * @guarantee The system record will be available for future queries.
- *
- * @param system - The system record to upsert.
+ * @intent Inserts or replaces a system record in the Hyperbee systems namespace.
+ * @guarantee Idempotent — repeated calls with the same ID overwrite the previous value without error.
  */
 export async function upsertSystem(system: SystemRecord): Promise<void> {
   const db = await getDatabase();
@@ -159,12 +126,8 @@ export async function upsertSystem(system: SystemRecord): Promise<void> {
 }
 
 /**
- * Inserts multiple wishlist records in a batch.
- *
- * @intent Efficiently persist multiple game records.
- * @guarantee All records are written atomically.
- *
- * @param records - Array of WishlistRecord to insert.
+ * @intent Writes a batch of wishlist records atomically, keyed by system+sha1 or system+title-slug.
+ * @guarantee No-op when records array is empty; sha1-based keys take priority over title-slug fallback.
  */
 export async function insertWishlistBatch(
   records: WishlistRecord[],
@@ -183,7 +146,6 @@ export async function insertWishlistBatch(
     if (record.sha1 && record.sha1.length === 40) {
       key = `${record.system_id}!${record.sha1}`;
     } else {
-      // Fallback: use sanitized title slug if SHA1 is not available
       const titleSlug = record.title
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "-")
@@ -206,15 +168,8 @@ export async function insertWishlistBatch(
 }
 
 /**
- * Searches the wishlist for games matching a query.
- *
- * @intent Find games by title in the wishlist database.
- * @guarantee Returns up to `limit` matching records.
- *
- * @param query - The search string to match against game titles.
- * @param systemId - Optional system ID to filter results.
- * @param limit - Maximum number of results to return.
- * @returns Array of matching WishlistRecord objects.
+ * @intent Performs a case-insensitive substring scan of the wishlist, optionally filtered by system ID.
+ * @guarantee Returns at most `limit` results; order follows Hyperbee key sort order.
  */
 export async function searchWishlist(
   query: string,
@@ -227,9 +182,7 @@ export async function searchWishlist(
   const results: WishlistRecord[] = [];
   const lowerQuery = query.toLowerCase();
 
-  let count = 0;
   for await (const entry of wishlist.createReadStream()) {
-    count++;
     if (!entry.value) continue;
 
     const record = entry.value as WishlistRecord;
@@ -247,10 +200,8 @@ export async function searchWishlist(
 }
 
 /**
- * Closes the database connection and releases resources.
- *
- * @intent Clean up database connections on shutdown.
- * @guarantee No further database operations will succeed until reinitialized.
+ * @intent Closes all Hyperbee and Corestore connections and nulls the module-level singletons.
+ * @guarantee Safe to call when already closed; a subsequent getDatabase call will reinitialize cleanly.
  */
 export async function closeDatabase(): Promise<void> {
   if (bee) {
@@ -266,19 +217,24 @@ export async function closeDatabase(): Promise<void> {
 }
 
 /**
- * Resets the database by closing connections and deleting storage files.
- *
- * @intent Wipe all persisted data for a fresh start.
- * @guarantee Database storage directory is deleted and recreated on next use.
+ * @intent Closes the database, deletes all on-disk storage, and resets the module to uninitialized state.
+ * @guarantee After reset, the next getDatabase call creates a fresh empty store.
+ * @warning Destructive and irreversible — permanently erases all persisted data.
  */
 export async function resetDatabase(): Promise<void> {
-  await ensureEnv();
+  const fs = await getFs();
+  const path = await getPath();
   await closeDatabase();
-  console.log(`Resetting database at ${STORAGE_PATH}...`);
-  if (fs.existsSync(STORAGE_PATH)) {
-    fs.rmSync(STORAGE_PATH, { recursive: true, force: true });
+  const storageBase = getStorageBasePath();
+  const storagePath = STORAGE_PATH || path.join(storageBase, "hyperbee-storage");
+  console.log(`Resetting database at ${storagePath}...`);
+  if (fs.existsSync(storagePath)) {
+    fs.rmSync(storagePath, { recursive: true, force: true });
     console.log("Database storage cleared.");
   }
+  initialized = false;
+  STORAGE_PATH = "";
 }
 
-export { STORAGE_BASE, STORAGE_PATH, STORAGE_PATH as DATABASE_PATH };
+export { STORAGE_PATH as DATABASE_PATH };
+export { STORAGE_PATH };
