@@ -30,6 +30,19 @@ describe("handleFetch", () => {
     consoleLog.mockRestore();
   });
 
+  it("No SHA1 argument in JSON mode: outputs JSON error", async () => {
+    const outputModule = await import("../../formatter.js");
+    const outputSpy = vi
+      .spyOn(outputModule, "output")
+      .mockImplementation(() => {});
+    await handleFetch("", mockHub, { isSilent: false, isJson: true });
+    expect(outputSpy).toHaveBeenCalledWith(
+      { error: "Usage: fetch <sha1>" },
+      { isSilent: false, isJson: true },
+    );
+    outputSpy.mockRestore();
+  });
+
   it("Invalid SHA1 (not 40 hex): outputs error", async () => {
     const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
     await handleFetch("invalid-sha1", mockHub, {
