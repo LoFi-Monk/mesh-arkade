@@ -11,10 +11,8 @@ export const handleStatus: CommandHandler = async (
   _argsStr: string,
   _hub: CoreHub,
   options: CommandOptions,
-  _rl?: unknown,
-  mode = "development",
 ) => {
-  showStatus(options, mode);
+  showStatus(options, options.mode ?? "development");
 };
 
 /**

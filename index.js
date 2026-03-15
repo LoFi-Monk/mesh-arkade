@@ -31,6 +31,8 @@ const commands = {
   reset: () => import("./dist/src/cli/commands/reset.js"),
   status: () => import("./dist/src/cli/commands/status.js"),
   help: () => import("./dist/src/cli/commands/help.js"),
+  "--help": () => import("./dist/src/cli/commands/help.js"),
+  "-h": () => import("./dist/src/cli/commands/help.js"),
 };
 
 const commandHandlers = {
@@ -44,6 +46,8 @@ const commandHandlers = {
   reset: "handleReset",
   status: "handleStatus",
   help: "handleHelp",
+  "--help": "handleHelp",
+  "-h": "handleHelp",
 };
 
 async function handleCommand(input, isJson, mode, rl) {

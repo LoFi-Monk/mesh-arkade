@@ -2,11 +2,12 @@
  * Options passed to every command handler controlling output mode.
  *
  * @intent Carry per-invocation output flags so commands can adjust their behaviour.
- * @guarantee All fields are boolean and reflect the flags parsed from process arguments.
+ * @guarantee `isJson` and `isSilent` are always present; `mode` identifies the runtime environment when provided.
  */
 export interface CommandOptions {
   isJson: boolean;
   isSilent: boolean;
+  mode?: string;
 }
 
 /**
