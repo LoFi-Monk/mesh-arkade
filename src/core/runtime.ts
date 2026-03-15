@@ -96,27 +96,36 @@ export async function getCrypto(): Promise<CryptoModule> {
   if (cryptoResolved && cachedCrypto) return cachedCrypto;
 
   if (typeof Bare !== "undefined") {
-    const bareCrypto = await import("bare-crypto");
+    const bareCrypto: any = await import("bare-crypto");
     cachedCrypto = {
-      createHash: (algo: string) => ({
-        update: (data: Buffer | Uint8Array | string) => ({
-          digest: (encoding: string) =>
-            bareCrypto.createHash(algo).update(data).digest(encoding),
-        }),
-      }),
+      createHash: (algo: string) => {
+        const hash = bareCrypto.createHash(algo);
+        return {
+          update: (data: Buffer | Uint8Array | string) => {
+            hash.update(data);
+            return {
+              digest: (encoding: string) => hash.digest(encoding),
+            };
+          },
+          digest: (encoding: string) => hash.digest(encoding),
+        };
+      },
     };
   } else {
     const nodeCrypto = await import("crypto");
     cachedCrypto = {
-      createHash: (algo: string) => ({
-        update: (data: Buffer | Uint8Array | string) => ({
-          digest: (encoding: string) =>
-            nodeCrypto
-              .createHash(algo)
-              .update(data)
-              .digest(encoding as "hex"),
-        }),
-      }),
+      createHash: (algo: string) => {
+        const hash = nodeCrypto.createHash(algo);
+        return {
+          update: (data: Buffer | Uint8Array | string) => {
+            hash.update(data);
+            return {
+              digest: (encoding: string) => hash.digest(encoding as "hex"),
+            };
+          },
+          digest: (encoding: string) => hash.digest(encoding as "hex"),
+        };
+      },
     };
   }
 

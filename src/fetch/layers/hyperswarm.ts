@@ -75,7 +75,6 @@ export async function fetchFromHyperswarm(
 
     await new Promise<void>((resolve, reject) => {
       const dataTimeoutId = setTimeout(() => {
-        swarm.destroy();
         reject(new FetchLayerTimeoutError("hyperswarm", timeout));
       }, timeout);
 
@@ -97,11 +96,11 @@ export async function fetchFromHyperswarm(
     });
 
     const result = Buffer.concat(chunks);
-    swarm.destroy();
+    await swarm.destroy();
     return new Uint8Array(result);
   } catch (err) {
     try {
-      swarm.destroy();
+      await swarm.destroy();
     } catch {
       // Ignore cleanup errors
     }

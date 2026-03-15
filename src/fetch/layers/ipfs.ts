@@ -61,6 +61,9 @@ export async function fetchFromIpfs(
       }, timeout);
     });
 
+    // Suppress dangling rejection when timeout wins
+    fetchPromise.catch(() => {});
+
     try {
       return await Promise.race([fetchPromise, timeoutPromise]);
     } finally {

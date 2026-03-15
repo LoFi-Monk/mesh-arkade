@@ -10,6 +10,7 @@ import { FetchManager } from "../../fetch/fetch-manager.js";
 import { AllLayersFailedError, FetchLayerError } from "../../fetch/errors.js";
 import { getFs, getPath } from "../../core/runtime.js";
 import { getStorageBasePath } from "../../core/paths.js";
+import { getWishlistBySha1, WishlistRecord } from "../../core/database.js";
 
 const SHA1_REGEX = /^[0-9a-fA-F]{40}$/;
 
@@ -98,9 +99,12 @@ export const handleFetch: CommandHandler = async (
       });
     }
 
+    const record = await getWishlistBySha1(normalizedSha1);
+    const records: WishlistRecord[] = record ? [record] : [];
     const filename = await fetchManager.fetchAndStage(
       normalizedSha1,
       stagePath,
+      records,
     );
 
     if (!options.isSilent) {

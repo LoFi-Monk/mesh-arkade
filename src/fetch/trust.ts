@@ -47,11 +47,13 @@ export const TRUSTED_DAT_SOURCES: TrustedSource[] = [
 ];
 
 /**
- * @intent Fetches a DAT file from a trusted source and verifies its content hash.
+ * @intent Fetches a DAT file from a trusted source.
  * @guarantee Returns the fetched Buffer. Hash verification is skipped when expectedHash is empty — populate this field to enable verification.
  * @param systemId The system ID to look up trusted source for.
  */
-export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
+export async function fetchDatFromTrustedSource(
+  systemId: string,
+): Promise<Buffer> {
   const normalizedSystemId = systemId.toLowerCase();
   const source = TRUSTED_DAT_SOURCES.find(
     (s) => s.systemId.toLowerCase() === normalizedSystemId,
