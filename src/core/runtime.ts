@@ -3,9 +3,9 @@
  * @description Runtime abstraction layer for Bare and Node.js environments.
  */
 
-let cachedFs: any = null;
-let cachedPath: any = null;
-let cachedOs: any = null;
+let cachedFs: typeof import("fs") | null = null;
+let cachedPath: typeof import("path") | null = null;
+let cachedOs: typeof import("os") | null = null;
 let runtimeResolved = false;
 
 async function ensureRuntime(): Promise<void> {
@@ -51,7 +51,7 @@ export async function getOs(): Promise<typeof import("os")> {
   return cachedOs;
 }
 
-let cachedFetch: any = null;
+let cachedFetch: typeof fetch | null = null;
 let fetchResolved = false;
 
 /**

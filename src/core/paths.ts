@@ -10,6 +10,11 @@ interface PearAppWithStorage {
   storage?: string;
 }
 
+/**
+ * @intent Returns the base storage directory for all persistent app data.
+ * @guarantee Returns Pear.app.storage when running inside the Pear runtime; falls back to "./data" otherwise.
+ * @constraint Must remain a leaf function with no src/ imports to prevent circular dependencies.
+ */
 function getStorageBasePath(): string {
   const pearApp =
     typeof Pear !== "undefined" ? (Pear.app as PearAppWithStorage) : null;

@@ -11,7 +11,7 @@ import {
   WishlistRecord,
   SystemRecord,
 } from "./database.js";
-import { parseDat, extractRegion, DatGame } from "./dat-parser.js";
+import { parseDat, extractRegion } from "./dat-parser.js";
 import { getFetch } from "./runtime.js";
 
 /**

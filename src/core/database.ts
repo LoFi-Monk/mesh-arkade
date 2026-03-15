@@ -223,11 +223,13 @@ export async function closeDatabase(): Promise<void> {
  */
 export async function resetDatabase(): Promise<void> {
   const fs = await getFs();
+  const path = await getPath();
   await closeDatabase();
   const storageBase = getStorageBasePath();
-  console.log(`Resetting database at ${STORAGE_PATH}...`);
-  if (fs.existsSync(STORAGE_PATH)) {
-    fs.rmSync(STORAGE_PATH, { recursive: true, force: true });
+  const storagePath = STORAGE_PATH || path.join(storageBase, "hyperbee-storage");
+  console.log(`Resetting database at ${storagePath}...`);
+  if (fs.existsSync(storagePath)) {
+    fs.rmSync(storagePath, { recursive: true, force: true });
     console.log("Database storage cleared.");
   }
   initialized = false;
@@ -235,4 +237,4 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export { STORAGE_PATH as DATABASE_PATH };
-export { getStorageBasePath as STORAGE_BASE, STORAGE_PATH };
+export { STORAGE_PATH };

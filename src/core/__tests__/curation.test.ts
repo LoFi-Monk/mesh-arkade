@@ -301,10 +301,9 @@ describe("CurationManager", () => {
 });
 
 describe("Database Module Exports", () => {
-  it("should export STORAGE_PATH and STORAGE_BASE", async () => {
-    const { STORAGE_PATH, STORAGE_BASE } = await import("../database.js");
+  it("should export STORAGE_PATH", async () => {
+    const { STORAGE_PATH } = await import("../database.js");
     expect(STORAGE_PATH).toBeDefined();
-    expect(STORAGE_BASE).toBeDefined();
   });
 
   it("should export DATABASE_PATH as alias for backwards compatibility", async () => {

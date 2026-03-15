@@ -9,6 +9,11 @@ import { getStorageBasePath } from "./paths.js";
 let storageMutex: Promise<void> = Promise.resolve();
 let currentHolder: { release: () => void } | null = null;
 
+/**
+ * @intent Serializes concurrent access to mounts.json to prevent lost updates.
+ * @guarantee Only one caller's fn executes at a time; others queue until the lock is released.
+ * @constraint Must not be called in a nested fashion — callers inside a withMutex block must use raw storage helpers directly.
+ */
 async function withMutex<T>(fn: () => Promise<T>): Promise<T> {
   if (currentHolder) {
     return fn();

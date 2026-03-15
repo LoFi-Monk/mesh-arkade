@@ -115,6 +115,10 @@ async function countRomFiles(pathStr: string): Promise<number> {
 }
 
 class CuratorClass {
+  /**
+   * @intent Registers a directory as an active ROM library mount, creating a .mesh-hub marker and scanning for ROMs.
+   * @guarantee Returns the new Mount record on success; throws if the path is not a valid directory or is already active.
+   */
   async mount(path: string): Promise<Mount> {
     return withMutex(async () => {
       if (!(await isValidDirectory(path))) {
@@ -153,6 +157,10 @@ class CuratorClass {
     });
   }
 
+  /**
+   * @intent Removes a mount record from the persistent list, deregistering the library path.
+   * @guarantee Throws if the path is not currently registered; otherwise removes it regardless of status.
+   */
   async unmount(path: string): Promise<void> {
     return withMutex(async () => {
       const mounts = await loadMounts();
@@ -167,10 +175,18 @@ class CuratorClass {
     });
   }
 
+  /**
+   * @intent Returns all registered library mounts from persistent storage.
+   * @guarantee Always returns an array — empty when no mounts have been registered; never throws.
+   */
   async listMounts(): Promise<Mount[]> {
     return loadMounts();
   }
 
+  /**
+   * @intent Retrieves a single mount record by its directory path.
+   * @guarantee Returns null when the path is not registered; never throws.
+   */
   async getMount(path: string): Promise<Mount | null> {
     const mounts = await loadMounts();
     return mounts.find((m) => m.path === path) ?? null;
