@@ -25,7 +25,7 @@ game (
 	rom ( name "game2.bin" size 2097152 crc ABCDEF12 md5 00000000000000000000000000000000 )
 )`;
 
-      const result = parseClrmamepro(content, "test");
+      const result = parseClrmamepro(content);
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe("Test Game 1");
       expect(result[0].crc).toBe("12345678");
@@ -45,7 +45,7 @@ game (
 	rom ( name "rom.bin" size 1024 crc DEADBEEF )
 )`;
 
-      const result = parseClrmamepro(content, "test");
+      const result = parseClrmamepro(content);
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe("Game Without Rom");
       expect(result[0].sha1).toBeUndefined();
@@ -60,7 +60,7 @@ game (
 	rom ( name "disc2.bin" size 200 crc BBBBBB02 sha1 2222222222222222222222222222222222222222 )
 )`;
 
-      const result = parseClrmamepro(content, "test");
+      const result = parseClrmamepro(content);
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("Multi Disc Game");
     });
@@ -71,18 +71,18 @@ game (
 	rom ( name "game.bin" size 1024 crc CAFEBABE )
 )`;
 
-      const result = parseClrmamepro(content, "test");
+      const result = parseClrmamepro(content);
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("Game (USA) (Rev A)");
     });
 
     it("should return empty array for invalid content", () => {
-      const result = parseClrmamepro("not a valid dat file", "test");
+      const result = parseClrmamepro("not a valid dat file");
       expect(result).toHaveLength(0);
     });
 
     it("should return empty array for empty content", () => {
-      const result = parseClrmamepro("", "test");
+      const result = parseClrmamepro("");
       expect(result).toHaveLength(0);
     });
   });
@@ -107,7 +107,7 @@ game (
   </game>
 </datafile>`;
 
-      const result = parseDatXml(content, "test");
+      const result = parseDatXml(content);
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe("Game 1");
       expect(result[0].crc).toBe("12345678");
@@ -127,7 +127,7 @@ game (
   </game>
 </datafile>`;
 
-      const result = parseDatXml(content, "test");
+      const result = parseDatXml(content);
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe("Game Without Rom");
       expect(result[0].sha1).toBeUndefined();
@@ -136,12 +136,12 @@ game (
     });
 
     it("should return empty array for invalid XML", () => {
-      const result = parseDatXml("not xml content", "test");
+      const result = parseDatXml("not xml content");
       expect(result).toHaveLength(0);
     });
 
     it("should return empty array for empty content", () => {
-      const result = parseDatXml("", "test");
+      const result = parseDatXml("");
       expect(result).toHaveLength(0);
     });
   });
@@ -156,7 +156,7 @@ game (
 	rom ( name "test.bin" size 1024 crc A1B2C3D4 )
 )`;
 
-      const result = parseDat(content, "test");
+      const result = parseDat(content);
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("Test Game");
     });
@@ -167,7 +167,7 @@ game (
 	rom ( name "test.bin" size 1024 crc A1B2C3D4 )
 )`;
 
-      const result = parseDat(content, "test");
+      const result = parseDat(content);
       expect(result).toHaveLength(1);
     });
 
@@ -179,7 +179,7 @@ game (
   </game>
 </datafile>`;
 
-      const result = parseDat(content, "test");
+      const result = parseDat(content);
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("Test Game");
     });

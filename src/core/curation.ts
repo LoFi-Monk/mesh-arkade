@@ -306,7 +306,7 @@ class CurationManagerClass {
     const xmlContent = await fetchDat(systemDef.datUrl);
 
     console.log(`Parsing DAT...`);
-    const games = parseDat(xmlContent, systemId);
+    const games = parseDat(xmlContent);
     const totalGames = games.length;
 
     await upsertSystem({

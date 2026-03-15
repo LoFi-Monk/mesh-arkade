@@ -18,22 +18,22 @@ export interface DatGame {
  * @intent Detects the DAT format from content and dispatches to the appropriate parser.
  * @guarantee Always returns an array — empty when no games are found; never throws.
  */
-export function parseDat(content: string, systemId: string): DatGame[] {
+export function parseDat(content: string): DatGame[] {
   const trimmed = content.trim();
   if (
     trimmed.startsWith("clrmamepro") ||
     trimmed.slice(0, 100).includes("game (")
   ) {
-    return parseClrmamepro(content, systemId);
+    return parseClrmamepro(content);
   }
-  return parseDatXml(content, systemId);
+  return parseDatXml(content);
 }
 
 /**
  * @intent Extracts game records from CLRMamePro-format DAT content using regex block matching.
  * @guarantee Returns only entries with a valid name field; hash fields are present only when found in the source ROM entry.
  */
-export function parseClrmamepro(content: string, _systemId: string): DatGame[] {
+export function parseClrmamepro(content: string): DatGame[] {
   const games: DatGame[] = [];
   const gameRegex = /\bgame\s*\(\s*(.*?)\n\s*\)/gs;
   let match;
@@ -69,7 +69,7 @@ export function parseClrmamepro(content: string, _systemId: string): DatGame[] {
  * @intent Extracts game records from XML-format DAT content using regex element matching.
  * @guarantee Returns only entries with a parseable name attribute; hash fields are present only when found in the game block.
  */
-export function parseDatXml(xmlContent: string, _systemId: string): DatGame[] {
+export function parseDatXml(xmlContent: string): DatGame[] {
   const games: DatGame[] = [];
 
   const gameRegex = /<game\s+name="([^"]+)"[^>]*>/g;
