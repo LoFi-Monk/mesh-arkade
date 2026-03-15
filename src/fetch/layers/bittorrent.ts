@@ -1,10 +1,10 @@
 /**
  * @file layers/bittorrent.ts
  * @description BitTorrent DHT-based P2P fetch layer using SHA1 as info hash.
+ * @note BitTorrent wire protocol implementation requires task 7.1 spike.
  */
 
 import DHT from "bittorrent-dht";
-import { getFetch } from "../../core/runtime.js";
 import { FetchLayerError, FetchLayerTimeoutError } from "../errors.js";
 
 /**
@@ -78,37 +78,18 @@ export async function fetchFromBittorrent(
   });
 }
 
+// TODO: Spike required - task 7.1
+// BitTorrent wire protocol not yet implemented.
+// This would require implementing the BEP03 (BitTorrent Protocol) handshake,
+// piece request handling, and data assembly.
 async function fetchFromPeer(
-  dht: DHT,
-  infoHash: string,
-  peer: PeerInfo,
-  options: BittorrentFetchOptions,
+  _dht: DHT,
+  _infoHash: string,
+  _peer: PeerInfo,
+  _options: BittorrentFetchOptions,
 ): Promise<Uint8Array> {
-  const { host, port } = peer;
-
-  const fetch = await getFetch();
-  const bittorrentUrl = `http://${host}:${port}/download/${infoHash}`;
-
-  try {
-    const response = await fetch(bittorrentUrl);
-
-    if (!response.ok) {
-      throw new FetchLayerError(
-        "bittorrent",
-        `Peer returned ${response.status}`,
-      );
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const data = new Uint8Array(arrayBuffer);
-
-    options.onProgress?.(data.length);
-    return data;
-  } catch (err) {
-    throw new FetchLayerError(
-      "bittorrent",
-      `Failed to download from peer`,
-      err,
-    );
-  }
+  throw new FetchLayerError(
+    "bittorrent",
+    "BitTorrent wire protocol not yet implemented — spike required (task 7.1)",
+  );
 }

@@ -8,6 +8,8 @@ import { FetchLayerError, AllLayersFailedError } from "./errors.js";
 import { fetchFromHyperswarm } from "./layers/hyperswarm.js";
 import { fetchFromIpfs } from "./layers/ipfs.js";
 import { fetchFromBittorrent } from "./layers/bittorrent.js";
+import type { DatGame } from "../core/dat-parser.js";
+import { resolveByShortSha1 } from "../core/dat-parser.js";
 
 /**
  * @intent Represents progress updates during P2P fetch operations.
@@ -107,19 +109,32 @@ export class FetchManager {
 
   /**
    * @intent Fetches ROM by SHA1 and writes it to the destination directory.
-   * @guarantee Filename is resolved from DAT record or defaults to <sha1>.bin.
+   * @guarantee Filename is resolved from DAT record (using records param) or defaults to <sha1>.bin.
    * @param sha1 The SHA1 hash identifying the ROM.
    * @param destDir The destination directory path.
-   * @param filename Optional filename override.
+   * @param records Optional DAT records to resolve filename from.
    */
   async fetchAndStage(
     sha1: string,
     destDir: string,
-    filename?: string,
+    records?: DatGame[],
   ): Promise<string> {
     const data = await this.fetch(sha1);
 
-    const finalFilename = filename || `${sha1}.bin`;
+    let finalFilename: string;
+    if (records && records.length > 0) {
+      const record = resolveByShortSha1(records, sha1);
+      if (record && record.name) {
+        // Use the game name, but sanitize for filesystem
+        const sanitizedName = record.name.replace(/[<>:"/\\|?*]/g, "_");
+        finalFilename = `${sanitizedName}.bin`;
+      } else {
+        finalFilename = `${sha1}.bin`;
+      }
+    } else {
+      finalFilename = `${sha1}.bin`;
+    }
+
     const fs = await getFs();
     const path = await getPath();
 

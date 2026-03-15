@@ -8,6 +8,7 @@
  * @guarantee url is always present; publicKey is optional; expectedHash must match for verification.
  */
 export interface TrustedSource {
+  systemId: string;
   url: string;
   publicKey?: string;
   description: string;
@@ -20,21 +21,25 @@ export interface TrustedSource {
  */
 export const TRUSTED_DAT_SOURCES: TrustedSource[] = [
   {
+    systemId: "nes",
     url: "https://raw.githubusercontent.com/libretro/metadata-assets/master/No-Intro/Nintendo/Nintendo - Nintendo Entertainment System.json",
     description: "Libretro No-Intro NES DAT mirror",
     expectedHash: "",
   },
   {
+    systemId: "snes",
     url: "https://raw.githubusercontent.com/libretro/metadata-assets/master/No-Intro/Nintendo/Nintendo - Super Nintendo Entertainment System.json",
     description: "Libretro No-Intro SNES DAT mirror",
     expectedHash: "",
   },
   {
+    systemId: "gb",
     url: "https://raw.githubusercontent.com/libretro/metadata-assets/master/No-Intro/Nintendo/Nintendo Game Boy.json",
     description: "Libretro No-Intro Game Boy DAT mirror",
     expectedHash: "",
   },
   {
+    systemId: "gbc",
     url: "https://raw.githubusercontent.com/libretro/metadata-assets/master/No-Intro/Nintendo/Nintendo Game Boy Color.json",
     description: "Libretro No-Intro Game Boy Color DAT mirror",
     expectedHash: "",
@@ -47,8 +52,9 @@ export const TRUSTED_DAT_SOURCES: TrustedSource[] = [
  * @param systemId The system ID to look up trusted source for.
  */
 export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
-  const source = TRUSTED_DAT_SOURCES.find((s) =>
-    s.url.toLowerCase().includes(systemId.toLowerCase()),
+  const normalizedSystemId = systemId.toLowerCase();
+  const source = TRUSTED_DAT_SOURCES.find(
+    (s) => s.systemId.toLowerCase() === normalizedSystemId,
   );
 
   if (!source) {
@@ -72,8 +78,8 @@ export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
 
     // For now, accept empty expected hash (placeholder until real hashes are configured)
     if (source.expectedHash) {
-      const { createHash } = await import("crypto");
-      const hash = createHash("sha1").update(buffer).digest("hex");
+      const bareCrypto = await import("bare-crypto");
+      const hash = bareCrypto.createHash("sha1").update(buffer).digest("hex");
 
       if (hash.toLowerCase() !== source.expectedHash.toLowerCase()) {
         throw new Error(

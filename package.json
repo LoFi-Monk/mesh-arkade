@@ -71,6 +71,7 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "bare-crypto": "^1.1.0",
     "bare-fetch": "^2.7.0",
     "bare-fs": "^4.5.5",
     "bare-os": "^3.8.0",

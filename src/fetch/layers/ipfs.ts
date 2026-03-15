@@ -60,9 +60,15 @@ export async function fetchFromIpfs(
     const arrayBuffer = await response.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   } catch (err) {
+    if (
+      err instanceof FetchLayerError ||
+      err instanceof FetchLayerTimeoutError
+    ) {
+      throw err;
+    }
     if (err instanceof Error && err.name === "AbortError") {
       throw new FetchLayerTimeoutError("ipfs", timeout);
     }
-    throw new FetchLayerError("ipfs", `Failed to fetch from gateway`, err);
+    throw new FetchLayerError("ipfs", "Failed to fetch from gateway", err);
   }
 }

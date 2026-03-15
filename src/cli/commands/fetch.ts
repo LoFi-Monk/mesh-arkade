@@ -91,7 +91,8 @@ export const handleFetch: CommandHandler = async (
       console.log(`Target: ${stagePath}`);
 
       fetchManager.onProgress((progress) => {
-        process.stdout.write(
+        // Use console.log with carriage return instead of process.stdout.write for Bare compatibility
+        console.log(
           `\r[${progress.layer}] Received ${progress.bytes} bytes... `,
         );
       });

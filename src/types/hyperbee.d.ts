@@ -147,3 +147,13 @@ declare const Bare: {
   };
   teardown: (fn: () => Promise<void> | void) => void;
 };
+
+declare module "bare-crypto" {
+  function createHash(algorithm: string): {
+    update(data: Buffer | Uint8Array | string): {
+      digest(encoding: string): string;
+    };
+  };
+  export { createHash };
+  export default { createHash };
+}

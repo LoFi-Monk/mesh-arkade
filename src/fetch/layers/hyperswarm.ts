@@ -4,8 +4,6 @@
  */
 
 import Hyperswarm from "hyperswarm";
-import { pipeline } from "stream/promises";
-import { getFetch } from "../../core/runtime.js";
 import { FetchLayerTimeoutError, FetchLayerError } from "../errors.js";
 
 /**
@@ -35,17 +33,26 @@ export async function fetchFromHyperswarm(
   const swarm = new Hyperswarm();
 
   try {
-    const topicBuffer = Buffer.from(normalizedSha1, "hex");
+    // Zero-pad SHA1 (20 bytes) to 32-byte topic buffer for Hyperswarm
+    const sha1Buf = Buffer.from(normalizedSha1, "hex");
+    const topicBuffer = Buffer.alloc(32);
+    sha1Buf.copy(topicBuffer);
+
     const discovery = swarm.join(topicBuffer, { client: true, server: true });
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     await new Promise<void>((resolve, reject) => {
-      discovery.on("peer", () => resolve());
-      const timeoutId = setTimeout(() => {
+      discovery.on("peer", () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        resolve();
+      });
+      timeoutId = setTimeout(() => {
         reject(new FetchLayerTimeoutError("hyperswarm", timeout));
       }, timeout);
 
       discovery.on("ready", () => {
-        clearTimeout(timeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
         if (!discovery.connected) {
           reject(new FetchLayerTimeoutError("hyperswarm", timeout));
         }
@@ -63,7 +70,7 @@ export async function fetchFromHyperswarm(
     const chunks: Buffer[] = [];
 
     await new Promise<void>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
+      const dataTimeoutId = setTimeout(() => {
         swarm.destroy();
         reject(new FetchLayerTimeoutError("hyperswarm", timeout));
       }, timeout);
@@ -74,12 +81,12 @@ export async function fetchFromHyperswarm(
       });
 
       peer.on("end", () => {
-        clearTimeout(timeoutId);
+        clearTimeout(dataTimeoutId);
         resolve();
       });
 
       peer.on("error", (err: Error) => {
-        clearTimeout(timeoutId);
+        clearTimeout(dataTimeoutId);
         reject(new FetchLayerError("hyperswarm", "Peer stream error", err));
       });
     });
