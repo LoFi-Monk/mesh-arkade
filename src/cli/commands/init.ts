@@ -28,6 +28,11 @@ export const handleInit: CommandHandler = async (
   }
 
   try {
+    if (!options.isJson) {
+      console.log(`Seeding system: ${system}`);
+      console.log("");
+    }
+
     const result = await hub.handleRequest({
       method: "curation:seed",
       params: { system },
@@ -43,8 +48,7 @@ export const handleInit: CommandHandler = async (
         gamesAdded: number;
         totalGames: number;
       };
-      console.log(`Seeding system: ${system}`);
-      console.log("");
+
       console.log(`Successfully seeded ${systemTitle}`);
       console.log(`  Games added: ${gamesAdded}`);
       console.log(`  Total in database: ${totalGames}`);
