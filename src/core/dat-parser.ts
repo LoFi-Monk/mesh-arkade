@@ -126,3 +126,27 @@ export function extractRegion(title: string): string {
 
   return "Unknown";
 }
+
+/**
+ * @intent Resolves a game record by matching a SHA1 hash (full or short) against records.
+ * @guarantee Returns the first matching GameRecord, or null if no match found. Comparison is case-insensitive.
+ * @param records Array of DatGame records to search.
+ * @param sha1 Full 40-char or short SHA1 hash to match.
+ */
+export function resolveByShortSha1(
+  records: DatGame[],
+  sha1: string,
+): DatGame | null {
+  const normalizedSha1 = sha1.toLowerCase();
+  for (const record of records) {
+    if (!record.sha1) continue;
+    const recordSha1 = record.sha1.toLowerCase();
+    if (
+      recordSha1 === normalizedSha1 ||
+      recordSha1.startsWith(normalizedSha1)
+    ) {
+      return record;
+    }
+  }
+  return null;
+}

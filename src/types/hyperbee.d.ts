@@ -84,6 +84,60 @@ declare module "bare-fetch" {
   export default fetch;
 }
 
+declare module "hyperswarm" {
+  class Hyperswarm {
+    constructor(options?: {
+      keyPair?: unknown;
+      seed?: Buffer;
+      maxPeers?: number;
+    });
+    join(
+      topic: Buffer,
+      options?: { client?: boolean; server?: boolean },
+    ): HyperswarmDiscovery;
+    getConnections(): HyperswarmConnection[];
+    destroy(): Promise<void>;
+  }
+
+  interface HyperswarmDiscovery {
+    on(event: "peer" | "ready", callback: () => void): void;
+    connected: boolean;
+  }
+
+  interface HyperswarmConnection {
+    on(event: "data", callback: (data: Buffer) => void): void;
+    on(event: "end", callback: () => void): void;
+    on(event: "error", callback: (err: Error) => void): void;
+    write(data: Buffer): void;
+    end(): void;
+  }
+
+  export default Hyperswarm;
+}
+
+declare module "bittorrent-dht" {
+  class DHT {
+    constructor(options?: {
+      nodeId?: string | Buffer;
+      bootstrap?: string[];
+      host?: string | false;
+      concurrency?: number;
+    });
+    on(
+      event: "peer",
+      callback: (
+        peer: { host: string; port: number },
+        infoHash: string,
+        from: { address: string; port: number },
+      ) => void,
+    ): void;
+    lookup(infoHash: string): void;
+    destroy(): Promise<void>;
+  }
+
+  export default DHT;
+}
+
 declare const Bare: {
   app: {
     args: string[];

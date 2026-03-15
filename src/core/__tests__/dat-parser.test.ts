@@ -4,6 +4,8 @@ import {
   parseClrmamepro,
   parseDatXml,
   extractRegion,
+  resolveByShortSha1,
+  DatGame,
 } from "../dat-parser.js";
 
 describe("dat-parser.ts", () => {
@@ -232,6 +234,49 @@ game (
     it("should be case insensitive", () => {
       expect(extractRegion("Game (usa)")).toBe("usa");
       expect(extractRegion("Game (USA)")).toBe("USA");
+    });
+  });
+
+  describe("resolveByShortSha1", () => {
+    const records: DatGame[] = [
+      { name: "Game 1", sha1: "abc123def456789012345678901234567890abcd" },
+      { name: "Game 2", sha1: "DEF456ABC789012345678901234567890123456789" },
+      { name: "Game 3", sha1: "1111111111111111111111111111111111111111" },
+      { name: "Game No Hash", crc: "12345678" },
+    ];
+
+    it("should match full SHA1", () => {
+      const result = resolveByShortSha1(
+        records,
+        "abc123def456789012345678901234567890abcd",
+      );
+      expect(result?.name).toBe("Game 1");
+    });
+
+    it("should match short SHA1 (first 8 chars)", () => {
+      const result = resolveByShortSha1(records, "abc123de");
+      expect(result?.name).toBe("Game 1");
+    });
+
+    it("should return null for no match", () => {
+      const result = resolveByShortSha1(
+        records,
+        "0000000000000000000000000000000000000000",
+      );
+      expect(result).toBeNull();
+    });
+
+    it("should be case insensitive", () => {
+      const result1 = resolveByShortSha1(records, "ABC123DEF");
+      expect(result1?.name).toBe("Game 1");
+
+      const result2 = resolveByShortSha1(records, "def456ab");
+      expect(result2?.name).toBe("Game 2");
+    });
+
+    it("should skip records without SHA1", () => {
+      const result = resolveByShortSha1(records, "1111111111111111");
+      expect(result?.name).toBe("Game 3");
     });
   });
 });

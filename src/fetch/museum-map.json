@@ -1,0 +1,6 @@
+{
+  "$schema": "https://mesh-arkade.example.com/museum-map/v1.json",
+  "description": "SHA1 to CID mapping for the Museum Map. Each entry maps a ROM's SHA1 hash to an IPFS CID.",
+  "version": 1,
+  "mappings": {}
+}

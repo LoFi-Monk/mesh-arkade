@@ -76,6 +76,7 @@
     "bare-os": "^3.8.0",
     "bare-path": "^3.0.0",
     "bare-readline": "^1.2.2",
+    "bittorrent-dht": "^11.0.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "corestore": "^7.9.1",
