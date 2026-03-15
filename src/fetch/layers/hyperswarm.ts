@@ -6,6 +6,14 @@
 import Hyperswarm from "hyperswarm";
 import { FetchLayerTimeoutError, FetchLayerError } from "../errors.js";
 
+interface HyperswarmConnection {
+  on(event: "data", callback: (data: Buffer) => void): void;
+  on(event: "end", callback: () => void): void;
+  on(event: "error", callback: (err: Error) => void): void;
+  write(data: Buffer): void;
+  end(): void;
+}
+
 /**
  * @intent Configuration options for Hyperswarm fetch layer.
  * @guarantee Timeout defaults to 30 seconds if not specified.
@@ -47,16 +55,18 @@ export async function fetchFromHyperswarm(
     // Use Promise.race for timeout
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const connectionPromise = new Promise<any>((resolve, reject) => {
-      timeoutId = setTimeout(() => {
-        reject(new FetchLayerTimeoutError("hyperswarm", timeout));
-      }, timeout);
+    const connectionPromise = new Promise<HyperswarmConnection>(
+      (resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new FetchLayerTimeoutError("hyperswarm", timeout));
+        }, timeout);
 
-      swarm.on("connection", (conn, info) => {
-        if (timeoutId) clearTimeout(timeoutId);
-        resolve(conn);
-      });
-    });
+        swarm.on("connection", (conn, _info) => {
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve(conn);
+        });
+      },
+    );
 
     const peer = await connectionPromise;
 

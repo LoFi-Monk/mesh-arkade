@@ -54,13 +54,18 @@ export async function fetchFromIpfs(
       return new Uint8Array(arrayBuffer);
     });
 
+    let timeoutId: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         reject(new FetchLayerTimeoutError("ipfs", timeout));
       }, timeout);
     });
 
-    return await Promise.race([fetchPromise, timeoutPromise]);
+    try {
+      return await Promise.race([fetchPromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timeoutId!);
+    }
   } catch (err) {
     if (
       err instanceof FetchLayerError ||

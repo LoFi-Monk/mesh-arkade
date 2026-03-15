@@ -77,26 +77,47 @@ export async function getFetch(): Promise<typeof fetch> {
   return cachedFetch;
 }
 
-let cachedCrypto: any = null;
+type CryptoModule = {
+  createHash: (algo: string) => {
+    update: (data: Buffer | Uint8Array | string) => {
+      digest: (encoding: string) => string;
+    };
+  };
+};
+
+let cachedCrypto: CryptoModule | null = null;
 let cryptoResolved = false;
 
 /**
  * @intent Returns a crypto module appropriate for the current runtime (bare-crypto in Bare, Node crypto otherwise).
  * @guarantee Result is cached after first resolution — subsequent calls return the same reference without re-importing.
  */
-export async function getCrypto(): Promise<{
-  createHash: (algo: string) => {
-    update: (data: Buffer | Uint8Array | string) => {
-      digest: (encoding: string) => string;
-    };
-  };
-}> {
-  if (cryptoResolved) return cachedCrypto;
+export async function getCrypto(): Promise<CryptoModule> {
+  if (cryptoResolved && cachedCrypto) return cachedCrypto;
 
   if (typeof Bare !== "undefined") {
-    cachedCrypto = await import("bare-crypto");
+    const bareCrypto = await import("bare-crypto");
+    cachedCrypto = {
+      createHash: (algo: string) => ({
+        update: (data: Buffer | Uint8Array | string) => ({
+          digest: (encoding: string) =>
+            bareCrypto.createHash(algo).update(data).digest(encoding),
+        }),
+      }),
+    };
   } else {
-    cachedCrypto = await import("crypto");
+    const nodeCrypto = await import("crypto");
+    cachedCrypto = {
+      createHash: (algo: string) => ({
+        update: (data: Buffer | Uint8Array | string) => ({
+          digest: (encoding: string) =>
+            nodeCrypto
+              .createHash(algo)
+              .update(data)
+              .digest(encoding as "hex"),
+        }),
+      }),
+    };
   }
 
   cryptoResolved = true;

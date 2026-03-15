@@ -48,7 +48,7 @@ export const TRUSTED_DAT_SOURCES: TrustedSource[] = [
 
 /**
  * @intent Fetches a DAT file from a trusted source and verifies its content hash.
- * @guarantee Returns the Buffer if hash matches, throws if hash mismatch or network error.
+ * @guarantee Returns the fetched Buffer. Hash verification is skipped when expectedHash is empty — populate this field to enable verification.
  * @param systemId The system ID to look up trusted source for.
  */
 export async function fetchVerifiedDat(systemId: string): Promise<Buffer> {
