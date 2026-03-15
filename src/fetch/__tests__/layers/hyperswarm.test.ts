@@ -112,4 +112,77 @@ describe("fetchFromHyperswarm", () => {
     expect(result).toBeInstanceOf(Uint8Array);
     expect(progressCalls.length).toBeGreaterThan(0);
   });
+
+  it("Peer connects but stream emits error: rejects with FetchLayerError", async () => {
+    const mockConnection = {
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        if (event === "connection") {
+          setTimeout(() => cb(mockConnection), 10);
+        }
+        if (event === "error") {
+          setTimeout(() => cb(new Error("Connection reset by peer")), 20);
+        }
+        if (event === "end") {
+          setTimeout(() => cb(), 30);
+        }
+      }),
+      end: vi.fn(),
+    };
+
+    const Hyperswarm = (await import("hyperswarm")).default as any;
+    const mockSwarm = {
+      join: vi.fn().mockReturnValue({
+        flushed: vi.fn().mockResolvedValue(undefined),
+      }),
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        if (event === "connection") {
+          setTimeout(() => cb(mockConnection), 10);
+        }
+      }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    };
+    Hyperswarm.mockImplementation(() => mockSwarm);
+
+    await expect(
+      fetchFromHyperswarm("abc123def456789012345678901234567890abcd", {
+        timeout: 5000,
+      }),
+    ).rejects.toThrow(FetchLayerError);
+  });
+
+  it("Peer connects but stream ends with 0 bytes: resolves with empty Uint8Array", async () => {
+    const mockConnection = {
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        if (event === "connection") {
+          setTimeout(() => cb(mockConnection), 10);
+        }
+        if (event === "end") {
+          setTimeout(() => cb(), 20);
+        }
+      }),
+      end: vi.fn(),
+    };
+
+    const Hyperswarm = (await import("hyperswarm")).default as any;
+    const mockSwarm = {
+      join: vi.fn().mockReturnValue({
+        flushed: vi.fn().mockResolvedValue(undefined),
+      }),
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        if (event === "connection") {
+          setTimeout(() => cb(mockConnection), 10);
+        }
+      }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    };
+    Hyperswarm.mockImplementation(() => mockSwarm);
+
+    const result = await fetchFromHyperswarm(
+      "abc123def456789012345678901234567890abcd",
+      { timeout: 5000 },
+    );
+
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.length).toBe(0);
+  });
 });

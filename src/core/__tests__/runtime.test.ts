@@ -183,5 +183,31 @@ describe("runtime.ts", () => {
       const fetch = await getFetch();
       expect(fetch).toBe(mockGlobalFetch);
     });
+
+    it("should cache crypto module after first resolution", async () => {
+      vi.resetModules();
+      vi.stubGlobal("Bare", undefined);
+      vi.mock("crypto", () => ({
+        default: {
+          createHash: vi.fn().mockReturnValue({
+            update: vi.fn().mockReturnValue({
+              digest: vi.fn().mockReturnValue("abc123"),
+            }),
+          }),
+        },
+        createHash: vi.fn().mockReturnValue({
+          update: vi.fn().mockReturnValue({
+            digest: vi.fn().mockReturnValue("abc123"),
+          }),
+        }),
+      }));
+
+      const { getCrypto } = await import("../runtime.js");
+      const crypto1 = await getCrypto();
+      const crypto2 = await getCrypto();
+
+      expect(crypto1).toBe(crypto2);
+      expect(crypto1.createHash).toBeDefined();
+    });
   });
 });
