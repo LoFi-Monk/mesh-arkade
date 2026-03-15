@@ -257,7 +257,7 @@ export async function ensureSystemExists(
 
   if (!systemDef) {
     const systems = await syncSystemsToDatabase();
-    systemDef = systems.find((s) => s.id === systemId.toLowerCase());
+    systemDef = systems.find((s) => s.id === normalizeSystemName(systemId));
   }
 
   if (!systemDef) {

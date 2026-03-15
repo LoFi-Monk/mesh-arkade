@@ -73,7 +73,7 @@ async function handleCommand(input, isJson, mode, rl) {
       const mod = await commandLoader();
       const handlerName = commandHandlers[cmd];
       const handler = mod[handlerName];
-      await handler(arg, hubInstance, { isJson, isSilent: false }, rl);
+      await handler(arg, hubInstance, { isJson, isSilent: false, mode }, rl);
     } catch (err) {
       if (isJson) {
         console.log(JSON.stringify({ error: err.message }));
