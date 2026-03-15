@@ -149,10 +149,12 @@ class CoreHub {
     }
 
     const { closeDatabase } = await import("./database.js");
-    await closeDatabase();
-
-    this._running = false;
-    this._socketPath = null;
+    try {
+      await closeDatabase();
+    } finally {
+      this._running = false;
+      this._socketPath = null;
+    }
   }
 
   /**
