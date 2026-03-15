@@ -112,7 +112,6 @@ export async function getCrypto(): Promise<CryptoModule> {
               digest: (encoding: string) => hash.digest(encoding),
             };
           },
-          digest: (encoding: string) => hash.digest(encoding),
         };
       },
     };
@@ -128,7 +127,6 @@ export async function getCrypto(): Promise<CryptoModule> {
               digest: (encoding: string) => hash.digest(encoding as "hex"),
             };
           },
-          digest: (encoding: string) => hash.digest(encoding as "hex"),
         };
       },
     };
