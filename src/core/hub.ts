@@ -259,7 +259,7 @@ class CoreHub {
       throw new Error("Missing required parameter: sha1");
     }
     const { getWishlistBySha1 } = await import("./database.js");
-    return getWishlistBySha1(params.sha1);
+    return (await getWishlistBySha1(params.sha1)) ?? null;
   }
 
   /**
