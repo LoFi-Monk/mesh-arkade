@@ -6,6 +6,30 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 
 ---
 
+## **[NEXT] Carry-Forward from Milestone-05**
+
+**Status**: NEXT 🚀
+
+These items were deferred from milestone-05 and must be addressed before or during milestone-06:
+
+### Fetch Layer Unit Tests (test coverage debt)
+- `5.3` — Hyperswarm layer: mock peer success + timeout cases
+- `6.3` — IPFS layer: map hit + 200, map miss, gateway error
+- `7.4` — BitTorrent layer: mock DHT success + timeout cases
+- `8.4` — FetchManager: Hyperswarm success, fallback to IPFS, all-fail aggregation
+- `9.7` — `handleFetch` CLI command: valid SHA1 + library, invalid SHA1, no library mounted
+- `12.6` — `fetchVerifiedDat`: hash match (accept), hash mismatch (reject), network error
+
+### BitTorrent DHT Spike (blocker for milestone-06 BitTorrent implementation)
+- `7.1` — Spike `bittorrent-dht` in a Bare process to confirm DHT lookup works with SHA1 as infohash
+
+### Trust & Security Hardening (scoped to a future trust milestone)
+- `12.4` — First-run DAT bootstrap: route through `fetchVerifiedDat`, reject on hash mismatch
+- `12.5` — Content-addressed pinning: announce verified SHA1 on Hyperswarm so peers can retrieve from swarm
+- `12.7` — Document trust model in `openspec/changes/milestone-05/specs/dat-trust/spec.md`
+
+---
+
 ## **[00] Production Contribution Workflow (Safety & CI)**
 
 **Status**: Completed ✓
@@ -106,7 +130,7 @@ src/core/paths.ts      ← single source of truth for storage path resolution
 
 ## **[05] Curation Milestone 2: The Multi-Layer Recovery (P2P Fetch)**
 
-**Status**: Completed ✓ (PR pending)
+**Status**: Completed ✓ (PR #9 merged 2026-03-15)
 **Context**: Implementing the Triple-Layer Discovery (Pear Swarm -> Torrent -> IPFS) to allow "From Zero" library creation.
 
 ### **Proposed Implementation Prompt:**

@@ -108,3 +108,30 @@ After completing all artifacts, summarize:
 - If context is critically unclear, ask the user - but prefer making reasonable decisions to keep momentum
 - If a change with that name already exists, ask if user wants to continue it or create a new one
 - Verify each artifact file exists after writing before proceeding to next
+
+**Engineering Standards (mandatory in every tasks.md)**
+
+*TDD*
+- Every task that adds or modifies production code MUST have a paired test task immediately after it.
+- Test tasks follow the pattern: "Write [unit/integration] tests for `<file>` — [what to cover]"
+- Order: implement → test → implement next → test. Never batch tests at the end.
+- Coverage for all new files must reach ≥80% lines/branches before the milestone is considered done.
+- Network-dependent code (Hyperswarm, DHT) must be tested with mocked transports — "can't mock it" is not an acceptable reason to skip tests.
+
+*SOLID + DRY*
+- Single responsibility: each new module/class does one thing. If a task description uses "and", split it.
+- No logic duplication: before implementing, check whether the functionality already exists in the codebase.
+- Dependency inversion: depend on abstractions (interfaces, runtime.ts wrappers) not concrete implementations.
+
+*Bare Compatibility*
+- Any task touching I/O, crypto, filesystem, networking, or OS must explicitly state it uses `runtime.ts` abstractions (`getFs`, `getPath`, `getFetch`, `getCrypto`). Direct `import fs from 'fs'` or `import crypto from 'crypto'` are forbidden in core/fetch code.
+
+*Types*
+- No `any`. All new code uses strict TypeScript types. Unknown external values use `unknown`.
+
+*TSDoc*
+- Every public export must have TSDoc with Intent, Guarantees, and Constraints/Warnings before the task is marked done.
+
+*Architecture Boundaries*
+- Each task must state which layer it touches: CLI / Hub / Core / Fetch.
+- CLI commands are pure hub clients — they call `hub.handleRequest()` only. Direct imports from `core/` or `fetch/` in CLI commands are a design violation and must be caught at proposal time.
