@@ -90,6 +90,8 @@ const SYSTEM_ALIASES: Record<string, string> = {
   "game boy": "gb",
   "game boy color": "gbc",
   "game boy advance": "gba",
+  "sega master system": "sms",
+  "sega game gear": "gg",
 };
 
 function normalizeSystemName(name: string): string {
@@ -230,9 +232,12 @@ function getSystemDefinition(systemId: string): SystemDefinition | undefined {
     return undefined;
   }
 
-  const normalizedId = normalizeSystemName(systemId);
+  const normalizedInput = normalizeSystemName(systemId);
 
-  return cached.find((s) => s.id === normalizedId);
+  return cached.find((s) => {
+    const normalizedStored = normalizeSystemName(s.id);
+    return normalizedStored === normalizedInput;
+  });
 }
 
 /**
@@ -257,7 +262,10 @@ export async function ensureSystemExists(
 
   if (!systemDef) {
     const systems = await syncSystemsToDatabase();
-    systemDef = systems.find((s) => s.id === normalizeSystemName(systemId));
+    const normalizedInput = normalizeSystemName(systemId);
+    systemDef = systems.find(
+      (s) => normalizeSystemName(s.id) === normalizedInput,
+    );
   }
 
   if (!systemDef) {

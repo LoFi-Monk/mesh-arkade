@@ -17,13 +17,13 @@ Devin is an automated PR reviewer that posts detailed code analysis on every com
 
 ### Phase 1: Pull & Triage
 
-Fetch all unresolved review threads from the PR:
+Fetch all unresolved Devin threads in one shot:
 
 ```bash
-# Get all top-level review comments with context
-gh api repos/{owner}/{repo}/pulls/{pr}/comments \
-  --jq '.[] | select(.in_reply_to_id == null) | {id: .id, path: .path, line: .line, body: .body[0:300]}'
+bash scripts/devin-review.sh fetch [PR_NUMBER]
 ```
+
+This prints a structured triage dump and saves thread IDs to `/tmp/devin-threads.txt` for use by `resolve`.
 
 Categorize each comment into one of three buckets:
 
@@ -74,35 +74,21 @@ fix: address Devin PR #{n} review findings ({count} items)
 
 ### Phase 6: Reply & Resolve Actionable Items
 
-Now that fixes are verified and pushed, reply to Bug and Flag threads:
+Now that fixes are verified and pushed, reply to Bug and Flag threads using a body file (no shell-escaping issues with backticks):
 
 ```bash
-# Reply to a review comment
-gh api repos/{owner}/{repo}/pulls/{pr}/comments \
-  -F in_reply_to={comment_id} \
-  -f body="Fixed in {commit_sha} — {brief description of fix}."
+# Write reply body to a temp file — use single-quoted heredoc to preserve backticks literally
+cat > /tmp/reply-123.txt << 'EOF'
+Fixed in abc1234. Added `mode?: string` to `CommandOptions`.
+EOF
+
+bash scripts/devin-review.sh reply <comment_id> /tmp/reply-123.txt
 ```
 
-Then resolve all threads:
+Then resolve all threads (uses IDs cached by `fetch`, or re-fetches if cache is absent):
 
 ```bash
-# Get unresolved thread IDs
-gh api graphql -f query='
-{
-  repository(owner: "{owner}", name: "{repo}") {
-    pullRequest(number: {pr}) {
-      reviewThreads(first: 30) {
-        nodes {
-          id
-          isResolved
-        }
-      }
-    }
-  }
-}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id'
-
-# Resolve each thread
-gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "{id}"}) { thread { isResolved } } }'
+bash scripts/devin-review.sh resolve [PR_NUMBER]
 ```
 
 ### Phase 7: Wait for Re-review
@@ -124,7 +110,7 @@ When items are acknowledged as "will fix in follow-up PR", track them here so th
 
 ## Tips
 
-- **Batch replies**: Use a single bash command with multiple `gh api` calls to reply to all comments at once.
+- **Use the script**: `scripts/devin-review.sh` handles fetch/reply/resolve. The `reply` subcommand reads the body from a file, so backticks and special characters render correctly on GitHub without any escaping.
 - **Devin repeats itself**: The `any` type findings came up in both review 1 and review 2. Keep a mental model of what's been addressed — responses can reference prior threads.
 - **Coverage threshold**: Fixes that change code may shift branch coverage below 80%. Always check coverage after fixes.
 - **Flash vs Opencode**: Use Flash for mechanical fixes (rename variable, remove debug log). Use Opencode for fixes requiring project context (architecture, Bare runtime patterns).
