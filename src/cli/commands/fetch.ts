@@ -99,7 +99,7 @@ export const handleFetch: CommandHandler = async (
       method: "curation:lookup-sha1",
       params: { sha1: normalizedSha1 },
     });
-    if (lookupResult.error) {
+    if (lookupResult.error && !options.isSilent) {
       console.warn(`[fetch] SHA1 name lookup failed: ${lookupResult.error.message} — falling back to <sha1>.bin`);
     }
     const record = lookupResult.result as WishlistRecord | null;
