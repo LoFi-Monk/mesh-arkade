@@ -26,31 +26,74 @@ This roadmap tracks our strategic goals. Commands are prompt-style to give the i
 
 ## **[03] The Curator CLI (Mount Manager)**
 **Status**: Completed ✓
-**Context**: Implement the "Cellular Library" logic. Allow the engine to `mount` external directories, detect existing ROMs, and `sanctify` paths by creating a local Hypercore metadata index (`.mesh-hub`). 
+**Context**: Implement the "Cellular Library" logic. Allow the engine to `mount` external directories, detect existing ROMs, and `sanctify` paths by creating a local Hypercore metadata index (`.mesh-hub`).
 
 ---
 
-## **[04] Curation Milestone 1: The Bootstrap (DAT & Metadata)**
-**Status**: NEXT 🚀
-**Context**: Moving from "Indexing" to "Curating". Implement the initial bootstrap flow that fetches No-Intro DATs from GitHub and populates a local "Truth Table" (SQLite) for verification.
+## **[04] Curation Bootstrap (DAT & Hyperbee)**
+**Status**: Completed ✓ (PR #3 merged 2026-03-14)
+**Context**: Bootstrap flow that fetches No-Intro DATs from Libretro GitHub, parses CLRMamePro format, and populates a local Hyperbee-backed wishlist. CLI commands: `systems`, `init --seed=<id>`, `search <query>`, `search --system=<id>`.
 
-### **Next Prompt for Implementation Agent:**
-> /opsx-propose "Implement Curation Milestone 1: The Bootstrap (`milestone-04`)
-> 
-> **Objective**: Enable the CLI to fetch system DATs and initialize the local 'Wishlist' database.
-> 
-> **Requirements**:
-> 1. **DAT Fetcher**: Implement `mesh init --seed <system>` (default: nes). 
->    - Fetch raw DAT from `libretro-database` GitHub mirror.
-> 2. **DAT Parser**: Implement a CLRMamePro parser (using regex or `datfile` lib) to extract Title/SHA1/CRC.
-> 3. **SQLite Metadata Store**: Store DAT entries in a local SQLite DB (`~/.mesh-arkade/dats.db`).
-> 4. **CLI Search**: Implement `mesh search <query>` to look up entries in the local Wishlist.
-> 5. **Sandbox Test**: Verify this works at `E:\mesh_arkade_dev` by initializing an NES wish-list."
+---
+
+## **[04a] Refactor Phase 1: Extract CLI Layer**
+**Status**: NEXT 🚀
+**Context**: `index.js` is a 789-line God File handling CLI parsing, command dispatch, REPL, GUI boot, help rendering, first-run wizard, and output formatting — with zero tests. This is the highest-risk, hardest-to-maintain file in the project. Extracting the CLI layer enables independent command testing and clean boundaries for milestone-05's new `fetch` command.
+
+### **Scope:**
+```
+index.js (789 → ~100 lines: boot logic + REPL only)
+
+src/cli/
+  commands/mount.ts      ← from handleMount()
+  commands/unmount.ts    ← from handleUnmount()
+  commands/search.ts     ← from handleSearch()
+  commands/systems.ts    ← from handleSystems()
+  commands/init.ts       ← from handleInit()
+  commands/reset.ts      ← from handleReset()
+  commands/status.ts     ← from showStatus()
+  formatter.ts           ← JSON vs human-readable output logic
+  wizard.ts              ← first-run wizard
+  parser.ts              ← arg parsing (parseArgs)
+```
+
+### **Principles:**
+- Each command is a single file with a single exported handler function
+- Formatter abstracts JSON vs human output — commands don't know about `--json`
+- `index.js` becomes a thin shell: detect environment → boot → REPL loop → dispatch to `src/cli/commands/`
+- Use `environment.ts` instead of inline detection in `index.js`
+- Every extracted command gets its own test file
+
+### **Deferred bug fixes to include:**
+- Hub `stop()` should close Hyperbee/Corestore on shutdown
+- `getSystemDefinition` loose `.includes()` matching (`nes` matches `snes`)
+- Remove dead `askQuestion` function
+- Wire up or remove unused `drawProgressBar`
+
+---
+
+## **[04b] Refactor Phase 2: Centralize Runtime Utilities**
+**Status**: Backlog (follows 04a)
+**Context**: Three core modules (`database.ts`, `curator.ts`, `storage.ts`) duplicate identical Bare/Node conditional import logic for `fs`, `path`, and `os`. Storage path resolution is duplicated between `hub.ts` and `storage.ts`. This violates DRY and makes runtime changes error-prone.
+
+### **Scope:**
+```
+src/core/runtime.ts    ← unified Bare/Node module loader (fs, path, os, fetch)
+src/core/paths.ts      ← single source of truth for storage path resolution
+```
+
+### **Principles:**
+- `runtime.ts` exports lazy-initialized `getFs()`, `getPath()`, `getOs()`, `getFetch()`
+- Each returns the Bare or Node version depending on runtime — called once, cached
+- `paths.ts` owns all `Pear.app.storage` resolution — `hub.ts` and `storage.ts` call it instead of duplicating
+- Remove all inline `if (typeof Bare !== "undefined")` import blocks from consumer modules
+- Extract DAT parsing from `curation.ts` into `src/core/dat-parser.ts` (~90 lines)
+- Standardize on factory pattern across all modules (align curator.ts and curation.ts with hub.ts singleton)
 
 ---
 
 ## **[05] Curation Milestone 2: The Multi-Layer Recovery (P2P Fetch)**
-**Status**: Backlog
+**Status**: Backlog (after 04a/04b refactor)
 **Context**: Implementing the Triple-Layer Discovery (Pear Swarm -> Torrent -> IPFS) to allow "From Zero" library creation.
 
 ### **Proposed Implementation Prompt:**

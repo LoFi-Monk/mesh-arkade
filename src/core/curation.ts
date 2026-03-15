@@ -226,14 +226,13 @@ export async function syncSystemsToDatabase(): Promise<SystemDefinition[]> {
 
 function getSystemDefinition(systemId: string): SystemDefinition | undefined {
   const cached = getCachedSystems();
-  if (cached) {
-    return cached.find(
-      (s) =>
-        s.id === systemId.toLowerCase() ||
-        s.title.toLowerCase().includes(systemId.toLowerCase()),
-    );
+  if (!cached) {
+    return undefined;
   }
-  return undefined;
+
+  const normalizedId = normalizeSystemName(systemId);
+
+  return cached.find((s) => s.id === normalizedId);
 }
 
 /**
