@@ -39,3 +39,4 @@ coverage_report*.txt
 !README.md
 !AGENTS.md
 !GEMINI.md
+.mcp.json
