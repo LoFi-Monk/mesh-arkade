@@ -1,0 +1,15 @@
+{
+  "id": "bittorrent-wire-protocol",
+  "category": "P2P",
+  "title": "BitTorrent Wire Protocol Implementation",
+  "description": "Implement the full BitTorrent wire protocol layer to replace the current stub in src/fetch/layers/bittorrent.ts. Enables DHT-based ROM fetching using SHA1 as the info hash for true decentralized retrieval. Completes Milestone 06.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.395Z",
+  "updatedAt": "2026-03-16T18:04:33.395Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "peer-count-display",
+  "category": "CLI",
+  "title": "Live Peer Count in Status Command",
+  "description": "Extend the status command to display the current number of active Hyperswarm peers, queued fetch jobs, and seeded topics. Gives operators a real-time health view of the node's P2P connectivity.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "fetch-telemetry"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.425Z",
+  "updatedAt": "2026-03-16T18:04:33.425Z",
+  "model": "claude-opus-4-6"
+}

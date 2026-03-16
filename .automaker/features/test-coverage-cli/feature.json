@@ -1,0 +1,17 @@
+{
+  "id": "test-coverage-cli",
+  "category": "Testing",
+  "title": "CLI Command Handler Test Suite",
+  "description": "Add unit tests for each CLI command handler (mount, unmount, fetch, verify, search, init, systems, config) using a mocked CoreHub. Tests cover both human-readable and --json output modes.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "structured-error-codes"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.478Z",
+  "updatedAt": "2026-03-16T18:04:33.478Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "bare-net-fetch-fallback",
+  "category": "Core",
+  "title": "Bare-Net Fallback for bare-fetch",
+  "description": "Implement a bare-net TCP-level HTTP client fallback for environments where bare-fetch is unavailable, maintaining Bare runtime compatibility for all outbound HTTP requests. Abstracts the transport layer behind the existing fetch interface.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.503Z",
+  "updatedAt": "2026-03-16T18:04:33.503Z",
+  "model": "claude-opus-4-6"
+}

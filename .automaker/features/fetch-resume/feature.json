@@ -1,0 +1,17 @@
+{
+  "id": "fetch-resume",
+  "category": "P2P",
+  "title": "Resumable Downloads",
+  "description": "Track partially downloaded ROM files in a Hyperbee sidecar namespace and resume interrupted fetches at the byte or piece boundary. Prevents re-downloading large ROM files after network interruptions.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "bittorrent-wire-protocol"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.400Z",
+  "updatedAt": "2026-03-16T18:04:33.400Z",
+  "model": "claude-opus-4-6"
+}

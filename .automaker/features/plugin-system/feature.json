@@ -1,0 +1,17 @@
+{
+  "id": "plugin-system",
+  "category": "Core",
+  "title": "Plugin Architecture for Fetch Layers",
+  "description": "Define a FetchLayer interface and a plugin registry so custom fetch backends (e.g., a private Hyperswarm archive, an alternative IPFS pinning service) can be loaded at runtime without modifying core code. Follows the open/closed principle.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "structured-error-codes"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.438Z",
+  "updatedAt": "2026-03-16T18:04:33.438Z",
+  "model": "claude-opus-4-6"
+}

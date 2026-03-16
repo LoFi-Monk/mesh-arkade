@@ -1,0 +1,18 @@
+{
+  "id": "archive-manifest",
+  "category": "Core",
+  "title": "Archive Manifest Generation",
+  "description": "Generate a signed manifest file listing all verified ROMs in the library with their SHA1, CRC32, system, title, and mount path. The manifest itself is hashed and can be published to Hyperswarm for trust establishment.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "rom-verification-command",
+    "bare-crypto-sha1-streaming"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.458Z",
+  "updatedAt": "2026-03-16T18:04:33.458Z",
+  "model": "claude-opus-4-6"
+}

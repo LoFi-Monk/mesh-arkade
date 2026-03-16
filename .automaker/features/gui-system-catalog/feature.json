@@ -1,0 +1,17 @@
+{
+  "id": "gui-system-catalog",
+  "category": "UI",
+  "title": "GUI System Catalog Grid",
+  "description": "Grid view of all seeded game systems with cover art placeholder, game count, completion percentage, and a seed/reseed button per system. Provides a museum-style catalog overview in the GUI.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "gui-library-browser"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.448Z",
+  "updatedAt": "2026-03-16T18:04:33.448Z",
+  "model": "claude-opus-4-6"
+}

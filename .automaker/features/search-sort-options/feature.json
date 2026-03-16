@@ -1,0 +1,17 @@
+{
+  "id": "search-sort-options",
+  "category": "CLI",
+  "title": "Search Sort Options",
+  "description": "Add --sort flag to the search command supporting sort by title, region, SHA1, and system. Enables consistent result ordering for both human navigation and deterministic agent pipelines.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [
+    "search-pagination"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.466Z",
+  "updatedAt": "2026-03-16T18:04:33.466Z",
+  "model": "claude-opus-4-6"
+}

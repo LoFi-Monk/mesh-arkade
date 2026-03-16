@@ -1,0 +1,17 @@
+{
+  "id": "multi-mount-resolution",
+  "category": "Core",
+  "title": "Multi-Mount ROM Resolution",
+  "description": "When a ROM exists across multiple mounted directories, resolve conflicts by preferring the mount flagged as 'primary' or the one with the highest trust score. Prevents ambiguity during verification and fetch.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "rom-verification-command"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.491Z",
+  "updatedAt": "2026-03-16T18:04:33.491Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "completion-scripts",
+  "category": "CLI",
+  "title": "Shell Completion Scripts",
+  "description": "Generate tab-completion scripts for bash, zsh, and fish shells that complete command names, flags, and system IDs from the live Hyperbee catalog. Improves developer experience for human CLI users.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.430Z",
+  "updatedAt": "2026-03-16T18:04:33.430Z",
+  "model": "claude-opus-4-6"
+}

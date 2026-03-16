@@ -1,0 +1,17 @@
+{
+  "id": "nfo-sidecar-generation",
+  "category": "Core",
+  "title": "NFO Sidecar File Generation",
+  "description": "Generate .nfo sidecar files alongside fetched ROMs containing provenance metadata: source DAT, fetch timestamp, verified SHA1, system ID, and region. Preserves archival context with the file itself.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [
+    "rom-verification-command"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.434Z",
+  "updatedAt": "2026-03-16T18:04:33.434Z",
+  "model": "claude-opus-4-6"
+}

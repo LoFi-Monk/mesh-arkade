@@ -1,0 +1,15 @@
+{
+  "id": "progress-bar-bare",
+  "category": "CLI",
+  "title": "Bare-Compatible Progress Bar",
+  "description": "Implement an inline ANSI progress bar renderer compatible with the Bare runtime (no Node.js readline assumptions) for use in fetch, verify, and seed operations. Replaces ad-hoc percentage logging.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.471Z",
+  "updatedAt": "2026-03-16T18:04:33.471Z",
+  "model": "claude-opus-4-6"
+}

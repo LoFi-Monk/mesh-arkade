@@ -1,0 +1,15 @@
+{
+  "id": "system-alias-extension",
+  "category": "Curation",
+  "title": "User-Defined System Aliases",
+  "description": "Allow users to define custom system aliases in a config file (e.g., 'megadrive' → 'Sega - Mega Drive - Genesis') that extend the built-in alias map. Persisted in the Hyperbee config namespace.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.419Z",
+  "updatedAt": "2026-03-16T18:04:33.419Z",
+  "model": "claude-opus-4-6"
+}

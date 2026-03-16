@@ -1,0 +1,15 @@
+{
+  "id": "test-coverage-core",
+  "category": "Testing",
+  "title": "Core Module Test Suite Expansion",
+  "description": "Bring src/core/* test coverage up to 80% thresholds across all branches by adding unit tests for database.ts reset edge cases, hub.ts lifecycle, and storage.ts mutex contention scenarios. Uses Vitest with mocked Hyperbee instances.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.476Z",
+  "updatedAt": "2026-03-16T18:04:33.476Z",
+  "model": "claude-opus-4-6"
+}

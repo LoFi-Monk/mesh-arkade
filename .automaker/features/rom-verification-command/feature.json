@@ -1,0 +1,17 @@
+{
+  "id": "rom-verification-command",
+  "category": "CLI",
+  "title": "ROM Verification Command (verify)",
+  "description": "CLI command that scans all mounted ROM files, computes their SHA1 hashes, and cross-references them against the seeded Hyperbee wishlist to report good dumps, bad dumps, and unknowns. Outputs a structured verification report in both human and JSON modes.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "dat-hash-verification"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.403Z",
+  "updatedAt": "2026-03-16T18:04:33.403Z",
+  "model": "claude-opus-4-6"
+}

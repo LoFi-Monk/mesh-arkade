@@ -1,0 +1,15 @@
+{
+  "id": "mount-watch",
+  "category": "Core",
+  "title": "Live Mount Watcher",
+  "description": "Watch mounted directories for new files using bare-fs events and automatically scan and record newly added ROMs without requiring a manual re-mount. Updates the Hyperbee mount record incrementally.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.413Z",
+  "updatedAt": "2026-03-16T18:04:33.413Z",
+  "model": "claude-opus-4-6"
+}

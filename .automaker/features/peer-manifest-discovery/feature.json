@@ -1,0 +1,17 @@
+{
+  "id": "peer-manifest-discovery",
+  "category": "P2P",
+  "title": "Peer Manifest Discovery & Trust Scoring",
+  "description": "Subscribe to the manifest topic on Hyperswarm to discover peer manifests and compute a trust score based on SHA1 verification overlap with local wishlist. Enables automated vetting of P2P sources.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "manifest-publish"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.460Z",
+  "updatedAt": "2026-03-16T18:04:33.460Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "release-automation",
+  "category": "DevOps",
+  "title": "Pear Release Automation",
+  "description": "Add a GitHub Actions workflow triggered on version tags that runs `pear release` to publish the app to the Pear distribution network. Includes changelog generation from conventional commits.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "ci-pipeline"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.481Z",
+  "updatedAt": "2026-03-16T18:04:33.481Z",
+  "model": "claude-opus-4-6"
+}

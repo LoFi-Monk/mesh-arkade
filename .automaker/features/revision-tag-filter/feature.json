@@ -1,0 +1,17 @@
+{
+  "id": "revision-tag-filter",
+  "category": "Curation",
+  "title": "Revision & Version Tag Filtering",
+  "description": "Parse No-Intro revision tags (Rev A, Rev B, v1.1) and prototype/beta/demo tags from DAT titles and expose them as filterable fields in search and verify commands. Enables archivists to target specific canonical releases.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "no-intro-region-filter"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.418Z",
+  "updatedAt": "2026-03-16T18:04:33.418Z",
+  "model": "claude-opus-4-6"
+}

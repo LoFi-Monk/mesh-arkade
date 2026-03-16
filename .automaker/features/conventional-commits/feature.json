@@ -1,0 +1,15 @@
+{
+  "id": "conventional-commits",
+  "category": "DevOps",
+  "title": "Conventional Commits Enforcement",
+  "description": "Add commitlint with the conventional commits preset to the Husky pre-commit hooks. Enforces structured commit messages (feat, fix, chore, etc.) required for automated changelog generation.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.482Z",
+  "updatedAt": "2026-03-16T18:04:33.482Z",
+  "model": "claude-opus-4-6"
+}

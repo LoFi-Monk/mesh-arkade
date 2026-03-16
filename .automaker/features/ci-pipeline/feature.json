@@ -1,0 +1,17 @@
+{
+  "id": "ci-pipeline",
+  "category": "DevOps",
+  "title": "GitHub Actions CI Pipeline",
+  "description": "Add a GitHub Actions workflow that runs lint, type-check, unit tests, and integration tests on every PR. Publishes coverage reports and fails the pipeline if thresholds drop below 80%.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "integration-test-harness"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.480Z",
+  "updatedAt": "2026-03-16T18:04:33.480Z",
+  "model": "claude-opus-4-6"
+}

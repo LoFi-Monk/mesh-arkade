@@ -1,0 +1,15 @@
+{
+  "id": "ascii-art-themes",
+  "category": "CLI",
+  "title": "Additional ASCII Art Splash Themes",
+  "description": "Provide multiple ASCII art splash screens selectable at startup (classic CRT, demoscene, minimal) and rotate them based on the branding tagline system. Enhances the retro terminal identity.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.472Z",
+  "updatedAt": "2026-03-16T18:04:33.472Z",
+  "model": "claude-opus-4-6"
+}

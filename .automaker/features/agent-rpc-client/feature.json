@@ -1,0 +1,17 @@
+{
+  "id": "agent-rpc-client",
+  "category": "CLI",
+  "title": "RPC Client Mode (--rpc flag)",
+  "description": "Add a --rpc flag to the CLI that routes all commands through the local socket server instead of bootstrapping a full CoreHub instance. Reduces startup latency for agent workloads that issue many sequential commands.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "agent-rpc-server"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.428Z",
+  "updatedAt": "2026-03-16T18:04:33.428Z",
+  "model": "claude-opus-4-6"
+}

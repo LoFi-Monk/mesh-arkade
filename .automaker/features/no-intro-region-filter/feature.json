@@ -1,0 +1,15 @@
+{
+  "id": "no-intro-region-filter",
+  "category": "Curation",
+  "title": "Region-Aware Wishlist Filtering",
+  "description": "Extend wishlist seeding and search to support region-based filtering (USA, Europe, Japan, World) using the already-implemented region extraction from No-Intro naming conventions. Allows collectors to target specific regional releases.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.417Z",
+  "updatedAt": "2026-03-16T18:04:33.417Z",
+  "model": "claude-opus-4-6"
+}

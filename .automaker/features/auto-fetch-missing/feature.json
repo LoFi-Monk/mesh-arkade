@@ -1,0 +1,18 @@
+{
+  "id": "auto-fetch-missing",
+  "category": "Core",
+  "title": "Auto-Fetch Missing ROMs After Verification",
+  "description": "After running the verify command, offer to automatically enqueue all missing-but-known ROMs (present in wishlist but absent locally) into the fetch queue. Closes the discovery-to-acquisition loop.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "rom-verification-command",
+    "fetch-queue"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.412Z",
+  "updatedAt": "2026-03-16T18:04:33.412Z",
+  "model": "claude-opus-4-6"
+}

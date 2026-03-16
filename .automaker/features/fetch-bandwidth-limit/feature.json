@@ -1,0 +1,18 @@
+{
+  "id": "fetch-bandwidth-limit",
+  "category": "Core",
+  "title": "Fetch Bandwidth Throttling",
+  "description": "Add configurable bandwidth limits (bytes/sec) to fetch operations via the config command. Implements a token-bucket rate limiter in the FetchManager compatible with the Bare runtime.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "config-command",
+    "fetch-queue"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.493Z",
+  "updatedAt": "2026-03-16T18:04:33.493Z",
+  "model": "claude-opus-4-6"
+}

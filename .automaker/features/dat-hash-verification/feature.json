@@ -1,0 +1,15 @@
+{
+  "id": "dat-hash-verification",
+  "category": "Curation",
+  "title": "DAT Source Hash Verification",
+  "description": "Complete task 12.4 by populating expectedHash values in src/fetch/trust.ts and wiring SHA1 verification for all fetched DAT files. Ensures the local catalog is seeded only from cryptographically verified authoritative sources.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.402Z",
+  "updatedAt": "2026-03-16T18:04:33.402Z",
+  "model": "claude-opus-4-6"
+}

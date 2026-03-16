@@ -1,0 +1,17 @@
+{
+  "id": "hyperswarm-relay",
+  "category": "P2P",
+  "title": "Hyperswarm Relay Mode for Firewalled Nodes",
+  "description": "Implement relay/proxy support using the Hyperswarm DHT's built-in holepunching and relay capabilities to allow nodes behind strict NAT or firewalls to participate in the P2P network.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "hyperswarm-seeding"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.495Z",
+  "updatedAt": "2026-03-16T18:04:33.495Z",
+  "model": "claude-opus-4-6"
+}

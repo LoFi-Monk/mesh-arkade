@@ -1,0 +1,18 @@
+{
+  "id": "gui-peer-network-view",
+  "category": "UI",
+  "title": "GUI Peer Network Visualizer",
+  "description": "Real-time visualization of active Hyperswarm peers, their advertised topics, and connection quality in the Pear Electron GUI. Uses an animated retro-themed graph to reflect the P2P nature of the platform.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "complex",
+  "dependencies": [
+    "peer-count-display",
+    "gui-fetch-progress"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.449Z",
+  "updatedAt": "2026-03-16T18:04:33.449Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "goodtools-dat-support",
+  "category": "Curation",
+  "title": "GoodTools DAT Format Support",
+  "description": "Extend the DAT parser to handle GoodTools naming conventions and DAT format quirks (overdumps, hacks, translations). Allows archivists using older GoodTools sets to seed and verify their collections.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "import-dat-file-command"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.444Z",
+  "updatedAt": "2026-03-16T18:04:33.444Z",
+  "model": "claude-opus-4-6"
+}

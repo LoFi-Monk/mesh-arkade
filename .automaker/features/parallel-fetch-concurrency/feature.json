@@ -1,0 +1,17 @@
+{
+  "id": "parallel-fetch-concurrency",
+  "category": "Core",
+  "title": "Parallel Fetch Concurrency Control",
+  "description": "Allow the fetch queue to process multiple jobs concurrently up to a configurable limit. Uses a semaphore pattern compatible with both Bare and Node.js to avoid overwhelming the P2P network.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "fetch-bandwidth-limit"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.494Z",
+  "updatedAt": "2026-03-16T18:04:33.494Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "multi-system-init",
+  "category": "CLI",
+  "title": "Bulk System DAT Seeding",
+  "description": "Extend the init command to accept multiple system IDs or a --all flag to seed all available systems in one invocation. Batches DAT fetches with concurrency limiting and progress reporting per system.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.406Z",
+  "updatedAt": "2026-03-16T18:04:33.406Z",
+  "model": "claude-opus-4-6"
+}

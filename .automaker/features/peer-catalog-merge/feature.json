@@ -1,0 +1,17 @@
+{
+  "id": "peer-catalog-merge",
+  "category": "P2P",
+  "title": "Peer Catalog Merge & Conflict Resolution",
+  "description": "Merge incoming replicated wishlist entries with the local Hyperbee, deduplicating by SHA1 and resolving conflicts using a last-writer-wins strategy keyed on DAT source priority. Preserves museum-quality provenance metadata.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "hyperbee-replication"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.410Z",
+  "updatedAt": "2026-03-16T18:04:33.410Z",
+  "model": "claude-opus-4-6"
+}

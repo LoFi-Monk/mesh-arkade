@@ -1,0 +1,17 @@
+{
+  "id": "torrent-piece-assembly",
+  "category": "P2P",
+  "title": "Torrent Piece Assembly & Verification",
+  "description": "Implement piece-level download, SHA1 piece verification, and file assembly from multi-piece BitTorrent downloads. Ensures downloaded ROM files are intact and match expected checksums before staging.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [
+    "bittorrent-wire-protocol"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.398Z",
+  "updatedAt": "2026-03-16T18:04:33.398Z",
+  "model": "claude-opus-4-6"
+}
