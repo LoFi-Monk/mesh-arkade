@@ -229,6 +229,18 @@
         <location>scripts/devin-review.sh</location>
       </file_locations>
     </feature>
+    <feature>
+      <name>BitTorrent Wire Protocol Implementation</name>
+      <description>Implement the full BitTorrent wire protocol layer to replace the current stub in src/fetch/layers/bittorrent.ts. Enables DHT-based ROM fetching using SHA1 as the info hash for true decentralized retrieval. Completes Milestone 06.</description>
+    </feature>
+    <feature>
+      <name>Streaming SHA1 Hashing for Large Files</name>
+      <description>Implement a streaming SHA1 computation path in runtime.ts that hashes files in chunks rather than loading them fully into memory. Required for verifying large disc images (CHD, bin/cue) without OOM risk in the Bare runtime.</description>
+    </feature>
+    <feature>
+      <name>Core Module Test Suite Expansion</name>
+      <description>Bring src/core/* test coverage up to 80% thresholds across all branches by adding unit tests for database.ts reset edge cases, hub.ts lifecycle, and storage.ts mutex contention scenarios. Uses Vitest with mocked Hyperbee instances.</description>
+    </feature>
   </implemented_features>
 
   <additional_requirements>

@@ -7,9 +7,12 @@
   "priority": 1,
   "complexity": "complex",
   "dependencies": [],
-  "planningMode": "skip",
-  "requirePlanApproval": false,
+  "planningMode": "full",
+  "requirePlanApproval": true,
   "createdAt": "2026-03-16T18:04:33.395Z",
-  "updatedAt": "2026-03-16T18:04:33.395Z",
-  "model": "claude-opus-4-6"
+  "updatedAt": "2026-03-16T22:04:39.150Z",
+  "model": "opencode-big-pickle",
+  "descriptionHistory": [],
+  "thinkingLevel": "adaptive",
+  "summary": "## Summary: BitTorrent Wire Protocol Layer\n\n### Changes Implemented\n- Replaced the stub `fetchFromBittorrent` function with a full DHT-based peer discovery and TCP data transfer implementation\n- Two-phase architecture: DHT peer discovery → sequential TCP download attempts\n- Custom mesh-arkade wire format: client sends 20-byte SHA1, server responds with raw file bytes\n- Peer deduplication during DHT discovery phase\n- Sequential peer fallback — tries each discovered peer until one succeeds\n- Idle timeout handling that resets on each data chunk (matches Hyperswarm layer pattern)\n- Progress callback support reporting cumulative bytes received\n- Proper DHT and socket cleanup on both success and error paths\n- SHA1 input validation (must be exactly 20 bytes when decoded from hex)\n- Case normalization of SHA1 to lowercase\n- Added `removeAllListeners` to the DHT type declaration\n- Comprehensive test suite with 11 test cases covering: invalid SHA1, no peers found, successful download, progress callbacks, socket errors, connection timeouts, peer deduplication, peer failover, empty streams, SHA1 normalization, and DHT cleanup\n\n### Files Modified\n- `src/fetch/layers/bittorrent.ts` — Full implementation replacing the stub\n- `src/fetch/__tests__/layers/bittorrent.test.ts` — 11 comprehensive test cases\n- `src/types/hyperbee.d.ts` — Added `removeAllListeners` to DHT type declaration\n\n### Notes for Developer\n- The wire format is mesh-arkade-specific (not BEP 3) since we use the content SHA1 as info hash rather than the torrent metadata hash — only other mesh-arkade nodes will be discoverable\n- Discovery phase uses half the total timeout budget (min 50ms), remaining budget goes to TCP download\n- The `bittorrent-dht` dependency was already in package.json; no new dependencies added\n- TCP uses Node.js `net` module via dynamic import — Bare runtime will need `bare-net` shim (future work)\n- The seeding/announcing side (serving data to incoming peer requests) is not implemented — that's a separate concern from the fetch layer\n- All 289 tests pass, TypeScript compiles cleanly\n\n### Verification Status\n- Verified via 11 unit tests covering all code paths (vitest with mocked DHT and TCP sockets)\n- Full test suite: 31 files, 289 tests, all passing\n- TypeScript type checking passes with no errors\n- Playwright verification not applicable — this is a headless P2P networking layer with no browser/UI surface"
 }
