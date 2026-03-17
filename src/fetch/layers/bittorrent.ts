@@ -374,7 +374,6 @@ class UDPTransceiver {
         callback?: (err: Error | null) => void,
       ): void;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       on(event: string, callback: any): void;
       address(): { address: string; port: number };
       close(): void;
@@ -391,7 +390,6 @@ class UDPTransceiver {
         address: string,
         callback?: (err: Error | null) => void,
       ): void;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       on(event: string, callback: any): void;
       address(): { address: string; port: number };
