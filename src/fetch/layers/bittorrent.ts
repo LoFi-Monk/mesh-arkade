@@ -129,76 +129,89 @@ export function bencode(data: unknown): Uint8Array {
  * @guarantee Returns parsed JavaScript data or throws on malformed bencode.
  */
 export function bdecode(data: Uint8Array): unknown {
-  const text = new TextDecoder("latin1").decode(data);
   let position = 0;
 
+  function peek(): number {
+    return data[position];
+  }
+
+  function consume(): number {
+    return data[position++];
+  }
+
   function parse(): unknown {
-    if (position >= text.length) {
+    if (position >= data.length) {
       throw new Error("Unexpected end of input");
     }
 
-    const char = text[position];
+    const char = peek();
 
-    if (char >= "0" && char <= "9") {
+    if (char >= 0x30 && char <= 0x39) {
       return parseString();
     }
 
-    if (char === "i") {
+    if (char === 0x69) {
       return parseInt_();
     }
 
-    if (char === "l") {
+    if (char === 0x6c) {
       return parseList();
     }
 
-    if (char === "d") {
+    if (char === 0x64) {
       return parseDict();
     }
 
-    throw new Error(`Unexpected character: ${char}`);
+    throw new Error(`Unexpected character: ${String.fromCharCode(char)}`);
   }
 
   function parseString(): Uint8Array | string {
-    const colonIndex = text.indexOf(":", position);
-    if (colonIndex === -1) {
+    let numStart = position;
+    while (position < data.length && peek() >= 0x30 && peek() <= 0x39) {
+      position++;
+    }
+    if (position >= data.length || peek() !== 0x3a) {
       throw new Error("Invalid string format");
     }
-    const length = parseInt(text.substring(position, colonIndex), 10);
-    const start = colonIndex + 1;
+    const length = parseInt(
+      String.fromCharCode(...data.slice(numStart, position)),
+      10,
+    );
+    position++;
+    const start = position;
     const end = start + length;
-    const result = text.substring(start, end);
     position = end;
-    const hasHighBytes =
-      result.charCodeAt(0) >= 256 ||
-      Array.from(result).some((c) => c.charCodeAt(0) >= 0x80);
+    const hasHighBytes = data.slice(start, end).some((b) => b >= 0x80);
     if (hasHighBytes) {
-      const bytes = new Uint8Array(length);
-      for (let i = 0; i < length; i++) {
-        bytes[i] = result.charCodeAt(i) & 0xff;
-      }
-      return bytes;
+      return data.slice(start, end);
     }
-    return result;
+    return String.fromCharCode(...data.slice(start, end));
   }
 
   function parseInt_(): number {
-    position++;
-    const endIndex = text.indexOf("e", position);
-    if (endIndex === -1) {
+    consume();
+    const start = position;
+    while (position < data.length && peek() !== 0x65) {
+      position++;
+    }
+    if (position >= data.length) {
       throw new Error("Invalid integer format");
     }
-    const result = parseInt(text.substring(position, endIndex), 10);
-    position = endIndex + 1;
+    const result = parseInt(
+      String.fromCharCode(...data.slice(start, position)),
+      10,
+    );
+    position++;
     return result;
   }
 
   function parseList(): unknown[] {
-    position++;
+    consume();
     const result: unknown[] = [];
-    while (position < text.length && text[position] !== "e") {
+    while (position < data.length && peek() !== 0x65) {
       result.push(parse());
     }
-    if (position >= text.length) {
+    if (position >= data.length) {
       throw new Error("Unterminated list");
     }
     position++;
@@ -206,14 +219,14 @@ export function bdecode(data: Uint8Array): unknown {
   }
 
   function parseDict(): Record<string, unknown> {
-    position++;
+    consume();
     const result: Record<string, unknown> = {};
-    while (position < text.length && text[position] !== "e") {
+    while (position < data.length && peek() !== 0x65) {
       const key = parse() as string;
       const value = parse();
       result[key] = value;
     }
-    if (position >= text.length) {
+    if (position >= data.length) {
       throw new Error("Unterminated dict");
     }
     position++;
@@ -221,7 +234,7 @@ export function bdecode(data: Uint8Array): unknown {
   }
 
   const result = parse();
-  if (position !== text.length) {
+  if (position !== data.length) {
     throw new Error("Extra data after decoding");
   }
   return result;

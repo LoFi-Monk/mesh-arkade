@@ -160,14 +160,16 @@ describe("fetchFromBittorrent", () => {
 
     it("accepts valid 40-character hex SHA1", async () => {
       await expect(
-        fetchFromBittorrent("abc123def456789012345678901234567890abcd"),
+        fetchFromBittorrent("abc123def456789012345678901234567890abcd", {
+          timeout: 100,
+        }),
       ).rejects.toThrow();
     });
 
     it("accepts options parameter without error", async () => {
       await expect(
         fetchFromBittorrent("abc123def456789012345678901234567890abcd", {
-          timeout: 5000,
+          timeout: 100,
           onProgress: () => {},
         }),
       ).rejects.toThrow();
