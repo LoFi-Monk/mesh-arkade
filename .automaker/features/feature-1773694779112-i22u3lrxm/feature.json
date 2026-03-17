@@ -1,0 +1,19 @@
+{
+  "category": "Uncategorized",
+  "description": "Extract index.js command handlers into a proper CLI layer for separation of concerns",
+  "title": "Extract CLI Command Handlers",
+  "id": "feature-1773694779112-i22u3lrxm",
+  "createdAt": "2026-03-16T20:59:39.113Z",
+  "descriptionHistory": [
+    {
+      "description": "Extract index.js command handlers into a proper CLI layer for separation of concerns",
+      "timestamp": "2026-03-16T20:59:39.113Z",
+      "source": "initial"
+    }
+  ],
+  "status": "backlog",
+  "planningMode": "full",
+  "requirePlanApproval": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "adaptive"
+}

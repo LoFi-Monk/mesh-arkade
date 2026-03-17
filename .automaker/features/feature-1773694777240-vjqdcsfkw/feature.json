@@ -1,0 +1,19 @@
+{
+  "category": "Uncategorized",
+  "description": "getSystemDefinition uses .includes() which causes false matches (e.g. nes matches snes)",
+  "title": "Fix System Name Matching Bug",
+  "id": "feature-1773694777240-vjqdcsfkw",
+  "createdAt": "2026-03-16T20:59:37.241Z",
+  "descriptionHistory": [
+    {
+      "description": "getSystemDefinition uses .includes() which causes false matches (e.g. nes matches snes)",
+      "timestamp": "2026-03-16T20:59:37.241Z",
+      "source": "initial"
+    }
+  ],
+  "status": "backlog",
+  "planningMode": "full",
+  "requirePlanApproval": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "adaptive"
+}

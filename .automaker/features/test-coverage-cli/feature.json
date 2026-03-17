@@ -9,9 +9,11 @@
   "dependencies": [
     "structured-error-codes"
   ],
-  "planningMode": "skip",
-  "requirePlanApproval": false,
+  "planningMode": "full",
+  "requirePlanApproval": true,
   "createdAt": "2026-03-16T18:04:33.478Z",
   "updatedAt": "2026-03-16T18:04:33.478Z",
-  "model": "claude-opus-4-6"
+  "model": "opencode-big-pickle",
+  "descriptionHistory": [],
+  "thinkingLevel": "adaptive"
 }
