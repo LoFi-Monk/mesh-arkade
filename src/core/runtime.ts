@@ -79,15 +79,16 @@ export async function getFetch(): Promise<typeof fetch> {
 
 /**
  * Crypto module interface for dual-runtime (Bare/Node) abstraction.
- * Only the single-chain pattern createHash(algo).update(data).digest(encoding) is supported.
- * Multi-step update() chaining is not supported.
+ * The createHash(algo).update(data).digest(encoding) chain pattern and multi-step
+ * update() chaining (e.g. hash.update(a).update(b).digest(enc)) are both supported.
  */
+type HashObject = {
+  update: (data: Buffer | Uint8Array | string) => HashObject;
+  digest: (encoding: string) => string;
+};
+
 type CryptoModule = {
-  createHash: (algo: string) => {
-    update: (data: Buffer | Uint8Array | string) => {
-      digest: (encoding: string) => string;
-    };
-  };
+  createHash: (algo: string) => HashObject;
 };
 
 let cachedCrypto: CryptoModule | null = null;
@@ -96,6 +97,8 @@ let cryptoResolved = false;
 /**
  * @intent Returns a crypto module appropriate for the current runtime (bare-crypto in Bare, Node crypto otherwise).
  * @guarantee Result is cached after first resolution — subsequent calls return the same reference without re-importing.
+ * @constraint bare-crypto hash objects support repeated `.update()` calls per the WHATWG/Node hash spec —
+ *   each call accumulates data into the running digest state.
  */
 export async function getCrypto(): Promise<CryptoModule> {
   if (cryptoResolved && cachedCrypto) return cachedCrypto;
@@ -105,14 +108,14 @@ export async function getCrypto(): Promise<CryptoModule> {
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = bareCrypto.createHash(algo);
-        return {
+        const obj: HashObject = {
           update: (data: Buffer | Uint8Array | string) => {
             hash.update(data);
-            return {
-              digest: (encoding: string) => hash.digest(encoding),
-            };
+            return obj;
           },
+          digest: (encoding: string) => hash.digest(encoding),
         };
+        return obj;
       },
     };
   } else {
@@ -120,18 +123,88 @@ export async function getCrypto(): Promise<CryptoModule> {
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = nodeCrypto.createHash(algo);
-        return {
+        const obj: HashObject = {
           update: (data: Buffer | Uint8Array | string) => {
             hash.update(data);
-            return {
-              digest: (encoding: string) => hash.digest(encoding as "hex"),
-            };
+            return obj;
           },
+          digest: (encoding: string) => hash.digest(encoding as "hex"),
         };
+        return obj;
       },
     };
   }
 
   cryptoResolved = true;
-  return cachedCrypto;
+  return cachedCrypto as CryptoModule;
+}
+
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
+
+type FsLike = {
+  createReadStream?: (path: string, opts?: { highWaterMark?: number }) => NodeJS.ReadableStream;
+  // Accepts both promise-based (bare-fs) and callback-based (Node fs) readFile signatures.
+  // The implementation resolves the correct variant via fs.promises?.readFile ?? fs.readFile.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readFile?: (...args: any[]) => any;
+  promises?: { readFile: (path: string) => Promise<Buffer> };
+};
+
+async function createReadStreamChunked(
+  fs: FsLike,
+  filePath: string,
+  chunkSize: number,
+  hash: HashObject,
+): Promise<void> {
+  const createReadStream = fs.createReadStream;
+  if (typeof createReadStream === "function") {
+    return new Promise((resolve, reject) => {
+      const stream = createReadStream(filePath, {
+        highWaterMark: chunkSize,
+      });
+
+      stream.on("data", (chunk: Buffer) => {
+        hash.update(chunk);
+      });
+
+      stream.on("end", () => {
+        resolve();
+      });
+
+      stream.on("error", (err: Error) => {
+        reject(err);
+      });
+    });
+  }
+
+  const readFileFn = fs.promises?.readFile ?? fs.readFile;
+  if (!readFileFn) {
+    throw new Error("fs module exposes neither createReadStream nor readFile");
+  }
+  const buffer = await readFileFn(filePath);
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    hash.update(buffer.slice(i, i + chunkSize));
+  }
+}
+
+/**
+ * @intent Computes a streaming hash digest of a file without loading the entire file into memory.
+ * @guarantee Memory usage is bounded to a single chunk at a time when `createReadStream` is
+ *   available. The `readFile` fallback loads the full file into memory before chunking — used
+ *   when `createReadStream` is unavailable (e.g. bare-fs environments that lack streaming).
+ * @constraint getCrypto() and getFs() errors propagate to the caller — callers must handle
+ *   rejection for environments where either module is unavailable.
+ */
+export async function hashFileStreaming(
+  filePath: string,
+  algorithm: string = "sha1",
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+): Promise<string> {
+  const crypto = await getCrypto();
+  const fs = await getFs();
+
+  const hash = crypto.createHash(algorithm);
+  await createReadStreamChunked(fs, filePath, chunkSize, hash);
+
+  return hash.digest("hex");
 }
