@@ -5,6 +5,7 @@
  */
 
 import { FetchLayerError, FetchLayerTimeoutError } from "../errors.js";
+import { getCrypto } from "../../core/runtime.js";
 
 /**
  * @intent Configuration options for BitTorrent DHT fetch layer.
@@ -48,6 +49,20 @@ const DHTTransactionId = {
 function buf2hex(buffer: Uint8Array): string {
   return Array.from(buffer)
     .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * @intent Converts a transaction ID (string or Uint8Array) to a hex string for request tracking.
+ * @guarantee Handles both bdecode output types: strings (bytes < 0x80) and Uint8Array (bytes >= 0x80).
+ * @constraint Returns consistent hex regardless of whether bdecode returned string or Uint8Array.
+ */
+function transactionIdToHex(t: Uint8Array | string): string {
+  if (t instanceof Uint8Array) {
+    return buf2hex(t);
+  }
+  return Array.from(t)
+    .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
     .join("");
 }
 
@@ -269,7 +284,7 @@ interface DHTNode {
 }
 
 interface DHTMessage {
-  t: Uint8Array;
+  t: Uint8Array | string;
   y: string;
   q?: string;
   r?: Record<string, unknown>;
@@ -291,40 +306,41 @@ function createGetPeersQuery(
   });
 }
 
+/**
+ * @intent Parses compact peer info from DHT responses into host:port pairs.
+ * @guarantee Returns valid peer array; silently skips entries shorter than 6 bytes.
+ * @constraint Handles string, Uint8Array, and array-of-either formats from bdecode.
+ */
 function parsePeers(peers: unknown): Array<{ host: string; port: number }> {
   const result: Array<{ host: string; port: number }> = [];
 
-  if (typeof peers === "string") {
+  if (peers instanceof Uint8Array) {
+    for (let i = 0; i < peers.length; i += 6) {
+      if (i + 6 <= peers.length) {
+        const ip = `${peers[i]}.${peers[i + 1]}.${peers[i + 2]}.${peers[i + 3]}`;
+        const port = (peers[i + 4] << 8) | peers[i + 5];
+        result.push({ host: ip, port });
+      }
+    }
+  } else if (typeof peers === "string") {
     for (let i = 0; i < peers.length; i += 6) {
       if (i + 6 <= peers.length) {
         const s = peers.substring(i, i + 6);
-        const peerBytes = [
-          s.charCodeAt(0),
-          s.charCodeAt(1),
-          s.charCodeAt(2),
-          s.charCodeAt(3),
-          s.charCodeAt(4),
-          s.charCodeAt(5),
-        ];
-        const ip = `${peerBytes[0]}.${peerBytes[1]}.${peerBytes[2]}.${peerBytes[3]}`;
-        const port = (peerBytes[4] << 8) | peerBytes[5];
+        const ip = `${s.charCodeAt(0)}.${s.charCodeAt(1)}.${s.charCodeAt(2)}.${s.charCodeAt(3)}`;
+        const port = (s.charCodeAt(4) << 8) | s.charCodeAt(5);
         result.push({ host: ip, port });
       }
     }
   } else if (Array.isArray(peers)) {
     for (const peer of peers) {
-      if (typeof peer === "string" && peer.length >= 6) {
+      if (peer instanceof Uint8Array && peer.length >= 6) {
+        const ip = `${peer[0]}.${peer[1]}.${peer[2]}.${peer[3]}`;
+        const port = (peer[4] << 8) | peer[5];
+        result.push({ host: ip, port });
+      } else if (typeof peer === "string" && peer.length >= 6) {
         const s = peer.substring(0, 6);
-        const peerBytes = [
-          s.charCodeAt(0),
-          s.charCodeAt(1),
-          s.charCodeAt(2),
-          s.charCodeAt(3),
-          s.charCodeAt(4),
-          s.charCodeAt(5),
-        ];
-        const ip = `${peerBytes[0]}.${peerBytes[1]}.${peerBytes[2]}.${peerBytes[3]}`;
-        const port = (peerBytes[4] << 8) | peerBytes[5];
+        const ip = `${s.charCodeAt(0)}.${s.charCodeAt(1)}.${s.charCodeAt(2)}.${s.charCodeAt(3)}`;
+        const port = (s.charCodeAt(4) << 8) | s.charCodeAt(5);
         result.push({ host: ip, port });
       }
     }
@@ -333,7 +349,19 @@ function parsePeers(peers: unknown): Array<{ host: string; port: number }> {
   return result;
 }
 
-function parseNodes(nodes: string): DHTNode[] {
+/**
+ * @intent Parses DHT compact node info from either string or Uint8Array format.
+ * @guarantee Returns valid DHTNode array; silently skips malformed entries shorter than 26 bytes.
+ * @constraint Input must be compact node format: 20-byte node ID + 4-byte IP + 2-byte port per entry.
+ */
+function parseNodes(nodes: string | Uint8Array): DHTNode[] {
+  if (nodes instanceof Uint8Array) {
+    return parseNodesFromBytes(nodes);
+  }
+  return parseNodesFromString(nodes);
+}
+
+function parseNodesFromString(nodes: string): DHTNode[] {
   const result: DHTNode[] = [];
   for (let i = 0; i < nodes.length; i += 26) {
     if (i + 26 <= nodes.length) {
@@ -342,20 +370,38 @@ function parseNodes(nodes: string): DHTNode[] {
       for (let j = 0; j < 20; j++) {
         nodeId[j] = s.charCodeAt(j);
       }
-      const peerBytes = [
-        s.charCodeAt(20),
-        s.charCodeAt(21),
-        s.charCodeAt(22),
-        s.charCodeAt(23),
-        s.charCodeAt(24),
-        s.charCodeAt(25),
-      ];
-      const address = `${peerBytes[0]}.${peerBytes[1]}.${peerBytes[2]}.${peerBytes[3]}`;
-      const port = (peerBytes[4] << 8) | peerBytes[5];
+      const address = `${s.charCodeAt(20)}.${s.charCodeAt(21)}.${s.charCodeAt(22)}.${s.charCodeAt(23)}`;
+      const port = (s.charCodeAt(24) << 8) | s.charCodeAt(25);
       result.push({ id: nodeId, address, port });
     }
   }
   return result;
+}
+
+function parseNodesFromBytes(nodes: Uint8Array): DHTNode[] {
+  const result: DHTNode[] = [];
+  for (let i = 0; i < nodes.length; i += 26) {
+    if (i + 26 <= nodes.length) {
+      const nodeId = nodes.slice(i, i + 20);
+      const address = `${nodes[i + 20]}.${nodes[i + 21]}.${nodes[i + 22]}.${nodes[i + 23]}`;
+      const port = (nodes[i + 24] << 8) | nodes[i + 25];
+      result.push({ id: nodeId, address, port });
+    }
+  }
+  return result;
+}
+
+/**
+ * @intent Verifies that fetched data matches the expected SHA1 hash.
+ * @guarantee Returns true only if the SHA1 of data matches expectedHex (case-insensitive).
+ * @constraint Uses getCrypto() for Bare-compatible hashing.
+ */
+async function verifySha1(data: Uint8Array, expectedHex: string): Promise<boolean> {
+  const crypto = await getCrypto();
+  const hash = crypto.createHash("sha1");
+  hash.update(data);
+  const actual = hash.digest("hex").toLowerCase();
+  return actual === expectedHex.toLowerCase();
 }
 
 async function getDgram(): Promise<unknown> {
@@ -471,7 +517,7 @@ class UDPTransceiver {
     }
 
     const msg = parsed as DHTMessage;
-    const t = buf2hex(msg.t);
+    const t = transactionIdToHex(msg.t);
 
     const pending = this.pendingRequests.get(t);
     if (pending) {
@@ -596,11 +642,10 @@ class DHTClient {
 
     while (iterations < maxIterations && closestNodes.length > 0) {
       const closest = closestNodes.slice(0, 3);
-      closestNodes = [];
 
       const queries = closest.map(async (node) => {
         if (contactedNodes.has(`${node.address}:${node.port}`)) {
-          return null;
+          return { nodes: [] as DHTNode[], peers: [] as Array<{ host: string; port: number }> };
         }
         contactedNodes.add(`${node.address}:${node.port}`);
 
@@ -611,19 +656,25 @@ class DHTClient {
             node.port,
           );
           if (response) {
-            const nodes = this.extractNodes(response);
-            closestNodes.push(...nodes);
-
+            const discoveredNodes = this.extractNodes(response);
             const peerList = this.extractPeers(response);
-            peers.push(...peerList);
+            return { nodes: discoveredNodes, peers: peerList };
           }
         } catch {
           // Node failed, continue
         }
-        return null;
+        return { nodes: [] as DHTNode[], peers: [] as Array<{ host: string; port: number }> };
       });
 
-      await Promise.all(queries);
+      const results = await Promise.all(queries);
+
+      let newNodes: DHTNode[] = [];
+      for (const result of results) {
+        newNodes.push(...result.nodes);
+        peers.push(...result.peers);
+      }
+
+      closestNodes = this.mergeClosestNodes([], newNodes, this.infoHash);
       iterations++;
     }
 
@@ -660,7 +711,7 @@ class DHTClient {
 
   private extractNodes(response: Record<string, unknown>): DHTNode[] {
     const nodes = response.nodes;
-    if (typeof nodes === "string") {
+    if (typeof nodes === "string" || nodes instanceof Uint8Array) {
       return parseNodes(nodes);
     }
     return [];
@@ -732,10 +783,28 @@ async function fetchFromPeer(
     socket.connect(peer.port, peer.host, () => {
       clearTimeout(timeoutId);
 
-      const requestBuffer = new Uint8Array(20);
-      requestBuffer.set(infoHash, 0);
+      // Set a new timeout for data reception — prevents indefinite hang
+      // when a peer accepts the connection but never sends data.
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new FetchLayerTimeoutError("bittorrent", timeout));
+      }, timeout);
 
-      socket.write(requestBuffer);
+      const pstrlen = 19;
+      const pstr = "BitTorrent protocol";
+      const reserved = new Uint8Array(8);
+      const peerId = randomNodeId();
+
+      const handshake = new Uint8Array(1 + pstrlen + 8 + 20 + 20);
+      handshake[0] = pstrlen;
+      for (let i = 0; i < pstrlen; i++) {
+        handshake[1 + i] = pstr.charCodeAt(i);
+      }
+      handshake.set(reserved, 1 + pstrlen);
+      handshake.set(infoHash, 1 + pstrlen + 8);
+      handshake.set(peerId, 1 + pstrlen + 8 + 20);
+
+      socket.write(handshake);
     });
 
     const chunks: Uint8Array[] = [];
@@ -822,6 +891,16 @@ export async function fetchFromBittorrent(
           timeout,
           options.onProgress,
         );
+
+        const hashValid = await verifySha1(data, sha1);
+        if (!hashValid) {
+          lastError = new FetchLayerError(
+            "bittorrent",
+            `SHA1 mismatch: peer ${peer.host}:${peer.port} returned data that does not match expected hash`,
+          );
+          continue;
+        }
+
         return data;
       } catch (err) {
         lastError = err as Error;
@@ -844,6 +923,8 @@ export {
   xorDistance,
   buf2hex,
   hex2buf,
+  transactionIdToHex,
+  verifySha1,
   randomNodeId,
   createGetPeersQuery,
   DHTClient,

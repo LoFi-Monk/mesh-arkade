@@ -28,8 +28,8 @@ if (originalRequire) {
   const originalAddon = (originalRequire as any).addon;
   Object.defineProperty(originalRequire, "addon", {
     get: () => originalAddon,
-    set: (val) => {
-      console.log("Setting require.addon:", val);
+    set: () => {
+      // Silently absorb require.addon assignment from Bare runtime shims
     },
     configurable: true,
   });

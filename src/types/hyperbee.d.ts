@@ -125,29 +125,6 @@ declare module "hyperswarm" {
   export default Hyperswarm;
 }
 
-declare module "bittorrent-dht" {
-  class DHT {
-    constructor(options?: {
-      nodeId?: string | Buffer;
-      bootstrap?: string[];
-      host?: string | false;
-      concurrency?: number;
-    });
-    on(
-      event: "peer",
-      callback: (
-        peer: { host: string; port: number },
-        infoHash: string,
-        from: { address: string; port: number },
-      ) => void,
-    ): void;
-    lookup(infoHash: string): void;
-    destroy(): Promise<void>;
-  }
-
-  export default DHT;
-}
-
 declare const Bare: {
   app: {
     args: string[];

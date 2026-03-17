@@ -10,6 +10,7 @@ import {
   randomNodeId,
   buf2hex,
   hex2buf,
+  transactionIdToHex,
   DHTClient,
   UDPTransceiver,
 } from "../../layers/bittorrent.js";
@@ -114,6 +115,23 @@ describe("createGetPeersQuery", () => {
   });
 });
 
+describe("transactionIdToHex", () => {
+  it("converts Uint8Array transaction ID to hex", () => {
+    expect(transactionIdToHex(new Uint8Array([0xab, 0xcd]))).toBe("abcd");
+  });
+
+  it("converts string transaction ID to hex (bdecode low-byte path)", () => {
+    const strId = String.fromCharCode(0x01, 0x02);
+    expect(transactionIdToHex(strId)).toBe("0102");
+  });
+
+  it("produces consistent hex for equivalent string and Uint8Array", () => {
+    const bytes = new Uint8Array([0x41, 0x42]);
+    const str = String.fromCharCode(0x41, 0x42);
+    expect(transactionIdToHex(bytes)).toBe(transactionIdToHex(str));
+  });
+});
+
 describe("parsePeers additional tests", () => {
   it("parses multiple compact peers from string", () => {
     const peerData =
@@ -127,6 +145,21 @@ describe("parsePeers additional tests", () => {
 
   it("parses peers from array format", () => {
     const peerArray = [String.fromCharCode(192, 168, 1, 1, 0x1f, 0x90)];
+    const result = parsePeers(peerArray);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ host: "192.168.1.1", port: 8080 });
+  });
+
+  it("parses compact peers from Uint8Array (bdecode binary path)", () => {
+    const peerData = new Uint8Array([192, 168, 1, 1, 0x1f, 0x90, 10, 0, 0, 1, 0x23, 0x28]);
+    const result = parsePeers(peerData);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ host: "192.168.1.1", port: 8080 });
+    expect(result[1]).toEqual({ host: "10.0.0.1", port: 9000 });
+  });
+
+  it("parses peers from array of Uint8Array entries", () => {
+    const peerArray = [new Uint8Array([192, 168, 1, 1, 0x1f, 0x90])];
     const result = parsePeers(peerArray);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({ host: "192.168.1.1", port: 8080 });
@@ -177,13 +210,14 @@ describe("fetchFromBittorrent", () => {
   });
 
   describe("timeout handling", () => {
-    it("throws FetchLayerTimeoutError with layer and timeoutMs", () => {
-      const sourceCode = `
-        new FetchLayerTimeoutError("bittorrent", timeout)
-      `;
-
-      expect(sourceCode).toContain("FetchLayerTimeoutError");
-      expect(sourceCode).toContain("bittorrent");
+    it("respects custom timeout option", async () => {
+      const validSha1 = "a".repeat(40);
+      const start = Date.now();
+      await expect(
+        fetchFromBittorrent(validSha1, { timeout: 200 }),
+      ).rejects.toThrow();
+      // Should resolve within a reasonable bound (not the 30s default)
+      expect(Date.now() - start).toBeLessThan(10000);
     });
   });
 });
@@ -336,6 +370,23 @@ describe("parseNodes", () => {
     expect(parseNodes("")).toEqual([]);
     expect(parseNodes("too-short")).toEqual([]);
   });
+
+  it("parses node compact format from Uint8Array (bdecode binary path)", () => {
+    const nodeBytes = new Uint8Array(26);
+    for (let i = 0; i < 20; i++) {
+      nodeBytes[i] = i + 1;
+    }
+    nodeBytes[20] = 192;
+    nodeBytes[21] = 168;
+    nodeBytes[22] = 1;
+    nodeBytes[23] = 1;
+    nodeBytes[24] = 0x1a;
+    nodeBytes[25] = 0x0f;
+    const result = parseNodes(nodeBytes);
+    expect(result).toHaveLength(1);
+    expect(result[0].address).toBe("192.168.1.1");
+    expect(result[0].port).toBe(6671);
+  });
 });
 
 describe("DHTClient", () => {
@@ -454,20 +505,16 @@ describe("bdecode edge cases", () => {
 });
 
 describe("UDPTransceiver message handling", () => {
-  it("resolves pending request on message receipt", () => {
-    const sourceCode = `
-      const pending = this.pendingRequests.get(t);
-      if (pending) {
-        clearTimeout(pending.timer);
-        this.pendingRequests.delete(t);
-        pending.resolve(data);
-      }
-    `;
-
-    expect(sourceCode).toContain("pendingRequests.get(t)");
-    expect(sourceCode).toContain("pending.resolve(data)");
-    expect(sourceCode).toContain("clearTimeout");
-    expect(sourceCode).toContain("pendingRequests.delete");
+  it("registers and retrieves message callbacks", () => {
+    const transceiver = new UDPTransceiver();
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+    transceiver.onMessage(cb1);
+    transceiver.onMessage(cb2);
+    // Callbacks are stored; actual invocation requires a bound socket
+    expect(cb1).not.toHaveBeenCalled();
+    expect(cb2).not.toHaveBeenCalled();
+    transceiver.close();
   });
 });
 
@@ -573,18 +620,13 @@ describe("fetchFromBittorrent integration", () => {
 });
 
 describe("Progress callback integration", () => {
-  it("invokes onProgress callback when provided", () => {
-    const bittorrentSource = `
-      async function fetchFromPeer(peer, infoHash, timeout, onProgress) {
-        if (onProgress) {
-          onProgress(1024);
-        }
-        return new Uint8Array([1,2,3]);
-      }
-      export { fetchFromPeer };
-    `;
+  it("fetchFromBittorrent accepts onProgress option without error", async () => {
+    const progressSpy = vi.fn();
+    const validSha1 = "a".repeat(40);
 
-    expect(bittorrentSource).toContain("onProgress(1024)");
-    expect(bittorrentSource).toContain("if (onProgress)");
+    // Should fail due to mocked network, but should not throw on the onProgress param itself
+    await expect(
+      fetchFromBittorrent(validSha1, { timeout: 100, onProgress: progressSpy }),
+    ).rejects.toThrow();
   });
 });
