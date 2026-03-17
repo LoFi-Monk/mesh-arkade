@@ -2,6 +2,12 @@
 
 This file is the map for AutoMaker agents. External docs live in `docs/` — follow the paths below to find what you need.
 
+## Engineering Standards
+
+Read this before writing any code: `engineering-standards.md`
+
+Covers: TDD, TypeScript (no `any`), TSDoc shape, SOLID/DRY, Bare runtime compatibility, git discipline, linting, and pre-commit hooks.
+
 ## Architecture Decision Records
 
 Decisions that are final. Do not re-propose alternatives without new evidence.
