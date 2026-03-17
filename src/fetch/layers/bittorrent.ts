@@ -15,8 +15,16 @@ export interface BittorrentFetchOptions {
   onProgress?: (bytes: number) => void;
 }
 
+/**
+ * @intent Default timeout for DHT operations in milliseconds.
+ * @guarantee Returns numeric value representing 30 seconds in ms.
+ */
 export const DEFAULT_TIMEOUT = 30000;
 
+/**
+ * @intent Bootstrap nodes for the BitTorrent DHT network.
+ * @guarantee Returns array of DHT router addresses for network initialization.
+ */
 export const BOOTSTRAP_NODES = [
   "router.bittorrent.com:6881",
   "router.utorrent.com:6881",
@@ -63,6 +71,12 @@ function randomNodeId(): Uint8Array {
   return arr;
 }
 
+/**
+ * @intent Encodes JavaScript data into Bencode format for BitTorrent DHT protocol.
+ * @param data - The data to encode (string, number, Uint8Array, array, or object).
+ * @returns The Bencode-encoded data as a Uint8Array.
+ * @guarantee Returns valid bencoded Uint8Array, throws on floats or unsupported types.
+ */
 export function bencode(data: unknown): Uint8Array {
   if (typeof data === "number") {
     if (Number.isInteger(data)) {
@@ -108,6 +122,12 @@ export function bencode(data: unknown): Uint8Array {
   throw new Error(`Unsupported type: ${typeof data}`);
 }
 
+/**
+ * @intent Decodes Bencode format data from BitTorrent DHT protocol into JavaScript.
+ * @param data - The Bencode-encoded Uint8Array to decode.
+ * @returns The decoded JavaScript data (string, number, Uint8Array, array, or object).
+ * @guarantee Returns parsed JavaScript data or throws on malformed bencode.
+ */
 export function bdecode(data: Uint8Array): unknown {
   const text = new TextDecoder("latin1").decode(data);
   let position = 0;
