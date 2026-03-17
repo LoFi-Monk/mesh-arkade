@@ -168,3 +168,41 @@ declare module "bare-crypto" {
   export { createHash };
   export default { createHash };
 }
+
+declare module "bare-dgram" {
+  function createSocket(type: "udp4" | "udp6"): DgramSocket;
+  interface DgramSocket {
+    bind(port: number, address?: string, callback?: () => void): void;
+    send(
+      buffer: Uint8Array | Buffer,
+      port: number,
+      address: string,
+      callback?: (err: Error | null) => void,
+    ): void;
+    on(
+      event: "message",
+      callback: (msg: Buffer, rinfo: { address: string; port: number }) => void,
+    ): void;
+    on(event: "error", callback: (err: Error) => void): void;
+    on(event: "listening", callback: () => void): void;
+    address(): { address: string; port: number };
+    close(): void;
+  }
+  export { createSocket };
+  export default { createSocket };
+}
+
+declare module "bare-net" {
+  class Socket {
+    connect(port: number, host: string, callback?: () => void): this;
+    write(data: Buffer, callback?: (err?: Error) => void): boolean;
+    on(event: "data", callback: (data: Buffer) => void): this;
+    on(event: "close", callback: () => void): this;
+    on(event: "error", callback: (err: Error) => void): this;
+    on(event: "connect", callback: () => void): this;
+    on(event: "end", callback: () => void): this;
+    destroy(): void;
+  }
+  export { Socket };
+  export default { Socket };
+}
