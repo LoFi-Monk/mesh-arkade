@@ -1,0 +1,17 @@
+{
+  "id": "ipfs-gateway-rotation",
+  "category": "P2P",
+  "title": "IPFS Gateway Rotation & Fallback",
+  "description": "Maintain a configurable list of IPFS gateways (ipfs.io, dweb.link, cloudflare-ipfs.com) and rotate through them on failure or rate-limiting during Museum Map fetch operations. Increases resilience of the IPFS fallback layer.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "config-command"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.421Z",
+  "updatedAt": "2026-03-16T18:04:33.421Z",
+  "model": "claude-opus-4-6"
+}

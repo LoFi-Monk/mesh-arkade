@@ -1,0 +1,17 @@
+{
+  "id": "hyperbee-replication",
+  "category": "P2P",
+  "title": "Hyperbee Catalog Replication Over Hyperswarm",
+  "description": "Allow peers to replicate their seeded wishlist Hyperbee over Hyperswarm so catalog data propagates P2P without requiring each node to individually fetch DAT files from GitHub. Uses Hypercore's built-in replication protocol.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [
+    "hyperswarm-seeding"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.409Z",
+  "updatedAt": "2026-03-16T18:04:33.409Z",
+  "model": "claude-opus-4-6"
+}

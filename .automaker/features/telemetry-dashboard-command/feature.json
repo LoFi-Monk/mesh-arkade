@@ -1,0 +1,18 @@
+{
+  "id": "telemetry-dashboard-command",
+  "category": "CLI",
+  "title": "Telemetry Dashboard Command",
+  "description": "CLI command that renders a live-updating ASCII dashboard showing fetch statistics, peer counts, queue depth, and verification pass/fail rates. Refreshes via terminal cursor repositioning without a full screen redraw.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "fetch-telemetry",
+    "progress-bar-bare"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.473Z",
+  "updatedAt": "2026-03-16T18:04:33.473Z",
+  "model": "claude-opus-4-6"
+}

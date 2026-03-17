@@ -1,0 +1,15 @@
+{
+  "id": "stage-directory-management",
+  "category": "CLI",
+  "title": "Stage Directory Management Commands",
+  "description": "CLI commands to list, move, and clean the staging area where fetched ROMs land before being committed to the active mount. Includes a commit-stage subcommand to move staged files into the verified library.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.414Z",
+  "updatedAt": "2026-03-16T18:04:33.414Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "system-info-command",
+  "category": "CLI",
+  "title": "System Info Detail Command",
+  "description": "CLI command that shows detailed metadata for a single system: DAT source URL, last seeded timestamp, total wishlist entries, region breakdown, verified local count, and seeding topic key. Complements the existing systems listing command.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "dat-cache-persistence"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.463Z",
+  "updatedAt": "2026-03-16T18:04:33.463Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "hyperswarm-seeding",
+  "category": "P2P",
+  "title": "Hyperswarm ROM Seeding (Upload)",
+  "description": "Allow a node to announce and serve ROMs it already owns over Hyperswarm by advertising SHA1-based topic keys. Transforms the platform from consumer-only to a full P2P participant capable of contributing to the network.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.399Z",
+  "updatedAt": "2026-03-16T18:04:33.399Z",
+  "model": "claude-opus-4-6"
+}

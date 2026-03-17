@@ -1,0 +1,17 @@
+{
+  "id": "test-coverage-fetch",
+  "category": "Testing",
+  "title": "Fetch Layer Test Suite",
+  "description": "Add comprehensive unit and integration tests for FetchManager, all three fetch layers, and AllLayersFailedError covering timeout, partial response, and layer-skip scenarios. Mocks Hyperswarm and IPFS gateway responses.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "bittorrent-wire-protocol"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.477Z",
+  "updatedAt": "2026-03-16T18:04:33.477Z",
+  "model": "claude-opus-4-6"
+}

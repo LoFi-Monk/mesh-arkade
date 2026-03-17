@@ -1,0 +1,17 @@
+{
+  "id": "snapshot-command",
+  "category": "CLI",
+  "title": "Database Snapshot Command",
+  "description": "CLI command to create a point-in-time snapshot of the entire Hyperbee catalog to a portable file. Snapshots can be shared directly with peers as a catalog seed file, bypassing DAT re-fetching from GitHub.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "corestore-backup"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.497Z",
+  "updatedAt": "2026-03-16T18:04:33.497Z",
+  "model": "claude-opus-4-6"
+}

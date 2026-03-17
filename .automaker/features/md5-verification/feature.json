@@ -1,0 +1,17 @@
+{
+  "id": "md5-verification",
+  "category": "Core",
+  "title": "MD5 Hash Verification",
+  "description": "Add MD5 computation support to the runtime abstraction layer for systems whose DAT records only provide MD5 checksums. Extends the verification engine to cover all hash types extracted by the DAT parser.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [
+    "crc32-verification"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.442Z",
+  "updatedAt": "2026-03-16T18:04:33.442Z",
+  "model": "claude-opus-4-6"
+}

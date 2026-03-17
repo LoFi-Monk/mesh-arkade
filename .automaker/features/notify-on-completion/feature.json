@@ -1,0 +1,17 @@
+{
+  "id": "notify-on-completion",
+  "category": "Core",
+  "title": "Desktop Notification on Fetch Completion",
+  "description": "Emit a desktop notification (via Pear's notification API if available, falling back to a terminal bell) when a long-running fetch job completes successfully or fails. Lets users step away from the terminal during large downloads.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [
+    "fetch-queue"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.500Z",
+  "updatedAt": "2026-03-16T18:04:33.500Z",
+  "model": "claude-opus-4-6"
+}

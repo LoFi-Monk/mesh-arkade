@@ -1,0 +1,15 @@
+{
+  "id": "import-dat-file-command",
+  "category": "CLI",
+  "title": "Import Local DAT File Command",
+  "description": "CLI command to seed the Hyperbee wishlist from a locally stored DAT file (bypassing the Libretro GitHub fetch). Supports both CLRMamePro and XML formats and enables use of custom or private DAT collections.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.443Z",
+  "updatedAt": "2026-03-16T18:04:33.443Z",
+  "model": "claude-opus-4-6"
+}

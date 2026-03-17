@@ -41,7 +41,8 @@
       "Bash(cd:*)",
       "Bash(node:*)",
       "Bash(WDIR=\"C:/Users/lofim/AppData/Local/Temp/vibe-kanban/worktrees/a2ec-implement-milest/mesh-arkade\")",
-      "Read(//c/ag-workspace/mesh-arkade/**)"
+      "Read(//c/ag-workspace/mesh-arkade/**)",
+      "WebFetch(domain:automaker.app)"
     ],
     "deny": [
       "Bash(rm -rf *)",

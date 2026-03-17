@@ -1,0 +1,17 @@
+{
+  "id": "tosec-dat-support",
+  "category": "Curation",
+  "title": "TOSEC DAT Format Support",
+  "description": "Add TOSEC (The Old School Emulation Center) DAT parsing support with TOSEC naming convention extraction (year, publisher, language, media). Broadens the platform's preservation standard coverage beyond No-Intro and Redump.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "import-dat-file-command"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.445Z",
+  "updatedAt": "2026-03-16T18:04:33.445Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "redump-system-support",
+  "category": "Curation",
+  "title": "Redump System Support",
+  "description": "Extend the system discovery and DAT fetching pipeline to support Redump disc-based systems (PSX, PS2, Saturn, Dreamcast, GameCube) in addition to the existing No-Intro cartridge systems. Includes disc image format recognition (bin/cue, CHD).",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [
+    "dat-hash-verification"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.432Z",
+  "updatedAt": "2026-03-16T18:04:33.432Z",
+  "model": "claude-opus-4-6"
+}

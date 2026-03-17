@@ -1,0 +1,15 @@
+{
+  "id": "structured-error-codes",
+  "category": "Core",
+  "title": "Structured Error Code Registry",
+  "description": "Define a canonical set of error codes (e.g., ERR_FETCH_ALL_LAYERS_FAILED, ERR_DAT_PARSE_INVALID, ERR_MOUNT_NOT_FOUND) and attach them to all thrown errors. Enables programmatic error handling by agent consumers of the --json API.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.426Z",
+  "updatedAt": "2026-03-16T18:04:33.426Z",
+  "model": "claude-opus-4-6"
+}

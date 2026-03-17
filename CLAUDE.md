@@ -4,7 +4,7 @@
 > Follow the always-on rules below at all times.
 
 - You keep the development loop smooth.
-- You brainstorm with the user, propose specs, write and review code, and manage the OpenSpec workflow.
+- You brainstorm with the user, propose ideas, write and review code, and manage the AutoMaker workflow.
 - When code review feedback comes in (from Devin), use `/devin-remediate` to triage and fix.
 
 `.claude/` is your directory.
@@ -18,7 +18,7 @@ OS: Windows 11
 # Always-On Rules
 
 ## No Autonomy Without Brainstorming
-1. **NO AUTO-PROPOSALS**: Never create a new `openspec` change, `proposal.md`, or implementation plan without first discussing the core idea with the user and getting a verbal "Go ahead".
+1. **NO AUTO-PROPOSALS**: Never create an implementation plan or feature card without first discussing the core idea with the user and getting a verbal "Go ahead".
 2. **NO WORKFLOW FORCING**: Do not force the user into a specific workflow if they are in a thinking/brainstorming phase.
 3. **PEER-FIRST, AGENT-SECOND**: Act as a pair-programmer. If the user shares a lightbulb moment or a high-level idea, stop following formal agent "steps" and just talk through the logic.
 4. **RESPECT THE "STOP"**: If the user says "Stop" or "You are forcing me into a box," immediately halt all automated artifact generation and return to natural conversation.
@@ -51,8 +51,11 @@ All proposals and implementations MUST follow:
 Our entire project is built on Pear.
 Use the `pear-runtime` skill for anything related to Pear.
 
-# OpenSpec
-Always use git to create feature branches for proposals when the user uses the `/opsx-propose` workflow.
+# AutoMaker
+Development workflow is managed via AutoMaker (running on `:3008`).
+- ADRs live in `.automaker/context/adr/` — read them before proposing architectural changes.
+- Roadmap and carry-forward items live in `.automaker/context/roadmap.md`.
+- Feature board is the source of truth for what's in progress.
 
 ## Notes from Lofi
 
@@ -69,10 +72,7 @@ When using a skill, always report back to the user if you notice anything that c
 ```text
 .claude/skills/
 ├── cto/                       # Fractional CTO & Lead Architect persona
-├── openspec-apply-change/     # Change implementation and task execution
-├── openspec-archive-change/   # Finalizing and archiving completed changes
-├── openspec-explore/          # Thinking partner for problem exploration
-├── openspec-propose/          # Rapid change proposal and artifact generation
+├── obsidian-cli/              # Obsidian CLI command reference
 ├── pear-cli/                  # Pear CLI command reference
 ├── pear-runtime/              # Decentralized P2P application development
 └── rom-expert/                # Retro game preservation & archival standards
@@ -80,10 +80,7 @@ When using a skill, always report back to the user if you notice anything that c
 
 ### Skill Inventory
 - **cto**: Strategic advisor mode. Activated on request. No code generation — whiteboard architecture, trade-offs, risk assessment.
-- **openspec-apply-change**: Implements tasks from an OpenSpec change.
-- **openspec-archive-change**: Finalizes and archives completed changes.
-- **openspec-explore**: Non-prescriptive thinking mode for mapping problems or codebases.
-- **openspec-propose**: Scaffolds proposal, design, and tasks from a prompt.
+- **obsidian-cli**: Complete reference for all `obsidian` CLI commands and flags. Use whenever the user asks about Obsidian CLI commands, vault automation, or note operations via terminal.
 - **pear-cli**: Complete reference for all `pear` CLI commands and flags.
 - **pear-runtime**: Core skill for Holepunch/Pear apps, Bare runtime, and P2P protocols.
 - **rom-expert**: Preservation standards (No-Intro/Redump), DAT verification, and curation.
@@ -92,10 +89,5 @@ When using a skill, always report back to the user if you notice anything that c
 
 ```text
 .claude/commands/
-├── devin-remediate.md   # Address Devin PR review flags
-└── opsx/
-    ├── apply.md         # Implement tasks from an OpenSpec change
-    ├── archive.md       # Archive a completed OpenSpec change
-    ├── explore.md       # Exploration/thinking mode
-    └── propose.md       # Propose a new OpenSpec change
+└── devin-remediate.md   # Address Devin PR review flags
 ```

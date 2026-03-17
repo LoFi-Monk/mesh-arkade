@@ -1,0 +1,15 @@
+{
+  "id": "dat-cache-persistence",
+  "category": "Core",
+  "title": "Persistent DAT Cache in Hyperbee",
+  "description": "Migrate the 24-hour in-memory system listing cache in curation.ts to a Hyperbee-backed cache with TTL support. Survives process restarts and eliminates redundant GitHub API calls across sessions.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.435Z",
+  "updatedAt": "2026-03-16T18:04:33.435Z",
+  "model": "claude-opus-4-6"
+}

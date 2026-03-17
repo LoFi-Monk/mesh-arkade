@@ -1,0 +1,18 @@
+{
+  "id": "catalog-diff-command",
+  "category": "CLI",
+  "title": "Catalog Diff Command",
+  "description": "CLI command that compares two local Hyperbee snapshots (or a local vs remote manifest) and shows added, removed, and changed wishlist entries. Essential for tracking what changed between DAT version updates.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "archive-manifest",
+    "incremental-dat-reseed"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.490Z",
+  "updatedAt": "2026-03-16T18:04:33.490Z",
+  "model": "claude-opus-4-6"
+}

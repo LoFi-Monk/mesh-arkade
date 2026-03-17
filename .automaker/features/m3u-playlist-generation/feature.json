@@ -1,0 +1,17 @@
+{
+  "id": "m3u-playlist-generation",
+  "category": "Core",
+  "title": "M3U Playlist Generation for Multi-Disc Games",
+  "description": "Detect multi-disc game sets (Disc 1, Disc 2, etc.) from wishlist titles and generate .m3u playlist files that group them for emulator consumption. Critical for Redump-standard disc-based game preservation.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "redump-system-support"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.434Z",
+  "updatedAt": "2026-03-16T18:04:33.434Z",
+  "model": "claude-opus-4-6"
+}

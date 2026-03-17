@@ -1,0 +1,15 @@
+{
+  "id": "wishlist-personal-notes",
+  "category": "Curation",
+  "title": "Personal Notes on Wishlist Entries",
+  "description": "Allow users to attach personal notes (acquisition priority, condition notes, alternate dump sources) to individual wishlist records in Hyperbee. Notes survive re-seeding via a separate notes sub-namespace keyed by SHA1.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.453Z",
+  "updatedAt": "2026-03-16T18:04:33.453Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "localization-support",
+  "category": "CLI",
+  "title": "CLI Output Localization (i18n)",
+  "description": "Extract all user-facing CLI strings into a locale file and implement a minimal i18n lookup. Ship with English as default and Japanese as a second locale given the Japanese retro game preservation community.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "color-output-theme"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.504Z",
+  "updatedAt": "2026-03-16T18:04:33.504Z",
+  "model": "claude-opus-4-6"
+}

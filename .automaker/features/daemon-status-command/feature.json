@@ -1,0 +1,18 @@
+{
+  "id": "daemon-status-command",
+  "category": "CLI",
+  "title": "Daemon Status & Control Commands",
+  "description": "CLI commands to check if the daemon is running, view its PID, and send stop/restart signals. Integrates with the --rpc flag to route all subsequent commands to the running daemon instance.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "headless-daemon-mode",
+    "agent-rpc-client"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.452Z",
+  "updatedAt": "2026-03-16T18:04:33.452Z",
+  "model": "claude-opus-4-6"
+}

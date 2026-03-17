@@ -1,0 +1,18 @@
+{
+  "id": "wishlist-priority-scoring",
+  "category": "Curation",
+  "title": "Wishlist Acquisition Priority Scoring",
+  "description": "Add a numeric priority score to wishlist entries based on user-defined rules (e.g., USA region gets +2, verified dump in Museum Map gets +1). The fetch queue uses this score to order automatic acquisition jobs.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "moderate",
+  "dependencies": [
+    "wishlist-tags",
+    "fetch-queue"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.501Z",
+  "updatedAt": "2026-03-16T18:04:33.501Z",
+  "model": "claude-opus-4-6"
+}

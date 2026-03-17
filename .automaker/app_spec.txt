@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project_specification>
+  <project_name>Mesh ARKade</project_name>
+
+  <overview>
+    Mesh ARKade is a decentralized game preservation platform built entirely on the Pear Runtime (Holepunch ecosystem). It operates as a CLI-first, P2P-native &quot;museum-quality&quot; archive for retro game ROMs. The application provides a headless terminal interface for managing game library mounts, discovering supported retro systems via Libretro&apos;s DAT database, seeding game metadata (wishlist) from No-Intro/Redump DAT files into a local Hyperbee database, searching the seeded catalog, and fetching ROMs via a triple-layer P2P discovery stack (Hyperswarm → IPFS → BitTorrent DHT). The architecture follows a singleton CoreHub pattern with JSON-RPC style request dispatch, a dual-runtime abstraction layer (Bare runtime vs Node.js), and a modular CLI with individually testable command handlers. A React/Vite GUI mode exists as a secondary interface (Pear Electron) but the primary focus is the headless CLI where both human users and AI agents are equal citizens. The project uses an OpenSpec workflow for change management and enforces SOLID, DRY, and TDD principles.
+  </overview>
+
+  <technology_stack>
+    <technology>Pear Runtime (Holepunch) — primary application runtime</technology>
+    <technology>Bare Runtime — low-level JS runtime for P2P (dual-runtime target alongside Node.js)</technology>
+    <technology>Hyperswarm — P2P peer discovery and connection (topic-based DHT swarming)</technology>
+    <technology>Hyperbee — local key-value database (B-tree on Hypercore)</technology>
+    <technology>Hypercore — append-only log (storage backend for Hyperbee)</technology>
+    <technology>Corestore — manages multiple Hypercore instances</technology>
+    <technology>BitTorrent DHT (bittorrent-dht) — fallback P2P discovery layer</technology>
+    <technology>IPFS — gateway-based ROM fetch via Museum Map (SHA1→CID resolution)</technology>
+    <technology>bare-fs / bare-path / bare-os / bare-crypto / bare-fetch / bare-readline — Bare runtime equivalents of Node built-ins</technology>
+    <technology>pear-electron — Pear&apos;s Electron-based GUI runtime</technology>
+    <technology>pear-bridge — bridge between Pear runtime and Electron webview</technology>
+    <technology>TypeScript 5.7 — strict mode, ESNext target, bundler module resolution</technology>
+    <technology>React 19 — GUI components (secondary interface)</technology>
+    <technology>Vite 6 — build tool and dev server for GUI</technology>
+    <technology>Tailwind CSS 4 — utility-first CSS framework</technology>
+    <technology>shadcn/ui — component library (Radix UI primitives)</technology>
+    <technology>Vitest 2 — test framework with Istanbul coverage (80% thresholds)</technology>
+    <technology>jsdom — test environment for UI tests</technology>
+    <technology>Husky 9 — Git hooks (pre-commit)</technology>
+    <technology>lint-staged — run tests and TSDoc checks on staged files</technology>
+    <technology>ESLint 9 — code linting</technology>
+    <technology>Prettier 3 — code formatting</technology>
+    <technology>concurrently — parallel dev server orchestration</technology>
+    <technology>tsx — TypeScript execution for scripts</technology>
+    <technology>OpenSpec — change management workflow (proposals, designs, specs, tasks)</technology>
+  </technology_stack>
+
+  <core_capabilities>
+    <capability>CLI-first headless terminal with REPL and one-shot command execution</capability>
+    <capability>Dual-runtime abstraction layer (Bare + Node.js) for all I/O operations (fs, path, os, fetch, crypto)</capability>
+    <capability>Singleton CoreHub engine with JSON-RPC style request dispatch for all operations</capability>
+    <capability>Library mount management (mount/unmount/list ROM directories with .mesh-hub markers)</capability>
+    <capability>ROM file scanning with 50+ recognized extensions across all retro platforms</capability>
+    <capability>DAT file parsing for both CLRMamePro and XML formats (No-Intro/Redump standards)</capability>
+    <capability>System discovery via Libretro GitHub DAT repository with 24-hour caching</capability>
+    <capability>System alias resolution (human-friendly names like &apos;nes&apos;, &apos;snes&apos;, &apos;gba&apos; to normalized IDs)</capability>
+    <capability>Wishlist database seeding from DAT files with batch Hyperbee writes</capability>
+    <capability>Full-text wishlist search with optional system filtering and configurable limits</capability>
+    <capability>SHA1 hash lookup against seeded wishlist records</capability>
+    <capability>Region extraction from No-Intro game title conventions</capability>
+    <capability>Triple-layer P2P ROM fetching: Hyperswarm (topic key) → IPFS (Museum Map CID) → BitTorrent DHT (info hash)</capability>
+    <capability>FetchManager with sequential fallback, progress reporting, and structured error aggregation</capability>
+    <capability>Museum Map index for SHA1→IPFS CID resolution</capability>
+    <capability>Trusted DAT source registry with optional SHA1 hash verification</capability>
+    <capability>Dual output modes: human-readable (ASCII tables, formatted text) and JSON (machine-parseable for agents)</capability>
+    <capability>First-run wizard for guided library onboarding</capability>
+    <capability>Database reset capability for clean slate</capability>
+    <capability>GUI mode via Pear Electron with React/Tailwind/shadcn interface (secondary)</capability>
+    <capability>Retro 8-bit themed UI components with mode switching</capability>
+    <capability>Environment detection (development, bare, headless, gui) from Pear app flags</capability>
+    <capability>Atomic file persistence for mount state (temp-file rename pattern)</capability>
+    <capability>Mutex-based concurrent access protection for shared mount storage</capability>
+    <capability>Pear-native teardown hooks for graceful shutdown</capability>
+  </core_capabilities>
+
+  <implemented_features>
+    <feature>
+      <name>Dual-Runtime Abstraction Layer</name>
+      <description>Transparently resolves fs, path, os, fetch, and crypto modules for either Bare runtime or Node.js. All modules are lazily loaded and cached after first resolution. Includes a CryptoModule interface supporting createHash→update→digest chain pattern.</description>
+      <file_locations>
+        <location>src/core/runtime.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Environment Detection</name>
+      <description>Detects runtime mode (development, bare, headless, gui) from Pear.app properties and CLI flags (--bare, --headless, --json, --silent). Provides a structured Environment interface for boot routing.</description>
+      <file_locations>
+        <location>src/core/environment.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Storage Path Resolution</name>
+      <description>Resolves the base storage directory using Pear.app.storage when in Pear runtime, falling back to ./data for local development. Designed as a leaf function with no internal imports to prevent circular dependencies.</description>
+      <file_locations>
+        <location>src/core/paths.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>CoreHub Engine (Singleton)</name>
+      <description>Central singleton hub managing P2P swarm, storage, and local bridge socket. Exposes a JSON-RPC style handleRequest() method that dispatches to curator, curation, and database operations. Handles start/stop lifecycle with Hyperbee cleanup on shutdown.</description>
+      <file_locations>
+        <location>src/core/hub.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Hyperbee Database Layer</name>
+      <description>Manages persistent storage via Corestore-backed Hyperbee with &apos;systems&apos; and &apos;wishlist&apos; sub-namespaces. Supports system CRUD, batch wishlist insertion with SHA1-based or title-slug keys, full-text search with system filtering, SHA1 lookups, and full database reset with on-disk cleanup.</description>
+      <file_locations>
+        <location>src/core/database.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Library Mount Manager (Curator)</name>
+      <description>Manages ROM library directory mounts with .mesh-hub marker directories. Supports mount (with recursive ROM scanning across 50+ file extensions), unmount, list, and get operations. All mount state is persisted atomically to mounts.json with mutex protection.</description>
+      <file_locations>
+        <location>src/core/curator.ts</location>
+        <location>src/core/storage.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>DAT File Parser</name>
+      <description>Pure-function parser supporting both CLRMamePro and XML DAT formats via regex-based extraction. Extracts game name, SHA1, CRC, and MD5 hashes. Includes region extraction from No-Intro naming conventions and short-SHA1 prefix matching for ROM resolution.</description>
+      <file_locations>
+        <location>src/core/dat-parser.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Curation Manager</name>
+      <description>Orchestrates DAT fetching from Libretro GitHub, system discovery with alias resolution, database seeding with batched writes and progress callbacks, wishlist searching, and system info retrieval. Includes 24-hour in-memory cache for system listings.</description>
+      <file_locations>
+        <location>src/core/curation.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>CLI Command Framework</name>
+      <description>Modular CLI with individually-extracted command handlers following a uniform CommandHandler signature. Includes argument parser (flags + positional), output formatter (JSON/human dual-mode with table rendering), and a first-run wizard for onboarding. Commands: help, status, mount, unmount, list-mounts, systems, init, search, reset, fetch.</description>
+      <file_locations>
+        <location>src/cli/index.ts</location>
+        <location>src/cli/types.ts</location>
+        <location>src/cli/parser.ts</location>
+        <location>src/cli/formatter.ts</location>
+        <location>src/cli/wizard.ts</location>
+        <location>src/cli/commands/index.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Mount/Unmount Commands</name>
+      <description>CLI commands to register and deregister ROM library directories. Mount creates a .mesh-hub marker, scans for ROM files, and persists the mount record. Unmount removes the registration.</description>
+      <file_locations>
+        <location>src/cli/commands/mount.ts</location>
+        <location>src/cli/commands/unmount.ts</location>
+        <location>src/cli/commands/list.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>System Discovery Command</name>
+      <description>Lists all supported game systems fetched from Libretro&apos;s GitHub DAT repository, sorted alphabetically with system IDs for use with the init command.</description>
+      <file_locations>
+        <location>src/cli/commands/systems.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>DAT Seeding Command (init)</name>
+      <description>Seeds the local Hyperbee database with game metadata from a system&apos;s DAT file. Fetches the DAT from Libretro GitHub, parses it, and batch-inserts wishlist records.</description>
+      <file_locations>
+        <location>src/cli/commands/init.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Wishlist Search Command</name>
+      <description>Searches the seeded wishlist database by title query with optional system filtering. Displays results with truncated SHA1 hashes and region info.</description>
+      <file_locations>
+        <location>src/cli/commands/search.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Triple-Layer P2P Fetch System</name>
+      <description>FetchManager orchestrates sequential fallback across three P2P layers to retrieve ROMs by SHA1 hash. Layer 1: Hyperswarm topic-based peer discovery with zero-padded SHA1 topic buffer. Layer 2: IPFS gateway fetch via Museum Map (SHA1→CID index). Layer 3: BitTorrent DHT (stub — disabled until milestone 06). Includes progress reporting, timeout handling, and structured error aggregation via AllLayersFailedError.</description>
+      <file_locations>
+        <location>src/fetch/fetch-manager.ts</location>
+        <location>src/fetch/layers/hyperswarm.ts</location>
+        <location>src/fetch/layers/ipfs.ts</location>
+        <location>src/fetch/layers/bittorrent.ts</location>
+        <location>src/fetch/errors.ts</location>
+        <location>src/fetch/museum-map.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Fetch CLI Command</name>
+      <description>CLI command for fetching ROMs by SHA1 hash. Validates input, resolves the active mount&apos;s stage directory, orchestrates FetchManager, resolves filenames from wishlist records, and stages downloaded files.</description>
+      <file_locations>
+        <location>src/cli/commands/fetch.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Museum Map (SHA1→IPFS CID Index)</name>
+      <description>Static JSON mapping of SHA1 hashes to IPFS CIDs for gateway-based ROM retrieval as a fallback to Hyperswarm.</description>
+      <file_locations>
+        <location>src/fetch/museum-map.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Trusted DAT Source Registry</name>
+      <description>Hardcoded list of known-good No-Intro DAT sources (NES, SNES, GB, GBC) with optional SHA1 hash verification for integrity checking. Verification is currently disabled (expectedHash empty) pending task 12.4.</description>
+      <file_locations>
+        <location>src/fetch/trust.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Branding &amp; Identity System</name>
+      <description>Centralized branding module with app name, rotating taglines, descriptor generation from semantic word categories, retro color palette (neon magenta, cyan, yellow on dark background), and Press Start 2P font specification.</description>
+      <file_locations>
+        <location>src/core/branding.ts</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Dual-Mode Entry Point</name>
+      <description>index.js serves as the boot shell routing to either headless CLI (bootBare) or GUI (bootGui via Pear Electron). Uses lazy imports for all command handlers, displays ASCII art splash, runs first-run wizard when no libraries detected, and supports both REPL and one-shot command execution.</description>
+      <file_locations>
+        <location>index.js</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>React GUI Shell</name>
+      <description>Secondary React 19 interface with Vite build, Tailwind CSS, shadcn/ui components, dark theme provider, 8-bit retro mode switcher, and window controls. Built for Pear Electron embedding.</description>
+      <file_locations>
+        <location>src/App.tsx</location>
+        <location>src/main.tsx</location>
+        <location>src/Welcome.tsx</location>
+        <location>src/components/theme-provider.tsx</location>
+        <location>src/components/WindowControls.tsx</location>
+        <location>src/components/ui/</location>
+      </file_locations>
+    </feature>
+    <feature>
+      <name>Quality Gates</name>
+      <description>Husky pre-commit hooks running vitest on related changed files and a TSDoc comment checker script. Coverage thresholds at 80% for lines, functions, branches, and statements.</description>
+      <file_locations>
+        <location>scripts/check-tsdoc.mjs</location>
+        <location>scripts/devin-review.sh</location>
+      </file_locations>
+    </feature>
+  </implemented_features>
+
+  <additional_requirements>
+    <requirement>Windows 11 development environment</requirement>
+    <requirement>Pear Runtime (pear-electron) required for GUI mode and Bare runtime features</requirement>
+    <requirement>Node.js required for development tooling (Vite, Vitest, TypeScript, Husky)</requirement>
+    <requirement>GitHub API access for Libretro DAT repository fetching (rate-limited at 60 req/hr unauthenticated)</requirement>
+    <requirement>IPFS gateway access (ipfs.io) for Museum Map-based ROM fetching</requirement>
+    <requirement>Hyperswarm DHT network connectivity for P2P peer discovery</requirement>
+    <requirement>TypeScript strict mode compilation with bundler module resolution</requirement>
+    <requirement>80% minimum code coverage thresholds for lines, functions, branches, and statements</requirement>
+    <requirement>OpenSpec change management workflow for all feature development</requirement>
+    <requirement>All core logic must be compatible with both Bare runtime and Node.js (no DOM or Node-only APIs in src/core/ or src/fetch/)</requirement>
+  </additional_requirements>
+
+  <development_guidelines>
+    <guideline>SOLID principles enforced: Single responsibility (one handler per file), open/closed (CommandHandler interface), Liskov substitution (CoreHub interface for testing), interface segregation (minimal ReadlineInterface), dependency inversion (runtime abstraction layer)</guideline>
+    <guideline>DRY: Shared formatter module, centralized runtime resolution, reusable parser</guideline>
+    <guideline>TDD: Tests written alongside implementation, 80% coverage thresholds enforced via vitest Istanbul</guideline>
+    <guideline>Terminal-first: CLI is the primary interface; GUI is secondary. All core logic must be headless-compatible</guideline>
+    <guideline>Bare Runtime compatibility: No DOM or Node-specific assumptions in core logic. Use runtime.ts abstraction for fs/path/os/fetch/crypto</guideline>
+    <guideline>Pear Guardian: Non-Pear-native solutions (HTTP servers, localStorage, standard WebSocket) are flagged with &apos;Timeout! ⏰&apos;</guideline>
+    <guideline>TSDoc comments must explain intent and guarantees, never restate implementation. Shape: Intent → Guarantees → Constraints/Warnings</guideline>
+    <guideline>Git discipline: Never use &apos;git add .&apos;, never force push, explicit file staging</guideline>
+    <guideline>No &apos;any&apos; types in production code (runtime.ts caches exempted with documented rationale)</guideline>
+    <guideline>OpenSpec workflow for all changes: proposal → design → specs → tasks → implementation → archive</guideline>
+    <guideline>Agent-friendly: All commands support --json flag for machine-parseable output. Agents and humans are equal CLI users</guideline>
+    <guideline>Pre-commit hooks: vitest related tests + TSDoc checker on staged files</guideline>
+  </development_guidelines>
+
+  <implementation_roadmap>
+    <phase>
+      <name>Milestone 01: Environment &amp; Branding Foundation</name>
+      <status>completed</status>
+      <description>Environment detection (GUI vs Bare/Terminal), branding module with taglines and retro theming, Pear runtime globals.</description>
+    </phase>
+    <phase>
+      <name>Milestone 02: React UI Setup</name>
+      <status>completed</status>
+      <description>Vite + React + Tailwind + shadcn/ui foundation, theme provider, retro 8-bit mode switcher, Pear Electron integration.</description>
+    </phase>
+    <phase>
+      <name>Milestone 03: Core Engine Foundation</name>
+      <status>completed</status>
+      <description>CoreHub singleton with JSON-RPC dispatch, Corestore + Hyperbee database with namespaced sub-stores, storage path resolution, runtime abstraction layer.</description>
+    </phase>
+    <phase>
+      <name>Milestone 03a: Curator Mount Manager</name>
+      <status>completed</status>
+      <description>Library mount/unmount/list with .mesh-hub markers, recursive ROM scanning (50+ extensions), atomic mounts.json persistence with mutex.</description>
+    </phase>
+    <phase>
+      <name>Milestone 03b: Production Workflow &amp; Quality Gates</name>
+      <status>completed</status>
+      <description>Husky pre-commit hooks, lint-staged with vitest + TSDoc checker, ESLint + Prettier configuration.</description>
+    </phase>
+    <phase>
+      <name>Milestone 04: DAT Bootstrap &amp; Curation</name>
+      <status>completed</status>
+      <description>Hyperbee database migration, DAT parser (CLRMamePro + XML), system discovery from Libretro GitHub, wishlist seeding with batch writes, search with system filtering.</description>
+    </phase>
+    <phase>
+      <name>Milestone 04a: CLI Layer Extraction</name>
+      <status>completed</status>
+      <description>Refactored 789-line index.js monolith into modular CLI layer. Individual command handlers, formatter, parser, wizard extracted to src/cli/. Bug fixes for Hub stop() and system matching.</description>
+    </phase>
+    <phase>
+      <name>Milestone 04b: Runtime Utilities Centralization</name>
+      <status>completed</status>
+      <description>Centralized DAT parser, runtime loader, and storage paths into dedicated modules with proper Bare compatibility.</description>
+    </phase>
+    <phase>
+      <name>Milestone 05: P2P Fetch (Triple-Layer)</name>
+      <status>completed</status>
+      <description>FetchManager with Hyperswarm → IPFS → BitTorrent DHT sequential fallback. Museum Map for SHA1→CID resolution. Fetch CLI command with stage directory integration. Trusted DAT source registry.</description>
+    </phase>
+    <phase>
+      <name>Milestone 06: BitTorrent Wire Protocol</name>
+      <status>pending</status>
+      <description>Implement the BitTorrent wire protocol layer (currently a stub throwing &apos;not yet implemented&apos;). Enable DHT-based ROM fetching using SHA1 as info hash.</description>
+    </phase>
+    <phase>
+      <name>Milestone N: Emulation Layer</name>
+      <status>pending</status>
+      <description>Future phase — no emulation in Phase 1. Platform focuses on preservation infrastructure (cataloging, verification, P2P distribution) before adding playback capabilities.</description>
+    </phase>
+  </implementation_roadmap>
+</project_specification>

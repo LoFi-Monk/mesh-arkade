@@ -1,0 +1,17 @@
+{
+  "id": "batch-fetch-command",
+  "category": "CLI",
+  "title": "Batch Fetch Command",
+  "description": "Accept a list of SHA1 hashes (from a file or stdin) and enqueue them all into the fetch queue for sequential or parallel retrieval. Useful for bootstrapping a collection from a verified hash list.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "moderate",
+  "dependencies": [
+    "fetch-queue"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.412Z",
+  "updatedAt": "2026-03-16T18:04:33.412Z",
+  "model": "claude-opus-4-6"
+}

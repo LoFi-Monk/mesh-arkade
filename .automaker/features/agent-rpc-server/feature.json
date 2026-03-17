@@ -1,0 +1,17 @@
+{
+  "id": "agent-rpc-server",
+  "category": "API",
+  "title": "JSON-RPC Local Socket Server",
+  "description": "Expose the CoreHub's handleRequest() over a local Unix/named-pipe socket so external agents and tools can invoke operations without spawning a new process. Enables persistent-session agent integrations.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "complex",
+  "dependencies": [
+    "structured-error-codes"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.427Z",
+  "updatedAt": "2026-03-16T18:04:33.427Z",
+  "model": "claude-opus-4-6"
+}

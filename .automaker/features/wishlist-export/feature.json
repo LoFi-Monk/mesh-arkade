@@ -1,0 +1,15 @@
+{
+  "id": "wishlist-export",
+  "category": "CLI",
+  "title": "Wishlist Export Command",
+  "description": "Export the seeded Hyperbee wishlist for one or all systems to a standard DAT XML or JSON file. Enables sharing curated catalogs with other tools and archivists.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.408Z",
+  "updatedAt": "2026-03-16T18:04:33.408Z",
+  "model": "claude-opus-4-6"
+}

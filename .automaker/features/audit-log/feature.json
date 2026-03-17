@@ -1,0 +1,17 @@
+{
+  "id": "audit-log",
+  "category": "Core",
+  "title": "Tamper-Evident Audit Log",
+  "description": "Append all fetch, verify, seed, and mount events to an append-only Hypercore audit log. Since Hypercore is cryptographically append-only by design, this provides a tamper-evident provenance trail for every archival action.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "structured-logging"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.489Z",
+  "updatedAt": "2026-03-16T18:04:33.489Z",
+  "model": "claude-opus-4-6"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "tsdoc-generation",
+  "category": "DevOps",
+  "title": "TSDoc API Documentation Generation",
+  "description": "Add a TypeDoc build step that generates HTML API documentation from TSDoc comments across all src/ modules. Published as a GitHub Pages artifact on every main branch push.",
+  "status": "backlog",
+  "priority": 3,
+  "complexity": "simple",
+  "dependencies": [
+    "conventional-commits"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.484Z",
+  "updatedAt": "2026-03-16T18:04:33.484Z",
+  "model": "claude-opus-4-6"
+}

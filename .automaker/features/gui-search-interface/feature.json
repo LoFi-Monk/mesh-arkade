@@ -1,0 +1,17 @@
+{
+  "id": "gui-search-interface",
+  "category": "UI",
+  "title": "GUI Wishlist Search Interface",
+  "description": "React search panel with real-time debounced input, system filter chips, region badges, and result cards showing SHA1 prefix, title, and fetch button. Consumes the search JSON-RPC endpoint.",
+  "status": "backlog",
+  "priority": 2,
+  "complexity": "moderate",
+  "dependencies": [
+    "gui-library-browser"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.446Z",
+  "updatedAt": "2026-03-16T18:04:33.446Z",
+  "model": "claude-opus-4-6"
+}

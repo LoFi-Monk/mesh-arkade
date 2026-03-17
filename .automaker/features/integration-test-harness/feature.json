@@ -1,0 +1,19 @@
+{
+  "id": "integration-test-harness",
+  "category": "Testing",
+  "title": "End-to-End Integration Test Harness",
+  "description": "Set up a Vitest integration test suite that boots a real CoreHub with an in-memory Corestore, seeds test DAT data, mounts a temp directory, and exercises the full fetch→verify→stage pipeline. Runs in CI without external network access.",
+  "status": "backlog",
+  "priority": 1,
+  "complexity": "complex",
+  "dependencies": [
+    "test-coverage-core",
+    "test-coverage-fetch",
+    "test-coverage-cli"
+  ],
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "createdAt": "2026-03-16T18:04:33.479Z",
+  "updatedAt": "2026-03-16T18:04:33.479Z",
+  "model": "claude-opus-4-6"
+}
