@@ -82,12 +82,13 @@ export async function getFetch(): Promise<typeof fetch> {
  * Only the single-chain pattern createHash(algo).update(data).digest(encoding) is supported.
  * Multi-step update() chaining is not supported.
  */
+type HashObject = {
+  update: (data: Buffer | Uint8Array | string) => HashObject;
+  digest: (encoding: string) => string;
+};
+
 type CryptoModule = {
-  createHash: (algo: string) => {
-    update: (data: Buffer | Uint8Array | string) => {
-      digest: (encoding: string) => string;
-    };
-  };
+  createHash: (algo: string) => HashObject;
 };
 
 let cachedCrypto: CryptoModule | null = null;
@@ -105,14 +106,14 @@ export async function getCrypto(): Promise<CryptoModule> {
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = bareCrypto.createHash(algo);
-        return {
+        const obj: HashObject = {
           update: (data: Buffer | Uint8Array | string) => {
             hash.update(data);
-            return {
-              digest: (encoding: string) => hash.digest(encoding),
-            };
+            return obj;
           },
+          digest: (encoding: string) => hash.digest(encoding),
         };
+        return obj;
       },
     };
   } else {
@@ -120,18 +121,76 @@ export async function getCrypto(): Promise<CryptoModule> {
     cachedCrypto = {
       createHash: (algo: string) => {
         const hash = nodeCrypto.createHash(algo);
-        return {
+        const obj: HashObject = {
           update: (data: Buffer | Uint8Array | string) => {
             hash.update(data);
-            return {
-              digest: (encoding: string) => hash.digest(encoding as "hex"),
-            };
+            return obj;
           },
+          digest: (encoding: string) => hash.digest(encoding as "hex"),
         };
+        return obj;
       },
     };
   }
 
   cryptoResolved = true;
-  return cachedCrypto;
+  return cachedCrypto as CryptoModule;
+}
+
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
+
+async function createReadStreamChunked(
+  fs: any,
+  filePath: string,
+  chunkSize: number,
+  hash: HashObject,
+): Promise<void> {
+  if (typeof fs.createReadStream === "function") {
+    return new Promise((resolve, reject) => {
+      const stream = fs.createReadStream(filePath, {
+        highWaterMark: chunkSize,
+      });
+
+      stream.on("data", (chunk: Buffer) => {
+        hash.update(chunk);
+      });
+
+      stream.on("end", () => {
+        resolve();
+      });
+
+      stream.on("error", (err: Error) => {
+        reject(err);
+      });
+    });
+  }
+
+  const buffer = await (fs.readFile as (path: string) => Promise<Buffer>)(
+    filePath,
+  );
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    hash.update(buffer.slice(i, i + chunkSize));
+  }
+}
+
+/**
+ * @intent Computes a streaming hash digest of a file without loading the entire file into memory.
+ * @guarantee Feeds each chunk directly into the hash object as it is read, keeping memory usage
+ *   bounded to a single chunk at a time regardless of file size. Falls back to readFile-based
+ *   chunking when createReadStream is unavailable (e.g. bare-fs environments that lack streaming).
+ * @constraint getCrypto() and getFs() errors propagate to the caller — callers must handle
+ *   rejection for environments where either module is unavailable.
+ */
+export async function hashFileStreaming(
+  filePath: string,
+  algorithm: string = "sha1",
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+): Promise<string> {
+  const crypto = await getCrypto();
+  const fs = await getFs();
+
+  const hash = crypto.createHash(algorithm);
+  await createReadStreamChunked(fs, filePath, chunkSize, hash);
+
+  return hash.digest("hex");
 }
