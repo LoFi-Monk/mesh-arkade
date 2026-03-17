@@ -1,10 +1,7 @@
 /**
- * Mock for bare-type native module.
- *
- * bare-type uses `require.addon` which is a Bare runtime API not available in
- * Node.js/Vitest test environments. This stub provides a no-op implementation
- * that allows tests to run without native addon loading errors.
- *
+ * @intent Provide a mock implementation of bare-type for test environments.
+ * @guarantee Returns the JavaScript typeof equivalent for all input values, matching bare-type's runtime behavior.
+ * @constraint Uses a no-op implementation — bare-type's native addon loading is bypassed in tests.
  * @see https://github.com/holepunchto/bare-type
  */
 export function type(val: unknown): string {

@@ -24,7 +24,8 @@ import "@testing-library/jest-dom";
 
 const originalRequire = typeof require !== "undefined" ? require : null;
 if (originalRequire) {
-  const originalAddon = originalRequire.addon;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const originalAddon = (originalRequire as any).addon;
   Object.defineProperty(originalRequire, "addon", {
     get: () => originalAddon,
     set: (val) => {
