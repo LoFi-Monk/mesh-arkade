@@ -54,4 +54,43 @@ describe("handleInit", () => {
     expect(consoleLog).toHaveBeenCalledWith("Successfully seeded NES");
     consoleLog.mockRestore();
   });
+
+  it("should output JSON error when system missing in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleInit("", mockHub, { isJson: true, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith(
+      '{"error":"Usage: init --seed=<system-id>"}',
+    );
+    consoleLog.mockRestore();
+  });
+
+  it("should output error when hub returns error", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      error: { message: "Invalid system" },
+    });
+    await handleInit("--seed=nes", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Invalid system");
+    consoleLog.mockRestore();
+  });
+
+  it("should output JSON result in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      result: { systemTitle: "NES", gamesAdded: 10, totalGames: 100 },
+    });
+    await handleInit("--seed=nes", mockHub, { isJson: true, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith(
+      '{"systemTitle":"NES","gamesAdded":10,"totalGames":100}',
+    );
+    consoleLog.mockRestore();
+  });
+
+  it("should handle exception from hub", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockRejectedValueOnce(new Error("Exception"));
+    await handleInit("--seed=nes", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Exception");
+    consoleLog.mockRestore();
+  });
 });

@@ -66,4 +66,43 @@ describe("handleSearch", () => {
     expect(output).toContain("Super Mario Bros.");
     consoleLog.mockRestore();
   });
+
+  it("should output JSON error when query and system missing in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleSearch("", mockHub, { isJson: true, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith(
+      '{"error":"Usage: search <query> [--system=<id>]"}',
+    );
+    consoleLog.mockRestore();
+  });
+
+  it("should output error when hub returns error", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      error: { message: "Search failed" },
+    });
+    await handleSearch("mario", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Search failed");
+    consoleLog.mockRestore();
+  });
+
+  it("should output JSON results in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      result: [{ title: "Super Mario Bros", sha1: "abc123", region: "USA" }],
+    });
+    await handleSearch("mario", mockHub, { isJson: true, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith(
+      '[{"title":"Super Mario Bros","sha1":"abc123","region":"USA"}]',
+    );
+    consoleLog.mockRestore();
+  });
+
+  it("should handle exception from hub", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockRejectedValueOnce(new Error("Exception"));
+    await handleSearch("mario", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Exception");
+    consoleLog.mockRestore();
+  });
 });

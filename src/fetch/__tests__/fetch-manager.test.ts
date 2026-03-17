@@ -83,6 +83,56 @@ describe("FetchManager", () => {
         manager.fetch("abc123def456789012345678901234567890abcd"),
       ).rejects.toThrow(AllLayersFailedError);
     });
+
+    it("All layers fail: aggregates errors from all layers", async () => {
+      vi.mocked(fetchFromHyperswarm).mockRejectedValue(
+        new FetchLayerError("hyperswarm", "timeout"),
+      );
+      vi.mocked(fetchFromIpfs).mockRejectedValue(
+        new FetchLayerError("ipfs", "network error"),
+      );
+      vi.mocked(fetchFromBittorrent).mockRejectedValue(
+        new FetchLayerError("bittorrent", "DHT timeout"),
+      );
+
+      const manager = new FetchManager();
+      try {
+        await manager.fetch("abc123def456789012345678901234567890abcd");
+        fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(AllLayersFailedError);
+        const allErr = err as AllLayersFailedError;
+        expect(allErr.errors).toHaveLength(3);
+        expect(allErr.errors[0].layer).toBe("hyperswarm");
+        expect(allErr.errors[1].layer).toBe("ipfs");
+        expect(allErr.errors[2].layer).toBe("bittorrent");
+      }
+    });
+
+    it("BitTorrent succeeds with progress callback", async () => {
+      const testData = new Uint8Array([1, 2, 3, 4, 5]);
+      vi.mocked(fetchFromHyperswarm).mockRejectedValue(
+        new FetchLayerError("hyperswarm", "timeout"),
+      );
+      vi.mocked(fetchFromIpfs).mockRejectedValue(
+        new FetchLayerError("ipfs", "not found"),
+      );
+      vi.mocked(fetchFromBittorrent).mockResolvedValue(testData);
+
+      const manager = new FetchManager();
+      const progressCalls: { layer: string; bytes: number }[] = [];
+      manager.onProgress((progress) => {
+        progressCalls.push(progress);
+      });
+
+      const result = await manager.fetch(
+        "abc123def456789012345678901234567890abcd",
+      );
+
+      expect(fetchFromBittorrent).toHaveBeenCalled();
+      expect(result).toEqual(testData);
+      expect(progressCalls.some((p) => p.layer === "bittorrent")).toBe(true);
+    });
   });
 
   describe("onProgress callback", () => {
