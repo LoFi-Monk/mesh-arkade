@@ -37,8 +37,6 @@ describe("runtime.ts hashFileStreaming", () => {
         const { hashFileStreaming } = await import("../runtime.js");
         const result = await hashFileStreaming(tmpPath);
         expect(result).toBe(knownSha1(content));
-        // Sanity-check the well-known value
-        expect(result).toBe("2aae6c69dc0e92f8e503b1afe1d5b0e8da3b0b1b".slice(0, 40) === result ? result : result);
         expect(result).toMatch(/^[0-9a-f]{40}$/);
       } finally {
         fs.unlinkSync(tmpPath);
@@ -50,9 +48,6 @@ describe("runtime.ts hashFileStreaming", () => {
       try {
         const { hashFileStreaming } = await import("../runtime.js");
         const result = await hashFileStreaming(tmpPath);
-        expect(result).toBe("2aae6c69dc0e92f8e503b1afe1d5b0e8da3b0b1b".slice(0, 40) === result
-          ? "2aae6c69dc0e92f8e503b1afe1d5b0e8da3b0b1b"
-          : result);
         // Node's own crypto gives us the ground truth
         expect(result).toBe(knownSha1("hello world"));
       } finally {
@@ -124,6 +119,10 @@ describe("runtime.ts hashFileStreaming", () => {
           ...realFs,
           createReadStream: undefined,
           readFile: (_path: string) => Promise.resolve(content),
+          promises: {
+            ...realFs.promises,
+            readFile: (_path: string) => Promise.resolve(content),
+          },
         };
       });
 
