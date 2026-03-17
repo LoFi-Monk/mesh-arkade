@@ -20,6 +20,13 @@ Obsidian CLI lets you control Obsidian from your terminal for scripting, automat
 
 ---
 
+## Known Issues
+
+- **`daily:append content=` returns exit 127** when any `content=` parameter is passed. Workaround: use `append path=<vault-relative-path> content=<text>` with the explicit file path instead of the `daily:` shortcut.
+- **Backticks in `content=` get shell-interpolated** when using `obsidian create` or `obsidian append` via bash. Any content containing inline code (backticks) will be corrupted. Workaround: write the file directly using the Write tool, bypassing the CLI entirely, when content contains backtick characters.
+
+---
+
 ## Install
 
 1. Go to **Settings → General**

@@ -42,3 +42,15 @@ coverage_report*.txt
 
 # Tooling
 .mcp.json
+
+# AutoMaker runtime artifacts (commit: feature.json, context/, settings.json, spec.md, app_spec.txt, categories.json)
+.automaker/worktrees/
+.automaker/events/
+.automaker/execution-state.json
+.automaker/active-branches.json
+.automaker/notifications.json
+.automaker/analysis.json
+.automaker/feature-suggestions.json
+.automaker/features/*/agent-output.md
+.automaker/features/*/*.bak*
+.automaker/features/*/raw-output.jsonl

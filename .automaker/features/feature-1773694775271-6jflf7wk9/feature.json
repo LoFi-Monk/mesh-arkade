@@ -1,0 +1,19 @@
+{
+  "category": "Uncategorized",
+  "description": "stop() does not close Hyperbee/Corestore, causing resource leaks",
+  "title": "Fix Hub Resource Leak",
+  "id": "feature-1773694775271-6jflf7wk9",
+  "createdAt": "2026-03-16T20:59:35.272Z",
+  "descriptionHistory": [
+    {
+      "description": "stop() does not close Hyperbee/Corestore, causing resource leaks",
+      "timestamp": "2026-03-16T20:59:35.272Z",
+      "source": "initial"
+    }
+  ],
+  "status": "backlog",
+  "planningMode": "full",
+  "requirePlanApproval": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "adaptive"
+}

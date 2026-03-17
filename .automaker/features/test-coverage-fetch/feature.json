@@ -9,9 +9,12 @@
   "dependencies": [
     "bittorrent-wire-protocol"
   ],
-  "planningMode": "skip",
-  "requirePlanApproval": false,
+  "planningMode": "full",
+  "requirePlanApproval": true,
   "createdAt": "2026-03-16T18:04:33.477Z",
-  "updatedAt": "2026-03-16T18:04:33.477Z",
-  "model": "claude-opus-4-6"
+  "updatedAt": "2026-03-16T22:34:01.203Z",
+  "model": "opencode-big-pickle",
+  "descriptionHistory": [],
+  "thinkingLevel": "adaptive",
+  "justFinishedAt": "2026-03-16T22:34:01.203Z"
 }
