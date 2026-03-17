@@ -143,7 +143,10 @@ const DEFAULT_CHUNK_SIZE = 64 * 1024;
 
 type FsLike = {
   createReadStream?: (path: string, opts?: { highWaterMark?: number }) => NodeJS.ReadableStream;
-  readFile?: (path: string) => Promise<Buffer>;
+  // Accepts both promise-based (bare-fs) and callback-based (Node fs) readFile signatures.
+  // The implementation resolves the correct variant via fs.promises?.readFile ?? fs.readFile.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readFile?: (...args: any[]) => any;
   promises?: { readFile: (path: string) => Promise<Buffer> };
 };
 
@@ -153,9 +156,10 @@ async function createReadStreamChunked(
   chunkSize: number,
   hash: HashObject,
 ): Promise<void> {
-  if (typeof fs.createReadStream === "function") {
+  const createReadStream = fs.createReadStream;
+  if (typeof createReadStream === "function") {
     return new Promise((resolve, reject) => {
-      const stream = fs.createReadStream(filePath, {
+      const stream = createReadStream(filePath, {
         highWaterMark: chunkSize,
       });
 
