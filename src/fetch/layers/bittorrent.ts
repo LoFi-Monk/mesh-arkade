@@ -67,6 +67,10 @@ const DHTTransactionId = {
   },
 };
 
+/**
+ * @intent Converts a Uint8Array to a lowercase hex string.
+ * @guarantee Returns string with each byte as two hex characters.
+ */
 function buf2hex(buffer: Uint8Array): string {
   return Array.from(buffer)
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -87,6 +91,11 @@ function transactionIdToHex(t: Uint8Array | string): string {
     .join("");
 }
 
+/**
+ * @intent Converts a hex string to a Uint8Array.
+ * @guarantee Returns Uint8Array with half the length of input hex string.
+ * @constraint Input must be valid hex string with even length.
+ */
 function hex2buf(hex: string): Uint8Array {
   const arr = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
@@ -95,6 +104,10 @@ function hex2buf(hex: string): Uint8Array {
   return arr;
 }
 
+/**
+ * @intent Generates a random 20-byte node ID for DHT protocol.
+ * @guarantee Returns Uint8Array of exactly 20 random bytes.
+ */
 function randomNodeId(): Uint8Array {
   const arr = new Uint8Array(20);
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
@@ -171,6 +184,10 @@ export function bencode(data: unknown): Uint8Array {
 export function bdecode(data: Uint8Array): unknown {
   let position = 0;
 
+  function bytesToString(bytes: Uint8Array): string {
+    return new TextDecoder("latin1").decode(bytes);
+  }
+
   function peek(): number {
     return data[position];
   }
@@ -213,10 +230,7 @@ export function bdecode(data: Uint8Array): unknown {
     if (position >= data.length || peek() !== 0x3a) {
       throw new Error("Invalid string format");
     }
-    const length = parseInt(
-      String.fromCharCode(...data.slice(numStart, position)),
-      10,
-    );
+    const length = parseInt(bytesToString(data.slice(numStart, position)), 10);
     position++;
     const start = position;
     const end = start + length;
@@ -230,7 +244,7 @@ export function bdecode(data: Uint8Array): unknown {
     if (hasHighBytes) {
       return data.slice(start, end);
     }
-    return String.fromCharCode(...data.slice(start, end));
+    return bytesToString(data.slice(start, end));
   }
 
   function parseInt_(): number {
@@ -242,10 +256,7 @@ export function bdecode(data: Uint8Array): unknown {
     if (position >= data.length) {
       throw new Error("Invalid integer format");
     }
-    const result = parseInt(
-      String.fromCharCode(...data.slice(start, position)),
-      10,
-    );
+    const result = parseInt(bytesToString(data.slice(start, position)), 10);
     position++;
     return result;
   }
@@ -270,7 +281,7 @@ export function bdecode(data: Uint8Array): unknown {
       const rawKey = parse();
       const key =
         rawKey instanceof Uint8Array
-          ? String.fromCharCode(...rawKey)
+          ? bytesToString(rawKey)
           : (rawKey as string);
       const value = parse();
       result[key] = value;
@@ -300,6 +311,10 @@ function concatenateUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
+/**
+ * @intent Calculates XOR distance between two byte arrays for DHT Kademlia routing.
+ * @guarantee Returns Uint8Array with XOR of corresponding bytes, zero-padded to max length.
+ */
 function xorDistance(a: Uint8Array, b: Uint8Array): Uint8Array {
   const len = Math.max(a.length, b.length);
   const result = new Uint8Array(len);
@@ -325,6 +340,11 @@ interface DHTMessage {
   e?: unknown[];
 }
 
+/**
+ * @intent Creates a bencoded DHT get_peers query message.
+ * @guarantee Returns bencoded Uint8Array with valid DHT query format.
+ * @constraint Uses random node ID; does not persist node ID across queries.
+ */
 function createGetPeersQuery(
   infoHash: Uint8Array,
   transactionId: Uint8Array,
@@ -455,6 +475,51 @@ async function getNet(): Promise<unknown> {
   return await import("net");
 }
 
+/**
+ * @intent Typed socket interface for DHT UDP operations.
+ * @guarantee Provides type-safe event handlers for socket events.
+ */
+interface UDPSocketLike {
+  bind(port: number, callback?: () => void): void;
+  send(
+    buffer: Uint8Array,
+    port: number,
+    address: string,
+    callback?: (err: Error | null) => void,
+  ): void;
+  on(event: "error", callback: (err: Error) => void): void;
+  on(
+    event: "message",
+    callback: (
+      msg: Uint8Array,
+      rinfo: { address: string; port: number },
+    ) => void,
+  ): void;
+  on(event: "listening", callback: () => void): void;
+  address(): { address: string; port: number };
+  close(): void;
+}
+
+/**
+ * @intent Typed socket interface for BitTorrent wire protocol TCP operations.
+ * @guarantee Provides type-safe event handlers for socket events.
+ */
+interface TCPSocketLike {
+  connect(port: number, host: string, callback?: () => void): unknown;
+  write(data: Uint8Array, callback?: (err?: Error) => void): boolean;
+  on(event: "data", callback: (data: Uint8Array) => void): unknown;
+  on(event: "error", callback: (err: Error) => void): unknown;
+  on(event: "close", callback: () => void): unknown;
+  on(event: "connect", callback: () => void): unknown;
+  destroy(): void;
+}
+
+/**
+ * @intent UDP transceiver for DHT protocol communication.
+ * @guarantee Provides asynchronous send/receive with transaction tracking and timeout handling.
+ * @constraint Must call bind() before send(). Must call close() to avoid resource leaks.
+ *             Post-bind socket errors are silently ignored.
+ */
 class UDPTransceiver {
   private socket: unknown = null;
   private address: string = "";
@@ -478,45 +543,13 @@ class UDPTransceiver {
     this.errorCallback = callback;
   }
 
-  private getSocket(): {
-    send(
-      buffer: Uint8Array,
-      port: number,
-      address: string,
-      callback?: (err: Error | null) => void,
-    ): void;
-    close(): void;
-  } {
-    return this.socket as {
-      bind(port: number, callback?: () => void): void;
-      send(
-        buffer: Uint8Array,
-        port: number,
-        address: string,
-        callback?: (err: Error | null) => void,
-      ): void;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      on(event: string, callback: any): void;
-      address(): { address: string; port: number };
-      close(): void;
-    };
+  private getSocket(): UDPSocketLike {
+    return this.socket as UDPSocketLike;
   }
 
   async bind(port: number = 0): Promise<{ address: string; port: number }> {
     const dgram = (await getDgram()) as { createSocket(type: "udp4"): unknown };
-    const socket = dgram.createSocket("udp4") as {
-      bind(port: number, callback?: () => void): void;
-      send(
-        buffer: Uint8Array,
-        port: number,
-        address: string,
-        callback?: (err: Error | null) => void,
-      ): void;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      on(event: string, callback: any): void;
-      address(): { address: string; port: number };
-      close(): void;
-    };
+    const socket = dgram.createSocket("udp4") as UDPSocketLike;
     this.socket = socket;
 
     return new Promise((resolve, reject) => {
@@ -646,6 +679,12 @@ class UDPTransceiver {
   }
 }
 
+/**
+ * @intent DHT client for BitTorrent peer discovery using info hash lookup.
+ * @guarantee Returns array of peer addresses found via DHT get_peers queries.
+ * @constraint Must call initialize() before lookup(). Must call close() to release resources.
+ *             Uses SHA1 as info hash for custom P2P mesh (not standard BitTorrent network).
+ */
 class DHTClient {
   private transceiver: UDPTransceiver;
   private nodeId: Uint8Array;
@@ -833,6 +872,13 @@ class DHTClient {
   }
 }
 
+/**
+ * @intent Fetches data from a BitTorrent peer via wire protocol.
+ * @guarantee Returns Uint8Array with downloaded data (may be partial on timeout/error).
+ * @constraint WARNING: Output is NOT SHA1 verified. Callers MUST verify hash before use.
+ *             Resolves with partial data on inactivity timeout, socket error, or close.
+ *             Uses 5-second inactivity timeout between pieces, distinct from overall operation timeout.
+ */
 async function fetchFromPeer(
   peer: { host: string; port: number },
   infoHash: Uint8Array,
@@ -842,20 +888,12 @@ async function fetchFromPeer(
   const net = (await getNet()) as { Socket: new () => unknown };
 
   return new Promise((resolve, reject) => {
-    const socket = new net.Socket() as unknown as {
-      connect(port: number, host: string, callback?: () => void): unknown;
-      write(data: Uint8Array, callback?: (err?: Error) => void): boolean;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      on(event: string, callback: any): unknown;
-      destroy(): void;
-    };
+    const socket = new net.Socket() as unknown as TCPSocketLike;
 
     let timeoutId: ReturnType<typeof setTimeout>;
     let handshakeReceived = false;
-    let amChoking = true;
     let amInterested = false;
     let peerChoking = true;
-    let peerInterested = false;
     let currentPieceIndex = 0;
     let currentOffset = 0;
     const downloadedPieces: Map<
@@ -973,10 +1011,8 @@ async function fetchFromPeer(
           queueRequest();
           break;
         case MessageId.INTERESTED:
-          peerInterested = true;
           break;
         case MessageId.NOT_INTERESTED:
-          peerInterested = false;
           break;
         case MessageId.HAVE:
           if (payload && payload.length === 4) {
@@ -1124,7 +1160,7 @@ function assemblePieces(
     const blocks = pieces.get(index)!;
     const sortedBlocks = [...blocks].sort((a, b) => a.offset - b.offset);
     let pieceData: Uint8Array;
-    if (sortedBlocks.length === 1) {
+    if (sortedBlocks.length === 1 && sortedBlocks[0].offset === 0) {
       pieceData = sortedBlocks[0].data;
     } else {
       let pieceLengthCalc = 0;
