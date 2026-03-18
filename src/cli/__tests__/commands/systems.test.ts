@@ -47,4 +47,22 @@ describe("handleSystems", () => {
     expect(consoleLog).toHaveBeenCalledWith(JSON.stringify(systems));
     consoleLog.mockRestore();
   });
+
+  it("should output error when result.error is present", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      error: { message: "Test error message" },
+    });
+    await handleSystems("", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Test error message");
+    consoleLog.mockRestore();
+  });
+
+  it("should catch and output error when hub.handleRequest throws", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockRejectedValueOnce(new Error("Network failure"));
+    await handleSystems("", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Network failure");
+    consoleLog.mockRestore();
+  });
 });

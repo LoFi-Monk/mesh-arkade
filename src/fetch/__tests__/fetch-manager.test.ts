@@ -16,15 +16,31 @@ vi.mock("../../core/runtime.js", () => ({
 }));
 
 vi.mock("../../fetch/layers/hyperswarm.js", () => ({
-  fetchFromHyperswarm: vi.fn(),
+  fetchFromHyperswarm: vi.fn().mockImplementation((sha1, options) => {
+    // Simulate calling onProgress if provided - this ensures the callback is invoked
+    // which exercises the code path in fetch-manager
+    if (options?.onProgress) {
+      options.onProgress(100);
+    }
+    return Promise.resolve(new Uint8Array([1, 2, 3]));
+  }),
 }));
 
 vi.mock("../../fetch/layers/ipfs.js", () => ({
-  fetchFromIpfs: vi.fn(),
+  fetchFromIpfs: vi.fn().mockImplementation((sha1, options) => {
+    return Promise.resolve(new Uint8Array([1, 2, 3]));
+  }),
 }));
 
 vi.mock("../../fetch/layers/bittorrent.js", () => ({
-  fetchFromBittorrent: vi.fn(),
+  fetchFromBittorrent: vi.fn().mockImplementation((sha1, options) => {
+    // Simulate calling onProgress if provided - this ensures the callback is invoked
+    // which exercises the code path in fetch-manager
+    if (options?.onProgress) {
+      options.onProgress(100);
+    }
+    return Promise.resolve(new Uint8Array([1, 2, 3]));
+  }),
 }));
 
 import { fetchFromHyperswarm } from "../../fetch/layers/hyperswarm.js";
@@ -48,6 +64,21 @@ describe("FetchManager", () => {
 
       expect(fetchFromHyperswarm).toHaveBeenCalled();
       expect(result).toEqual(testData);
+    });
+
+    it("Hyperswarm succeeds with onProgress callback", async () => {
+      const testData = new Uint8Array([1, 2, 3, 4, 5]);
+      vi.mocked(fetchFromHyperswarm).mockResolvedValue(testData);
+
+      const manager = new FetchManager();
+      const progressCalls: { layer: string; bytes: number }[] = [];
+      manager.onProgress((progress) => {
+        progressCalls.push(progress);
+      });
+
+      await manager.fetch("abc123def456789012345678901234567890abcd");
+
+      expect(progressCalls.some((p) => p.layer === "hyperswarm")).toBe(true);
     });
 
     it("Hyperswarm fails, IPFS succeeds: falls through to IPFS layer", async () => {

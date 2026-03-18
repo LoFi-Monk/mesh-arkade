@@ -50,6 +50,7 @@ export enum MessageId {
 
 /**
  * @intent Standard BitTorrent block size (16KB).
+ * @guarantee Returns numeric value representing 16KB in bytes (16384).
  */
 export const BLOCK_SIZE = 16384;
 
@@ -619,6 +620,7 @@ class UDPTransceiver {
 
   async send(data: Uint8Array, address: string, port: number): Promise<void> {
     const sock = this.getSocket();
+    if (!sock) return;
     return new Promise((resolve, reject) => {
       sock.send(data, port, address, (err: Error | null) => {
         if (err) {
@@ -639,6 +641,7 @@ class UDPTransceiver {
   ): Promise<Uint8Array> {
     const t = buf2hex(transactionId);
     const sock = this.getSocket();
+    if (!sock) throw new Error("Socket closed");
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -923,7 +926,7 @@ async function fetchFromPeer(
     };
 
     const queueRequest = () => {
-      if (amInterested && !peerChoking) {
+      if (amInterested && !peerChoking && socket) {
         const requestMsg = createRequestMessage(
           currentPieceIndex,
           currentOffset,
@@ -1263,4 +1266,8 @@ export {
   DHTNode,
   DHTMessage,
   fetchFromPeer,
+  assemblePieces,
+  DHTTransactionId,
+  getDgram,
+  getNet,
 };
