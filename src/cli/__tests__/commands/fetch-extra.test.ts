@@ -19,6 +19,16 @@ vi.mock("../../../fetch/fetch-manager.js", () => ({
   })),
 }));
 
+vi.mock("../../../core/runtime.js", () => ({
+  getFs: vi.fn().mockResolvedValue({
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
+  }),
+  getPath: vi.fn().mockResolvedValue({
+    join: (...parts: string[]) => parts.join("/"),
+  }),
+}));
+
 vi.mock("ora", () => {
   const spinner = {
     start: vi.fn().mockReturnThis(),
