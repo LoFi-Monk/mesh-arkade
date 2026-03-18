@@ -33,6 +33,9 @@
 
 ## Carry-Forward (Still Open)
 
+### docs/architecture.md — Needs Full Rewrite
+File is stale — missing P2P fetch layer, BitTorrent DHT, FetchManager, trust layer, and CLI command structure. C4 diagram has inaccuracies (HTTP/WebSocket ref). Defer until after bittorrent modularization card lands — the new architectural doc from that card will be the primary source to pull from.
+
 ### Trust & Security Hardening (future milestone)
 - `12.4` — First-run DAT bootstrap: route through `fetchVerifiedDat`, reject on hash mismatch
 - `12.5` — Content-addressed pinning: announce verified SHA1 on Hyperswarm so peers can retrieve from swarm
