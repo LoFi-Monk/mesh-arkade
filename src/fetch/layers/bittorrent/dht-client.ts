@@ -40,7 +40,6 @@ export const BOOTSTRAP_NODES = [
  */
 export class DHTClient {
   private transceiver: UDPTransceiver;
-  private nodeId: Uint8Array;
   private infoHash: Uint8Array;
   private timeout: number;
   private bootstrapNodes: string[];
@@ -51,7 +50,6 @@ export class DHTClient {
     bootstrapNodes: string[] = BOOTSTRAP_NODES,
   ) {
     this.transceiver = new UDPTransceiver();
-    this.nodeId = randomNodeId();
     this.infoHash = infoHash;
     this.timeout = timeout;
     this.bootstrapNodes = bootstrapNodes;
