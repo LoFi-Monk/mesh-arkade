@@ -32,6 +32,27 @@ export const BOOTSTRAP_NODES = [
   "dht.transmissionbt.com:6881",
 ];
 
+/**
+ * @intent Standard BitTorrent Message IDs.
+ */
+export enum MessageId {
+  CHOKE = 0,
+  UNCHOKE = 1,
+  INTERESTED = 2,
+  NOT_INTERESTED = 3,
+  HAVE = 4,
+  BITFIELD = 5,
+  REQUEST = 6,
+  PIECE = 7,
+  CANCEL = 8,
+  PORT = 9,
+}
+
+/**
+ * @intent Standard BitTorrent block size (16KB).
+ */
+export const BLOCK_SIZE = 16384;
+
 const DHTTransactionId = {
   generate(): Uint8Array {
     const arr = new Uint8Array(2);
@@ -101,7 +122,11 @@ export function bencode(data: unknown): Uint8Array {
   }
 
   if (typeof data === "string") {
-    return new TextEncoder().encode(`${data.length}:${data}`);
+    const encoded = new TextEncoder().encode(data);
+    return concatenateUint8Arrays([
+      new TextEncoder().encode(`${encoded.length}:`),
+      encoded,
+    ]);
   }
 
   if (data instanceof Uint8Array) {
@@ -195,6 +220,11 @@ export function bdecode(data: Uint8Array): unknown {
     position++;
     const start = position;
     const end = start + length;
+    if (end > data.length) {
+      throw new Error(
+        `String length ${length} exceeds available data (${data.length - start} bytes remaining)`,
+      );
+    }
     position = end;
     const hasHighBytes = data.slice(start, end).some((b) => b >= 0x80);
     if (hasHighBytes) {
@@ -396,7 +426,10 @@ function parseNodesFromBytes(nodes: Uint8Array): DHTNode[] {
  * @guarantee Returns true only if the SHA1 of data matches expectedHex (case-insensitive).
  * @constraint Uses getCrypto() for Bare-compatible hashing.
  */
-async function verifySha1(data: Uint8Array, expectedHex: string): Promise<boolean> {
+async function verifySha1(
+  data: Uint8Array,
+  expectedHex: string,
+): Promise<boolean> {
   const crypto = await getCrypto();
   const hash = crypto.createHash("sha1");
   hash.update(data);
@@ -582,6 +615,11 @@ class UDPTransceiver {
   }
 
   close(): void {
+    for (const [key, pending] of this.pendingRequests) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error("Transceiver closed"));
+    }
+    this.pendingRequests.clear();
     if (this.socket) {
       this.getSocket().close();
     }
@@ -613,6 +651,7 @@ class DHTClient {
 
   async lookup(): Promise<Array<{ host: string; port: number }>> {
     const peers: Array<{ host: string; port: number }> = [];
+    const contactedPeers: Set<string> = new Set();
     const contactedNodes: Set<string> = new Set();
     let closestNodes: DHTNode[] = [];
 
@@ -630,7 +669,13 @@ class DHTClient {
           );
 
           const peerList = this.extractPeers(response);
-          peers.push(...peerList);
+          for (const peer of peerList) {
+            const peerKey = `${peer.host}:${peer.port}`;
+            if (!contactedPeers.has(peerKey)) {
+              contactedPeers.add(peerKey);
+              peers.push(peer);
+            }
+          }
         }
       } catch {
         // Continue to next bootstrap node
@@ -645,7 +690,10 @@ class DHTClient {
 
       const queries = closest.map(async (node) => {
         if (contactedNodes.has(`${node.address}:${node.port}`)) {
-          return { nodes: [] as DHTNode[], peers: [] as Array<{ host: string; port: number }> };
+          return {
+            nodes: [] as DHTNode[],
+            peers: [] as Array<{ host: string; port: number }>,
+          };
         }
         contactedNodes.add(`${node.address}:${node.port}`);
 
@@ -663,7 +711,10 @@ class DHTClient {
         } catch {
           // Node failed, continue
         }
-        return { nodes: [] as DHTNode[], peers: [] as Array<{ host: string; port: number }> };
+        return {
+          nodes: [] as DHTNode[],
+          peers: [] as Array<{ host: string; port: number }>,
+        };
       });
 
       const results = await Promise.all(queries);
@@ -671,10 +722,20 @@ class DHTClient {
       let newNodes: DHTNode[] = [];
       for (const result of results) {
         newNodes.push(...result.nodes);
-        peers.push(...result.peers);
+        for (const peer of result.peers) {
+          const peerKey = `${peer.host}:${peer.port}`;
+          if (!contactedPeers.has(peerKey)) {
+            contactedPeers.add(peerKey);
+            peers.push(peer);
+          }
+        }
       }
 
-      closestNodes = this.mergeClosestNodes([], newNodes, this.infoHash);
+      closestNodes = this.mergeClosestNodes(
+        closestNodes,
+        newNodes,
+        this.infoHash,
+      );
       iterations++;
     }
 
@@ -768,11 +829,38 @@ async function fetchFromPeer(
       on(event: string, callback: any): unknown;
       destroy(): void;
     };
+
     let timeoutId: ReturnType<typeof setTimeout>;
+    let handshakeReceived = false;
+    let amChoking = true;
+    let amInterested = false;
+    let peerChoking = true;
+    let peerInterested = false;
+    let currentPieceIndex = 0;
+    let currentOffset = 0;
+    const downloadedPieces: Map<number, { offset: number; data: Uint8Array }> =
+      new Map();
+    let buffer = new Uint8Array(0);
+    let isConnected = false;
+    let isClosed = false;
 
     const cleanup = () => {
       clearTimeout(timeoutId);
-      socket.destroy();
+      if (!isClosed) {
+        isClosed = true;
+        socket.destroy();
+      }
+    };
+
+    const queueRequest = () => {
+      if (!amChoking && !peerChoking) {
+        const requestMsg = createRequestMessage(
+          currentPieceIndex,
+          currentOffset,
+          BLOCK_SIZE,
+        );
+        socket.write(requestMsg);
+      }
     };
 
     timeoutId = setTimeout(() => {
@@ -781,18 +869,24 @@ async function fetchFromPeer(
     }, timeout);
 
     socket.connect(peer.port, peer.host, () => {
+      isConnected = true;
       clearTimeout(timeoutId);
 
-      // Set a new timeout for data reception — prevents indefinite hang
-      // when a peer accepts the connection but never sends data.
       timeoutId = setTimeout(() => {
         cleanup();
-        reject(new FetchLayerTimeoutError("bittorrent", timeout));
+        if (downloadedPieces.size > 0) {
+          const total = assemblePieces(downloadedPieces);
+          onProgress?.(total.length);
+          resolve(total);
+        } else {
+          reject(new FetchLayerTimeoutError("bittorrent", timeout));
+        }
       }, timeout);
 
       const pstrlen = 19;
       const pstr = "BitTorrent protocol";
       const reserved = new Uint8Array(8);
+      reserved[5] = 0x10;
       const peerId = randomNodeId();
 
       const handshake = new Uint8Array(1 + pstrlen + 8 + 20 + 20);
@@ -807,45 +901,199 @@ async function fetchFromPeer(
       socket.write(handshake);
     });
 
-    const chunks: Uint8Array[] = [];
-
-    const handleData = (data: Uint8Array) => {
-      const arr = data instanceof Uint8Array ? data : new Uint8Array(data);
-      chunks.push(arr);
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        cleanup();
-        if (chunks.length > 0) {
-          const total = concatenateUint8Arrays(chunks);
-          onProgress?.(total.length);
-          resolve(total);
-        } else {
-          reject(new FetchLayerError("bittorrent", "No data received"));
-        }
-      }, 5000);
+    const createInterestedMessage = (): Uint8Array => {
+      const msg = new Uint8Array(5);
+      const view = new DataView(msg.buffer);
+      view.setUint32(0, 1, false);
+      msg[4] = MessageId.INTERESTED;
+      return msg;
     };
 
-    socket.on("data", handleData);
+    const createRequestMessage = (
+      index: number,
+      begin: number,
+      length: number,
+    ): Uint8Array => {
+      const msg = new Uint8Array(17);
+      const view = new DataView(msg.buffer);
+      view.setUint32(0, 13, false);
+      msg[4] = MessageId.REQUEST;
+      view.setUint32(5, index, false);
+      view.setUint32(9, begin, false);
+      view.setUint32(13, length, false);
+      return msg;
+    };
+
+    const parseMessage = (
+      data: Uint8Array,
+    ): { length: number; id?: number; payload?: Uint8Array } | null => {
+      if (data.length < 4) return null;
+      const view = new DataView(data.buffer, data.byteOffset, data.length);
+      const length = view.getUint32(0, false);
+      if (length === 0) return { length: 0 };
+      if (data.length < 4 + length) return null;
+      const id = data[4];
+      const payload = length > 1 ? data.slice(5, 5 + length - 1) : undefined;
+      return { length, id, payload };
+    };
+
+    const handleMessage = (id: number, payload?: Uint8Array) => {
+      switch (id) {
+        case MessageId.CHOKE:
+          peerChoking = true;
+          break;
+        case MessageId.UNCHOKE:
+          peerChoking = false;
+          if (!amInterested) {
+            amInterested = true;
+            socket.write(createInterestedMessage());
+          }
+          queueRequest();
+          break;
+        case MessageId.INTERESTED:
+          peerInterested = true;
+          break;
+        case MessageId.NOT_INTERESTED:
+          peerInterested = false;
+          break;
+        case MessageId.HAVE:
+          if (payload && payload.length === 4) {
+            const view = new DataView(payload.buffer, payload.byteOffset, 4);
+            const pieceIndex = view.getUint32(0, false);
+            if (
+              amInterested &&
+              !peerChoking &&
+              pieceIndex >= currentPieceIndex
+            ) {
+              currentPieceIndex = pieceIndex;
+              currentOffset = 0;
+              queueRequest();
+            }
+          }
+          break;
+        case MessageId.BITFIELD:
+          if (!amInterested) {
+            amInterested = true;
+            socket.write(createInterestedMessage());
+          }
+          break;
+        case MessageId.PIECE:
+          if (payload && payload.length >= 8) {
+            const view = new DataView(payload.buffer, payload.byteOffset, 8);
+            const index = view.getUint32(0, false);
+            const begin = view.getUint32(4, false);
+            const block = payload.slice(8);
+            downloadedPieces.set(index, { offset: begin, data: block });
+            currentOffset += block.length;
+            clearTimeout(timeoutId);
+            // Note: 5-second inactivity timeout between pieces is intentional and distinct
+            // from the overall operation timeout. This allows slow peers to complete transfers
+            // while still detecting when the peer has stopped sending data.
+            timeoutId = setTimeout(() => {
+              cleanup();
+              const total = assemblePieces(downloadedPieces);
+              onProgress?.(total.length);
+              resolve(total);
+            }, 5000);
+            if (!peerChoking) {
+              queueRequest();
+            }
+          }
+          break;
+      }
+    };
+
+    socket.on("data", (data: Uint8Array) => {
+      const arr = data instanceof Uint8Array ? data : new Uint8Array(data);
+      const newBuffer = new Uint8Array(buffer.length + arr.length);
+      newBuffer.set(buffer);
+      newBuffer.set(arr, buffer.length);
+      buffer = newBuffer;
+
+      while (buffer.length > 0) {
+        if (!handshakeReceived) {
+          if (buffer.length < 68) break;
+          const handshake = buffer.slice(0, 68);
+          if (
+            handshake[0] === 19 &&
+            String.fromCharCode(...handshake.slice(1, 20)) ===
+              "BitTorrent protocol"
+          ) {
+            handshakeReceived = true;
+            buffer = buffer.slice(68);
+          } else {
+            cleanup();
+            reject(
+              new FetchLayerError("bittorrent", "Invalid handshake from peer"),
+            );
+            return;
+          }
+        } else {
+          const parsed = parseMessage(buffer);
+          if (parsed === null) break;
+          if (parsed.length === 0) {
+            buffer = buffer.slice(4);
+          } else if (parsed.id !== undefined) {
+            handleMessage(parsed.id, parsed.payload);
+            buffer = buffer.slice(4 + parsed.length);
+          }
+        }
+      }
+    });
 
     socket.on("error", (err: Error) => {
       cleanup();
-      reject(
-        new FetchLayerError(
-          "bittorrent",
-          `Peer connection error: ${err.message}`,
-          err,
-        ),
-      );
+      if (downloadedPieces.size > 0) {
+        const total = assemblePieces(downloadedPieces);
+        onProgress?.(total.length);
+        resolve(total);
+      } else {
+        reject(
+          new FetchLayerError(
+            "bittorrent",
+            `Peer connection error: ${err.message}`,
+            err,
+          ),
+        );
+      }
     });
 
     socket.on("close", () => {
-      if (chunks.length > 0) {
-        const total = concatenateUint8Arrays(chunks);
+      if (isClosed) return;
+      isClosed = true;
+      clearTimeout(timeoutId);
+      if (downloadedPieces.size > 0) {
+        const total = assemblePieces(downloadedPieces);
         onProgress?.(total.length);
         resolve(total);
+      } else {
+        reject(
+          new FetchLayerError(
+            "bittorrent",
+            "Connection closed before data received",
+          ),
+        );
       }
     });
   });
+}
+
+function assemblePieces(
+  pieces: Map<number, { offset: number; data: Uint8Array }>,
+): Uint8Array {
+  if (pieces.size === 0) return new Uint8Array(0);
+  const indices = Array.from(pieces.keys()).sort((a, b) => a - b);
+  let totalLength = 0;
+  for (const index of indices) {
+    const piece = pieces.get(index)!;
+    totalLength = Math.max(totalLength, piece.offset + piece.data.length);
+  }
+  const result = new Uint8Array(totalLength);
+  for (const index of indices) {
+    const piece = pieces.get(index)!;
+    result.set(piece.data, piece.offset);
+  }
+  return result;
 }
 
 /**

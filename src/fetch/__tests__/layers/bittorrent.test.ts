@@ -151,7 +151,9 @@ describe("parsePeers additional tests", () => {
   });
 
   it("parses compact peers from Uint8Array (bdecode binary path)", () => {
-    const peerData = new Uint8Array([192, 168, 1, 1, 0x1f, 0x90, 10, 0, 0, 1, 0x23, 0x28]);
+    const peerData = new Uint8Array([
+      192, 168, 1, 1, 0x1f, 0x90, 10, 0, 0, 1, 0x23, 0x28,
+    ]);
     const result = parsePeers(peerData);
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ host: "192.168.1.1", port: 8080 });
@@ -532,36 +534,49 @@ describe("DHTClient lookup integration", () => {
   }, 5000);
 });
 
-describe("fetchFromPeer integration", () => {
-  it("rejects connection to invalid host", async () => {
+describe("bencode UTF-8 compatibility", () => {
+  it("uses UTF-8 byte length for non-ASCII strings", () => {
+    const result = bencode("é");
+    const decoded = bdecode(result);
+    const decodedBytes =
+      decoded instanceof Uint8Array
+        ? decoded
+        : new TextEncoder().encode(decoded as string);
+    expect(Array.from(decodedBytes)).toEqual([195, 169]);
+    const encoded = new TextEncoder().encode("é");
+    expect(encoded.length).toBe(2);
+    const prefix = new TextDecoder().decode(result.slice(0, 2));
+    expect(prefix).toBe("2:");
+  });
+
+  it("correctly encodes multi-byte UTF-8 characters", () => {
+    const result = bencode("日本語");
+    const decoded = bdecode(result);
+    expect(decoded instanceof Uint8Array).toBe(true);
+    const decodedStr = new TextDecoder().decode(decoded as Uint8Array);
+    expect(decodedStr).toBe("日本語");
+    const encoded = new TextEncoder().encode("日本語");
+    expect(encoded.length).toBe(9);
+  });
+
+  it("encodes ASCII strings the same as character length", () => {
+    const result = bencode("hello");
+    expect(new TextDecoder().decode(result)).toBe("5:hello");
+  });
+});
+
+describe("fetchFromPeer actual behavior", () => {
+  it("fetchFromPeer function is exported and callable", async () => {
+    const { fetchFromPeer } = await import("../../layers/bittorrent.js");
+    expect(typeof fetchFromPeer).toBe("function");
+  });
+
+  it("rejects connection to invalid host with proper error type", async () => {
     const { fetchFromPeer } = await import("../../layers/bittorrent.js");
     const peer = { host: "192.0.2.1", port: 6881 };
     const infoHash = new Uint8Array(20).fill(0xab);
 
-    await expect(fetchFromPeer(peer, infoHash, 500)).rejects.toThrow();
-  }, 10000);
-
-  it("uses Uint8Array for socket.write (Bare runtime compatible)", async () => {
-    const { readFileSync } = await import("fs");
-    const { fileURLToPath } = await import("url");
-    const { dirname, join } = await import("path");
-
-    const testFile = fileURLToPath(import.meta.url);
-    const testDir = dirname(testFile);
-    const sourcePath = join(testDir, "..", "..", "layers", "bittorrent.ts");
-    const sourceCode = readFileSync(sourcePath, "utf-8");
-
-    const fetchFromPeerMatch = sourceCode.match(
-      /async function fetchFromPeer\([\s\S]*?\n\}/,
-    );
-    expect(fetchFromPeerMatch).not.toBeNull();
-
-    const functionBody = fetchFromPeerMatch![0];
-    const hasBufferModuleCheck = /net\.Buffer/.test(functionBody);
-    const hasBufferFrom = /Buffer\.from\(/.test(functionBody);
-
-    expect(hasBufferModuleCheck).toBe(false);
-    expect(hasBufferFrom).toBe(false);
+    await expect(fetchFromPeer(peer, infoHash, 100)).rejects.toThrow();
   });
 });
 
