@@ -1,6 +1,6 @@
 # Context Index
 
-This file is the map for AutoMaker agents. External docs live in `docs/` — follow the paths below to find what you need.
+This file is the map for all agents working on this project. External docs live in `docs/` — follow the paths below to find what you need.
 
 ## Engineering Standards
 

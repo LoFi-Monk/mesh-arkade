@@ -3,7 +3,7 @@
   "category": "Core",
   "title": "Streaming SHA1 Hashing for Large Files",
   "description": "Implement a streaming SHA1 computation path in runtime.ts that hashes files in chunks rather than loading them fully into memory. Required for verifying large disc images (CHD, bin/cue) without OOM risk in the Bare runtime.",
-  "status": "verified",
+  "status": "completed",
   "priority": 1,
   "complexity": "moderate",
   "dependencies": [],
