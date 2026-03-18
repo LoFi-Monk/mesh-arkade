@@ -53,7 +53,7 @@ Use the `pear-runtime` skill for anything related to Pear.
 
 # AutoMaker
 Development workflow is managed via AutoMaker (running on `:3008`).
-- ADRs live in `.automaker/context/adr/` — read them before proposing architectural changes.
+- ADRs live in `docs/adr/` — read them before proposing architectural changes.
 - Roadmap and carry-forward items live in `.automaker/context/roadmap.md`.
 - Feature board is the source of truth for what's in progress.
 

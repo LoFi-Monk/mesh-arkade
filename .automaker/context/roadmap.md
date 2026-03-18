@@ -12,26 +12,26 @@
 | 04a — CLI Layer Extraction | ✅ Complete |
 | 04b — Centralize Runtime Utilities | ✅ Complete |
 | 05 — P2P Fetch (Triple-Layer) | ✅ Complete |
-| 06 — BitTorrent Wire Protocol | 🚀 Next |
+| 06 — BitTorrent Wire Protocol | ✅ Complete (PR #16 merged 2026-03-18) |
+| 06a — BitTorrent Modularization + Docs | 🚀 In Progress |
 | N — Normalization & TorrentZip | 📋 Backlog |
 | N — Emulation Layer | 📋 Backlog (Phase 3+) |
 
 ---
 
-## Carry-Forward from Milestone 05
+## Active Backlog
 
-These items were deferred and must be addressed before or during Milestone 06.
+| Card | Description |
+|------|-------------|
+| Refactor bittorrent.ts into focused modules | Split 1257-line file into 6 modules + write ADR and architectural doc alongside |
+| Fix Hub Resource Leak | `stop()` doesn't close Hyperbee/Corestore |
+| Fix System Name Matching Bug | `getSystemDefinition` uses `.includes()` — nes matches snes |
+| Extract CLI Command Handlers | Move handlers out of `index.js` into proper CLI layer |
+| End-to-End Integration Test Harness | Real DHT lookup + peer connect + piece download test |
 
-### Test Coverage Debt
-- `5.3` — Hyperswarm layer: mock peer success + timeout cases
-- `6.3` — IPFS layer: map hit + 200, map miss, gateway error
-- `7.4` — BitTorrent layer: mock DHT success + timeout cases
-- `8.4` — FetchManager: Hyperswarm success, fallback to IPFS, all-fail aggregation
-- `9.7` — `handleFetch` CLI command: valid SHA1 + library, invalid SHA1, no library mounted
-- `12.6` — `fetchVerifiedDat`: hash match (accept), hash mismatch (reject), network error
+---
 
-### BitTorrent DHT Spike (blocker for Milestone 06)
-- `7.1` — Spike `bittorrent-dht` in a Bare process to confirm DHT lookup works with SHA1 as infohash
+## Carry-Forward (Still Open)
 
 ### Trust & Security Hardening (future milestone)
 - `12.4` — First-run DAT bootstrap: route through `fetchVerifiedDat`, reject on hash mismatch
@@ -39,21 +39,10 @@ These items were deferred and must be addressed before or during Milestone 06.
 
 ---
 
-## Milestone 06 — BitTorrent Wire Protocol
-
-**Objective**: Implement the BitTorrent wire protocol layer (currently a stub throwing 'not yet implemented'). Enable DHT-based ROM fetching using SHA1 as info hash.
-
-Key requirements:
-1. Spike `bittorrent-dht` in Bare process (carry-forward 7.1)
-2. Implement `src/fetch/layers/bittorrent.ts` — DHT lookup with SHA1 as infohash
-3. Wire into FetchManager as Layer 3 (currently disabled)
-4. Full test coverage for the layer
-
----
-
 ## Strategic Notes
 
 - **CLI-first always**: If it doesn't work headless, it doesn't ship. GUI wraps CLI, never the reverse.
 - **No emulation in scope** until Phase 3+. Focus is preservation infrastructure.
-- **Myrient shutdown**: 2026-03-31. Affects ROM sourcing — P2P layers become more critical after this date.
+- **Myrient shutdown**: 2026-03-31. P2P layers are critical infrastructure — prioritize anything that enables ROM retrieval.
 - **Agents = humans**: All CLI commands must support `--json` for machine-parseable output.
+- **Custom BitTorrent protocol**: SHA1-as-info_hash is intentional. Our DHT peers are mesh-arkade nodes, not standard BT swarms. See `docs/adr/` and AGENTS.md Intentional Design Decisions.
