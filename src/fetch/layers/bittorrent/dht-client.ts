@@ -7,7 +7,6 @@ import { UDPTransceiver } from "./udp-transceiver.js";
 import {
   DHTNode,
   DHTMessage,
-  randomNodeId,
   createGetPeersQuery,
   DHTTransactionId,
   parseNodes,
