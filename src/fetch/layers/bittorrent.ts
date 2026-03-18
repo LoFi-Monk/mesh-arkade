@@ -467,6 +467,12 @@ class UDPTransceiver {
     msg: DHTMessage,
     rinfo: { address: string; port: number },
   ) => void)[] = [];
+  private errorCallback: ((err: Error) => void) | null = null;
+  private bound = false;
+
+  public setErrorCallback(callback: (err: Error) => void): void {
+    this.errorCallback = callback;
+  }
 
   private getSocket(): {
     send(
@@ -510,15 +516,22 @@ class UDPTransceiver {
     this.socket = socket;
 
     return new Promise((resolve, reject) => {
+      const handleError = (err: Error) => {
+        if (!this.bound) {
+          reject(err);
+        } else {
+          this.errorCallback?.(err);
+        }
+      };
+
+      socket.on("error", handleError);
+
       socket.bind(port, () => {
+        this.bound = true;
         const addr = socket.address();
         this.address = addr.address;
         this.port = addr.port;
         resolve({ address: this.address, port: this.port });
-      });
-
-      socket.on("error", (err: Error) => {
-        reject(err);
       });
 
       socket.on(
@@ -838,8 +851,10 @@ async function fetchFromPeer(
     let peerInterested = false;
     let currentPieceIndex = 0;
     let currentOffset = 0;
-    const downloadedPieces: Map<number, { offset: number; data: Uint8Array }> =
-      new Map();
+    const downloadedPieces: Map<
+      number,
+      Array<{ offset: number; data: Uint8Array }>
+    > = new Map();
     let buffer = new Uint8Array(0);
     let isConnected = false;
     let isClosed = false;
@@ -853,7 +868,7 @@ async function fetchFromPeer(
     };
 
     const queueRequest = () => {
-      if (!amChoking && !peerChoking) {
+      if (amInterested && !peerChoking) {
         const requestMsg = createRequestMessage(
           currentPieceIndex,
           currentOffset,
@@ -983,7 +998,12 @@ async function fetchFromPeer(
             const index = view.getUint32(0, false);
             const begin = view.getUint32(4, false);
             const block = payload.slice(8);
-            downloadedPieces.set(index, { offset: begin, data: block });
+            const existing = downloadedPieces.get(index);
+            if (existing) {
+              existing.push({ offset: begin, data: block });
+            } else {
+              downloadedPieces.set(index, [{ offset: begin, data: block }]);
+            }
             currentOffset += block.length;
             clearTimeout(timeoutId);
             // Note: 5-second inactivity timeout between pieces is intentional and distinct
@@ -1079,19 +1099,41 @@ async function fetchFromPeer(
 }
 
 function assemblePieces(
-  pieces: Map<number, { offset: number; data: Uint8Array }>,
+  pieces: Map<number, Array<{ offset: number; data: Uint8Array }>>,
+  pieceLength: number = 262144,
 ): Uint8Array {
   if (pieces.size === 0) return new Uint8Array(0);
   const indices = Array.from(pieces.keys()).sort((a, b) => a - b);
   let totalLength = 0;
   for (const index of indices) {
-    const piece = pieces.get(index)!;
-    totalLength = Math.max(totalLength, piece.offset + piece.data.length);
+    const blocks = pieces.get(index)!;
+    const pieceEnd = index * pieceLength + pieceLength;
+    for (const block of blocks) {
+      const blockEnd = index * pieceLength + block.offset + block.data.length;
+      totalLength = Math.max(totalLength, blockEnd);
+    }
   }
   const result = new Uint8Array(totalLength);
   for (const index of indices) {
-    const piece = pieces.get(index)!;
-    result.set(piece.data, piece.offset);
+    const blocks = pieces.get(index)!;
+    const sortedBlocks = [...blocks].sort((a, b) => a.offset - b.offset);
+    let pieceData: Uint8Array;
+    if (sortedBlocks.length === 1) {
+      pieceData = sortedBlocks[0].data;
+    } else {
+      let pieceLengthCalc = 0;
+      for (const block of sortedBlocks) {
+        pieceLengthCalc += block.data.length;
+      }
+      pieceData = new Uint8Array(pieceLengthCalc);
+      let offset = 0;
+      for (const block of sortedBlocks) {
+        pieceData.set(block.data, offset);
+        offset += block.data.length;
+      }
+    }
+    const absoluteOffset = index * pieceLength;
+    result.set(pieceData, absoluteOffset);
   }
   return result;
 }
