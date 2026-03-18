@@ -267,7 +267,11 @@ export function bdecode(data: Uint8Array): unknown {
     consume();
     const result: Record<string, unknown> = {};
     while (position < data.length && peek() !== 0x65) {
-      const key = parse() as string;
+      const rawKey = parse();
+      const key =
+        rawKey instanceof Uint8Array
+          ? String.fromCharCode(...rawKey)
+          : (rawKey as string);
       const value = parse();
       result[key] = value;
     }
@@ -563,6 +567,9 @@ class UDPTransceiver {
     }
 
     const msg = parsed as DHTMessage;
+    if (!msg.t) {
+      return;
+    }
     const t = transactionIdToHex(msg.t);
 
     const pending = this.pendingRequests.get(t);
@@ -1107,7 +1114,6 @@ function assemblePieces(
   let totalLength = 0;
   for (const index of indices) {
     const blocks = pieces.get(index)!;
-    const pieceEnd = index * pieceLength + pieceLength;
     for (const block of blocks) {
       const blockEnd = index * pieceLength + block.offset + block.data.length;
       totalLength = Math.max(totalLength, blockEnd);
@@ -1123,13 +1129,14 @@ function assemblePieces(
     } else {
       let pieceLengthCalc = 0;
       for (const block of sortedBlocks) {
-        pieceLengthCalc += block.data.length;
+        pieceLengthCalc = Math.max(
+          pieceLengthCalc,
+          block.offset + block.data.length,
+        );
       }
       pieceData = new Uint8Array(pieceLengthCalc);
-      let offset = 0;
       for (const block of sortedBlocks) {
-        pieceData.set(block.data, offset);
-        offset += block.data.length;
+        pieceData.set(block.data, block.offset);
       }
     }
     const absoluteOffset = index * pieceLength;
