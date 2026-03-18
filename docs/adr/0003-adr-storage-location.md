@@ -9,10 +9,12 @@ ADRs were being duplicated — copies existed in both `docs/adr/` and `.automake
 
 ## Decision
 
-`docs/adr/` is the canonical location for all ADRs. The `.automaker/context/adr/` directory is removed. AutoMaker agents find ADRs by following the links in `.automaker/context/context-index.md`, which maps directly to `docs/adr/`.
+`docs/adr/` is the canonical location for all ADRs. The `.automaker/context/adr/` directory has been deleted — it was a manual duplicate of `docs/adr/` with no automation keeping it in sync. AutoMaker agents find ADRs by following the links in `.automaker/context/context-index.md`, which maps directly to `docs/adr/`.
+
+Do not recreate `.automaker/context/adr/`. If a new ADR is needed, create it in `docs/adr/` and add a row to `context-index.md`.
 
 ## Consequences
 
-- **Positive**: Single source of truth — no duplication, no drift.
-- **Positive**: ADRs are visible on GitHub in the standard location.
-- **Negative**: AutoMaker agents must follow the context-index link rather than reading a local copy — acceptable given context-index is always loaded.
+- **Positive**: Single source of truth — no duplication, no drift between copies.
+- **Positive**: ADRs are visible on GitHub in the standard `docs/adr/` location.
+- **Negative**: AutoMaker agents must follow the context-index link rather than reading a local copy — acceptable given context-index is always loaded first.
