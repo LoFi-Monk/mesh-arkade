@@ -717,6 +717,7 @@ class DHTClient {
     for (const nodeAddr of this.bootstrapNodes) {
       const [address, portStr] = nodeAddr.split(":");
       const port = parseInt(portStr, 10);
+      contactedNodes.add(nodeAddr);
       try {
         const response = await this.sendGetPeers(this.infoHash, address, port);
         if (response) {
@@ -853,7 +854,14 @@ class DHTClient {
     target: Uint8Array,
   ): DHTNode[] {
     const allNodes = [...existing, ...newNodes];
-    allNodes.sort((a, b) => {
+    const seen = new Set<string>();
+    const uniqueNodes = allNodes.filter((node) => {
+      const key = `${node.address}:${node.port}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    uniqueNodes.sort((a, b) => {
       const distA = xorDistance(target, a.id);
       const distB = xorDistance(target, b.id);
       for (let i = 0; i < distA.length; i++) {
@@ -864,7 +872,7 @@ class DHTClient {
       return 0;
     });
 
-    return allNodes.slice(0, 8);
+    return uniqueNodes.slice(0, 8);
   }
 
   close(): void {
@@ -890,7 +898,8 @@ async function fetchFromPeer(
   return new Promise((resolve, reject) => {
     const socket = new net.Socket() as unknown as TCPSocketLike;
 
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+    let inactivityTimer: ReturnType<typeof setTimeout> | undefined;
     let handshakeReceived = false;
     let amInterested = false;
     let peerChoking = true;
@@ -905,7 +914,8 @@ async function fetchFromPeer(
     let isClosed = false;
 
     const cleanup = () => {
-      clearTimeout(timeoutId);
+      clearTimeout(deadlineTimer);
+      clearTimeout(inactivityTimer);
       if (!isClosed) {
         isClosed = true;
         socket.destroy();
@@ -923,25 +933,13 @@ async function fetchFromPeer(
       }
     };
 
-    timeoutId = setTimeout(() => {
+    deadlineTimer = setTimeout(() => {
       cleanup();
       reject(new FetchLayerTimeoutError("bittorrent", timeout));
     }, timeout);
 
     socket.connect(peer.port, peer.host, () => {
       isConnected = true;
-      clearTimeout(timeoutId);
-
-      timeoutId = setTimeout(() => {
-        cleanup();
-        if (downloadedPieces.size > 0) {
-          const total = assemblePieces(downloadedPieces);
-          onProgress?.(total.length);
-          resolve(total);
-        } else {
-          reject(new FetchLayerTimeoutError("bittorrent", timeout));
-        }
-      }, timeout);
 
       const pstrlen = 19;
       const pstr = "BitTorrent protocol";
@@ -1048,11 +1046,11 @@ async function fetchFromPeer(
               downloadedPieces.set(index, [{ offset: begin, data: block }]);
             }
             currentOffset += block.length;
-            clearTimeout(timeoutId);
+            clearTimeout(inactivityTimer);
             // Note: 5-second inactivity timeout between pieces is intentional and distinct
             // from the overall operation timeout. This allows slow peers to complete transfers
             // while still detecting when the peer has stopped sending data.
-            timeoutId = setTimeout(() => {
+            inactivityTimer = setTimeout(() => {
               cleanup();
               const total = assemblePieces(downloadedPieces);
               onProgress?.(total.length);
@@ -1124,7 +1122,7 @@ async function fetchFromPeer(
     socket.on("close", () => {
       if (isClosed) return;
       isClosed = true;
-      clearTimeout(timeoutId);
+      cleanup();
       if (downloadedPieces.size > 0) {
         const total = assemblePieces(downloadedPieces);
         onProgress?.(total.length);

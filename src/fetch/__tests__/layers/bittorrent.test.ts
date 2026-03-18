@@ -13,6 +13,7 @@ import {
   transactionIdToHex,
   DHTClient,
   UDPTransceiver,
+  DHTNode,
 } from "../../layers/bittorrent.js";
 import { FetchLayerError } from "../../errors.js";
 
