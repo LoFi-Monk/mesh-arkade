@@ -1,6 +1,6 @@
 # Context Index
 
-This file is the map for AutoMaker agents. External docs live in `docs/` — follow the paths below to find what you need.
+This file is the map for all agents working on this project. External docs live in `docs/` — follow the paths below to find what you need.
 
 ## Engineering Standards
 
@@ -16,6 +16,7 @@ Decisions that are final. Do not re-propose alternatives without new evidence.
 |---|----------|------|
 | 0001 | Use MADR format for tracking architecture decisions | `docs/adr/0001-adr-standard.md` |
 | 0002 | Hyperbee chosen over SQLite for metadata storage (Bare-friendly, P2P-portable) | `docs/adr/0002-hyperbee-metadata-storage.md` |
+| 0003 | `docs/adr/` is canonical — `.automaker/context/adr/` removed | `docs/adr/0003-adr-storage-location.md` |
 
 ## Reference Docs
 

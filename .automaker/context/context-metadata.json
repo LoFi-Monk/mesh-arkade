@@ -1,3 +1,10 @@
 {
-  "files": {}
+  "files": {
+    "context-index.md": {
+      "description": "This file is the map for all agents working on this project."
+    },
+    "engineering-standards.md": {
+      "description": "These rules apply to every task. Non-negotiable."
+    }
+  }
 }

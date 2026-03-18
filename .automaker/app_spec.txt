@@ -241,6 +241,1876 @@
       <name>Core Module Test Suite Expansion</name>
       <description>Bring src/core/* test coverage up to 80% thresholds across all branches by adding unit tests for database.ts reset edge cases, hub.ts lifecycle, and storage.ts mutex contention scenarios. Uses Vitest with mocked Hyperbee instances.</description>
     </feature>
+    <feature>
+      <name>Test AutoMaker GitHub workflow end-to-end</name>
+      <description>This is a workflow test, not a production feature. The goal is to exercise   
+  the full AutoMaker → GitHub pipeline end to end.
+
+  ## What to build
+
+  A single utility function `clamp(value, min, max)` in `src/core/utils.ts`    
+  that clamps a number within a range. Nothing more.
+
+  ## Requirements
+
+  - Read `.automaker/context/engineering-standards.md` before writing anything 
+  - Write the test first (`src/core/__tests__/utils.test.ts`) — TDD
+  - Implement `clamp` with a TSDoc comment (intent → guarantees → constraints) 
+  - No `any`, no type assertions
+  - Run `npm test` and `npm run typecheck` — both must pass before committing  
+  - Stage files explicitly by name — no `git add .`
+  - Commit message: `feat: add clamp utility function`
+  - Open a draft PR when done
+
+  ## Checklist
+  - [ ] Husky fail workflow
+  - [ ] Husky pass workflow
+  - [ ] PR
+  - [ ] CI fail workflow
+  - [ ] CI pass workflow
+  - [ ] Address reviews
+  - [ ] Squash and merge</description>
+    </feature>
+    <feature>
+      <name>BitTorrent Code Review Fixes</name>
+      <description>CRITICAL — TDD REQUIRED: Write tests BEFORE implementation for every task.                                 
+  The order is non-negotiable: (1) write a failing test, (2) write minimum                                   
+  implementation to make it pass, (3) move to the next task. Do not write any                                  implementation code without a failing test already committed.                                              
+                                                                                                             
+  Apply SOLID and DRY throughout — single responsibility per function, no
+  duplicated logic.
+
+CRITICAL BUG 1 — bdecode corrupts binary data (line 112)                                                     new TextDecoder() defaults to UTF-8. DHT responses contain binary node IDs,
+  compact peer lists, and tokens that are not valid UTF-8. Bytes like 0xC0 0xA8                              
+  (192.168.x.x IPs) get mangled, making bencode length prefixes count wrong.                                 
+  Fix: change to new TextDecoder(&apos;latin1&apos;) — latin-1 maps each byte 0–255 to                                 
+  exactly one character.                                                                                                                                                                                                    CRITICAL BUG 2 — Buffer usage in fetchFromPeer (lines 672, 677, 684, 685)                                    Buffer.from(), Buffer[], and Buffer.concat() violate the Bare constraint
+  (Uint8Array only, no Buffer). concatenateUint8Arrays() is already defined in                               
+  the file — use it.                                                                                                                                                                                                        SIGNIFICANT — Dead code: isCloser() and createFindNodeQuery() are defined but                                never called. Remove both.
+                                                                                                             
+  SIGNIFICANT — any types on getDgram(), getNet(), socket field, and in the test
+  file. The bare-dgram and bare-net type declarations are already in
+  hyperbee.d.ts — use them.
+
+  SIGNIFICANT — sendWithTransaction() re-decodes the full bencoded message just
+  to extract the transaction ID the caller already has. Add transactionId as a
+  parameter instead.
+
+  SIGNIFICANT — xorDistance() fallback for unequal-length arrays compares a byte                               value against an array length (nonsensical). Uint8Array is zero-initialised so
+  the loop body is a no-op — just remove it.                                                                 
+                                                                                                               TEST FIXES — Three tests don&apos;t verify meaningful behaviour:                                                  - &apos;Progress callback integration&apos; checks expect(progressFn).toBeDefined() —                                
+    trivially true                                                                                           
+  - &apos;timeout handling&apos; uses try/catch which passes even if no exception is thrown
+  - &apos;UDPTransceiver message handling&apos; calls vi.mock() after bind() already ran
+  Rewrite each to actually verify what it claims.</description>
+    </feature>
+    <feature>
+      <name>Add bare-dgram and bare-net dependencies</name>
+      <description>Fix CI failure: bare-dgram cannot be resolved at import time because it is
+  missing from package.json dependencies. bare-net has the same issue.                                       
+                                                                                                               In package.json, add to dependencies:                                                                      
+    &quot;bare-dgram&quot;: &quot;^1.0.1&quot;                                                                                   
+    &quot;bare-net&quot;: &quot;^2.2.0&quot;                                                                                            
+  Also remove &quot;bittorrent-dht&quot;: &quot;^11.0.8&quot; from dependencies — it was replaced                                  by the bespoke BEP 5 DHT client and is no longer imported anywhere.
+                                                                                                               Run npm install, then npm test and npm run typecheck to verify clean.</description>
+    </feature>
+    <feature>
+      <name>Fix duplicate eslint-disable comments (TSDoc CI failure)</name>
+      <description>Fix CI failure: TSDoc validation fails because there are duplicate
+  eslint-disable-next-line comments in src/fetch/layers/bittorrent.ts.                                       
+                                                                                                               At lines ~376-377 and ~393-394 there are two consecutive identical lines:                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any                                           
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any                                           
+                                                                                                               Remove the duplicate — each location should have exactly one directive.                                                                                                                                                 
+  Run npm test and npm run typecheck to verify clean.</description>
+    </feature>
+    <feature>
+      <name>Fix three failing BitTorrent layer tests</name>
+      <description>Fix three failing tests in src/fetch/__tests__/layers/bittorrent.test.ts.
+
+  --- FAILURE 1 &amp; 2: Two tests timing out (5000ms) ---
+
+    fetchFromBittorrent &gt; input validation &gt; accepts valid 40-character hex SHA1
+    fetchFromBittorrent &gt; input validation &gt; accepts options parameter without error
+
+  These tests pass a valid SHA1 and just expect any throw, but they&apos;re making
+  real DHT network connections and timing out. They must not make real network
+  calls. Fix by adding a very short timeout (e.g. 100ms) to the fetchFromBittorrent
+  call inside those tests so they fail fast, or mock the DHTClient so initialize()
+  returns immediately.
+
+  --- FAILURE 3: Binary roundtrip assertion wrong ---
+
+    bdecode &gt; roundtrips binary data with various non-UTF8 byte values
+
+  Expected [128, 255, 0, 127] but received [172, 255, 0, 127].
+  Byte 0x80 is being corrupted — TextDecoder(&apos;latin1&apos;) in Node.js/WHATWG maps
+  bytes 0x80–0x9F to Windows-1252 code points rather than their raw byte values,
+  so 0x80 → U+20AC (€) → charCode 8364, then something downstream produces 172.
+
+  The string-based bdecode approach cannot reliably round-trip arbitrary binary
+  bytes. The fix is to rewrite bdecode to operate on the raw Uint8Array directly
+  using byte-level index arithmetic instead of converting to a string first.
+  This also removes the need for TextDecoder entirely in bdecode.
+
+  After fixing, all three tests must pass and npm run typecheck must be clean.</description>
+    </feature>
+    <feature>
+      <name>Fix branch coverage threshold in IPFS fetch tests</name>
+      <description>failing job (ID: 67452659562, ref: d8d25ee67039f29f1841d4bcc341bc77efdef8ef) did not pass due to insufficient branch coverage in tests. The logs indicate:
+
+ERROR: Coverage for branches (78.08%) does not meet global threshold (80%)
+
+Your coverage threshold is set at 80%, but current branch coverage is 78.08%.
+
+Solution:
+Increase branch coverage by adding tests for under-tested branches, especially for src/fetch/ipfs.ts (lines 60 and 79):
+
+Review src/fetch/ipfs.ts and identify untested logic around lines 60 and 79.
+Add test cases that exercise all conditional branches in those areas.</description>
+    </feature>
+    <feature>
+      <name>Fix CI failures on bittorrent feature branch</name>
+      <description>Three tests are failing on the open PR. Fix all three. Do NOT rewrite passing tests or change the public     API.
+                                                                                                             
+  ---
+  Failure 1 &amp; 2 — DHT input validation tests timing out
+                                                                                                               fetchFromBittorrent &gt; input validation &gt; accepts valid 40-character hex SHA1
+  fetchFromBittorrent &gt; input validation &gt; accepts options parameter without error                           
+  
+  These tests make real UDP calls to DHT bootstrap nodes, causing timeouts in CI.                               
+  Fix: mock the UDPTransceiver (or the DHTClient constructor) so no real network I/O occurs. The tests only    assert that valid input is accepted without throwing — they do not assert DHT behavior. The mock just needs   to resolve/reject cleanly.                                                                                
+  
+  ---
+  Failure 3 — bdecode corrupts byte 0x80
+                                                                                                               bdecode &gt; roundtrips binary data with various non-UTF8 byte values
+                                                                                                               Root cause: TextDecoder(&apos;latin1&apos;) is being used somewhere in bdecode. WHATWG maps bytes 0x80–0x9F via        Windows-1252 (e.g. 0x80 → 0x20AC, not 0x80). This corrupts binary Bencode strings.
+                                                                                                               Fix: rewrite bdecode to operate entirely on raw Uint8Array using byte-level index arithmetic. Remove all     TextDecoder usage from the decoder path. No string conversion at any point during decode — strings must
+  stay as Uint8Array until the caller converts them.                                                         
+
+  ---
+  Constraints:
+  - TDD: if you add new test cases, write them before touching implementation
+  - No any types                                              
+  - No Buffer — Uint8Array only                                                                                - All existing passing tests must remain green
+  - npm test and npm run typecheck must both pass</description>
+    </feature>
+    <feature>
+      <name>Fix bare-type binding addon loading issue</name>
+      <description>⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/core/__tests__/runtime-hashstreaming.test.ts [ src/core/__tests__/run
+time-hashstreaming.test.ts ]
+TypeError: require.addon is not a function
+ ❯ Object.&lt;anonymous&gt; ../../node_modules/bare-type/binding.js:1:26
+ ❯ Object.&lt;anonymous&gt; ../../node_modules/bare-type/index.js:1:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 31 passed (32)
+      Tests  339 passed (339)
+
+Technical Implementation:
+
+**Root Cause Analysis:**
+`bare-type` uses a native addon loaded via `require.addon` — a Bare runtime API that does not exist in the Node.js/Vitest test environment. The `runtime-hashstreaming.test.ts` suite transitively imports a module that pulls in `bare-type` (likely via `bare-crypto` or a Bare-native hashing utility), causing the entire test file to fail at module evaluation time before any test runs.
+
+**Fix Strategy — Dual-Runtime Mock Injection:**
+
+1. **Identify the import chain** — trace which module in `src/core/` imports `bare-type` (likely `src/core/runtime/crypto.ts` or the hash-streaming adapter) and confirm the exact transitive path: `runtime-hashstreaming.ts → bare-crypto → bare-type/binding.js`
+
+2. **Add a Vitest module mock** for `bare-type` in the test file (or a shared `__mocks__` file):
+   ```ts
+   // src/core/__tests__/__mocks__/bare-type.ts
+   export const type = (val: unknown) =&gt; typeof val; // no-op stub
+   export default { type };
+   ```
+   Register via `vi.mock(&apos;bare-type&apos;, ...)` or `vitest.config.ts` alias resolution.
+
+3. **Preferred approach — runtime abstraction shim:** Following the existing dual-runtime abstraction layer pattern, ensure `bare-crypto` usage in the hash-streaming module is already gated behind the runtime adapter (e.g., `src/core/runtime/crypto.ts`). If not, extract the `bare-type` dependency behind the adapter so Vitest can substitute a Node.js-compatible shim without mocking a transitive `node_modules` path.
+
+**Vitest Config Changes (`vitest.config.ts`):**
+```ts
+resolve: {
+  alias: {
+    &apos;bare-type&apos;: path.resolve(__dirname, &apos;src/core/__tests__/__mocks__/bare-type.ts&apos;),
+  },
+},
+```
+Scope the alias to the `test` config block only so it does not affect the Pear/Bare production build.
+
+**Affected Files:**
+- `vitest.config.ts` — add `bare-type` alias under test resolver
+- `src/core/__tests__/__mocks__/bare-type.ts` — new stub module
+- `src/core/runtime/crypto.ts` *(if refactor needed)* — gate `bare-type` import behind runtime guard
+- `src/core/__tests__/runtime-hashstreaming.test.ts` — remove any workaround imports once mock is in place
+
+**Validation Steps:**
+- `pnpm test -- runtime-hashstreaming` passes with 0 failed suites
+- All 32 test files pass; 339 tests remain green
+- `bare-type` stub does not bleed into non-test builds (verify with `pnpm build`)
+- Coverage thresholds (80% branch/line) remain satisfied for the `core` module group
+
+**Edge Cases &amp; Constraints:**
+- Do **not** mock `bare-crypto` wholesale — only `bare-type`&apos;s native binding layer; other Bare modules stubbed elsewhere must remain unaffected
+- Confirm the alias is **test-only**; Pear/Bare production runtime must still load the real native addon
+- If `bare-type` is used for type-narrowing guards inside production logic, the stub must return values that pass those guards to avoid masking real logic errors in tests
+- Add a comment in the mock referencing the Bare addon incompatibility so future engineers understand why the alias exists
+
+Acceptance Criteria:
+
+1. Given the Vitest test environment is running `runtime-hashstreaming.test.ts`, when the test suite is executed via `pnpm test -- runtime-hashstreaming`, then the suite must complete with 0 failed test files and all previously passing 339 tests remain green.
+
+2. Given the `bare-type` native addon is incompatible with the Node.js/Vitest environment (`require.addon` is not a function), when `runtime-hashstreaming.test.ts` is evaluated, then module resolution must not throw `TypeError: require.addon is not a function` at any point during suite initialization.
+
+3. Given a `bare-type` stub module exists at `src/core/__tests__/__mocks__/bare-type.ts`, when Vitest resolves the `bare-type` import, then it must use the stub and export a shape compatible with any type-narrowing guards used in production logic (i.e., the stub must not silently change the truthiness or type of guarded values in ways that mask real logic errors).
+
+4. Given the `bare-type` alias is registered in `vitest.config.ts` under the `test` config block, when a production build is executed via `pnpm build`, then the alias must not be present in the build resolver and the real native `bare-type` addon must be loaded by the Pear/Bare runtime unchanged.
+
+5. Given the full test suite of 32 test files is run, when `pnpm test` completes, then all 32 test files must pass and no previously passing test file may be newly failing as a result of this fix.
+
+6. Given the `bare-type` mock is introduced, when it is examined in source, then it must contain an inline comment explaining the Bare addon incompatibility with the Node.js/Vitest environment and referencing `require.addon` as the root cause, so future engineers understand the rationale for the alias.
+
+7. Given other Bare module stubs exist elsewhere in the test harness (e.g., `bare-crypto` or other `node_modules` shims), when the `bare-type` alias is added, then those existing stubs must remain unaffected and their test suites must continue to pass without modification.
+
+8. Given `bare-type` is used only for type-narrowing or runtime type inspection in production code, when the stub replaces it in tests, then the stub&apos;s return values must be semantically equivalent for all inputs exercised by the test suite (e.g., if production code calls `type(val)` and checks the result against `&apos;string&apos;` or `&apos;number&apos;`, the stub must return the correct string for those inputs).
+
+9. Given the `bare-type` mock file is created at `src/core/__tests__/__mocks__/bare-type.ts`, when TypeScript strict-mode compilation runs against the test directory, then the mock file must compile without errors or `@ts-ignore` suppressions.
+
+10. Given the fix is applied and `pnpm test` is run with coverage enabled, when the coverage report is generated, then branch and line coverage for the `core` module group must remain at or above the 80% threshold required by `vitest.config.ts`.
+
+11. Given the import chain `runtime-hashstreaming.ts → bare-crypto → bare-type/binding.js` has been confirmed, when the fix is implemented, then only `bare-type` is aliased to the stub — `bare-crypto` itself must not be wholesale-mocked, ensuring that any other `bare-crypto` behavior exercised in tests is still validated against real (or already-approved stub) logic.
+
+12. Given a developer runs `pnpm test` in a clean Node.js environment without the Pear/Bare runtime present, when all 32 test suites execute, then no suite may fail due to any native addon loading error, including but not limited to `require.addon`, `require.nativeAddon`, or equivalent Bare-only APIs.</description>
+    </feature>
+    <feature>
+      <name>Fix TSDoc and TypeScript errors introduced by bare-type mock</name>
+      <description>Two CI failures introduced by the bare-type mock changes. Fix both without altering the mock&apos;s behavior.
+                                                                                                               Failure 1 — TSDoc missing tags
+  src/core/__tests__/__mocks__/bare-type.ts fails TSDoc strict check:                                          type: Missing @intent tag                                                                                    type: Missing @guarantee or @contract tag
+  Add a TSDoc comment to the type export with @intent (what this mock is for) and @guarantee (what it          guarantees to callers). Follow the same TSDoc shape used in other mock files in the project.                                                                                                                              Failure 2 — TypeScript error in tests/setup.ts                                                               tests/setup.ts(27,41): error TS2339: Property &apos;addon&apos; does not exist on type &apos;Require&apos;                       require.addon is not typed in the Require interface. Fix by augmenting the NodeRequire interface to include   addon as an optional function, or cast appropriately. Do not remove the line — it is needed for the mock.                                                                                                                Constraints:
+  - Do not change mock behavior                                                                                - npm run typecheck and npm test must both pass                                                              - TSDoc must follow intent → guarantee → constraints shape</description>
+    </feature>
+    <feature>
+      <name>Address PR #16 Review Comments</name>
+      <description>Read the review requests on PR #16 and address any feedback the best you can.</description>
+    </feature>
+    <feature>
+      <name>Address 5 review comments on PR #16</name>
+      <description>## PR Review Comments Resolution
+
+**Pull Request:** #16 - Implement BitTorrent wire protocol with DHT support
+**Number of comments:** 5
+
+Please address all of the following review comments from this pull request.
+
+---
+
+### Comment 1 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 12 potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 2 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 849)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0006&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 704, &quot;end_line&quot;: 780, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer uses non-standard custom protocol instead of BitTorrent wire protocol**
+&gt; 
+&gt; The `fetchFromPeer` function at `src/fetch/layers/bittorrent.ts:704-780` connects to peers via TCP and sends a raw 20-byte info hash, then collects whatever data the peer sends back. This is not the BitTorrent wire protocol (BEP 3), which requires a handshake message (68 bytes: pstrlen + pstr + reserved + info_hash + peer_id), followed by piece request messages. Real BitTorrent peers would not understand this custom protocol and would likely drop the connection or send unexpected data. This means even if the DHT discovery bugs are fixed, the peer download would not work with actual BitTorrent swarm participants.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 3 - by @devin-ai-integration[bot]
+**File:** `src/fetch/__tests__/layers/bittorrent.test.ts` (line 235)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/__tests__/layers/bittorrent.test.ts&quot;, &quot;start_line&quot;: 194, &quot;end_line&quot;: 201, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **Test assertions checking source code strings rather than testing actual behavior**
+&gt; 
+&gt; Several test cases in `src/fetch/__tests__/layers/bittorrent.test.ts` assert against string literals containing source code rather than testing actual runtime behavior. For example, lines 194-200 (timeout handling test), lines 471-483 (UDPTransceiver message handling), and lines 589-601 (progress callback) all just check that a hardcoded string contains certain patterns. These tests provide zero coverage — they pass regardless of the actual implementation. While not a bug per se, they inflate the test count without providing value and could mask regressions.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 4 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 588)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0006&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 538, &quot;end_line&quot;: 542, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **UDPTransceiver.close() does not clear pending request timers, causing resource leaks**
+&gt; 
+&gt; The `close()` method at `src/fetch/layers/bittorrent.ts:538-542` closes the underlying socket but does not clear the timers in `pendingRequests`. These timers continue to run after the transceiver is closed and will fire, attempting to reject promises and delete from the map after the socket is already closed. In the `fetchFromBittorrent` `finally` block (`src/fetch/layers/bittorrent.ts:836-838`), `dht.close()` is called which invokes this, leaving dangling timers.
+&gt; 
+&gt; ```suggestion
+&gt;   close(): void {
+&gt;     for (const [key, pending] of this.pendingRequests) {
+&gt;       clearTimeout(pending.timer);
+&gt;       pending.reject(new Error(&quot;Transceiver closed&quot;));
+&gt;     }
+&gt;     this.pendingRequests.clear();
+&gt;     if (this.socket) {
+&gt;       this.getSocket().close();
+&gt;     }
+&gt;   }
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 5 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 105)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 88, &quot;end_line&quot;: 90, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **bencode uses JS string character count instead of UTF-8 byte length for string prefix**
+&gt; 
+&gt; In `bencode` (`src/fetch/layers/bittorrent.ts:88-90`), `data.length` is used as the bencode length prefix for strings. JavaScript&apos;s `String.length` returns the number of UTF-16 code units, but bencode requires the byte length of the encoded string. For any non-ASCII character (e.g., `&quot;é&quot;` has `length=1` but UTF-8 encoding is 2 bytes), the produced length prefix is incorrect. A decoder reading this would read fewer bytes than present, causing parse failures. Since `bencode` is exported as a public utility, any use with non-ASCII strings would produce corrupt output.
+&gt; 
+&gt; ```suggestion
+&gt;   if (typeof data === &quot;string&quot;) {
+&gt;     const encoded = new TextEncoder().encode(data);
+&gt;     return concatenateUint8Arrays([
+&gt;       new TextEncoder().encode(`${encoded.length}:`),
+&gt;       encoded,
+&gt;     ]);
+&gt;   }
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+
+### Instructions
+
+Please address all the review comments listed above. For each comment:
+1. Review the code in context at the specified file and line
+2. Make the necessary changes to resolve the reviewer&apos;s feedback
+3. Ensure changes follow existing code patterns and conventions
+4. Do not introduce regressions</description>
+    </feature>
+    <feature>
+      <name>Address 11 review comments on PR #16</name>
+      <description>## PR Review Comments Resolution
+
+**Pull Request:** #16 - Implement BitTorrent wire protocol with DHT support
+**Number of comments:** 11
+
+Please address all of the following review comments from this pull request.
+
+---
+
+### Comment 1 - by @devin-ai-integration[bot]
+**File:** `tests/setup.ts` (line 21)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0006&quot;, &quot;file_path&quot;: &quot;tests/setup.ts&quot;, &quot;start_line&quot;: 13, &quot;end_line&quot;: 21, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bare-crypto mock in tests/setup.ts returns non-chainable hash object**
+&gt; 
+&gt; The global `bare-crypto` mock at `tests/setup.ts:13-21` returns `{ update: () =&gt; ({ digest: () =&gt; &apos;mocked-hash&apos; }) }` — calling `update()` returns an object with only `digest`, not another object with `update`. This means chained calls like `hash.update(a).update(b).digest(&apos;hex&apos;)` would fail. However, the production code in `runtime.ts:108-118` wraps bare-crypto in a chainable adapter (`getCrypto()`), so tests that use `getCrypto()` are fine. The mock only matters if a test directly imports bare-crypto, which none currently do.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 2 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 6 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 3 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 678)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 677, &quot;end_line&quot;: 678, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: DHTClient iterative lookup discards previously discovered closest nodes each iteration**
+&gt; 
+&gt; At line 677, `closestNodes` is rebuilt from only `newNodes` each iteration: `closestNodes = this.mergeClosestNodes([], newNodes, this.infoHash)`. This discards previously known closest nodes that weren&apos;t contacted yet. In a proper Kademlia iterative lookup, you&apos;d merge new discoveries with the existing set of uncontacted closest nodes. As written, if iteration N discovers nodes A, B, C (sorted by distance) and contacts A, B, C in iteration N+1, but their responses yield only distant nodes, the search terminates prematurely even though iteration N-1 may have discovered closer uncontacted nodes.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 4 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 681)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 614, &quot;end_line&quot;: 681, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: DHTClient.lookup() doesn&apos;t deduplicate peers from multiple DHT responses**
+&gt; 
+&gt; The `lookup()` method at `src/fetch/layers/bittorrent.ts:614` appends peers from every DHT response without deduplication. If multiple DHT nodes return the same peer (common in real DHT networks), the same `host:port` pair will appear multiple times in the returned array. `fetchFromBittorrent` then tries each peer sequentially (line 886), meaning it would attempt the same failing peer multiple times, wasting time and network resources. A `Set` based on `host:port` strings (similar to `contactedNodes` for DHT nodes) would prevent this.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 5 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 825)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 816, &quot;end_line&quot;: 825, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Hardcoded 5-second inactivity timeout in fetchFromPeer ignores user timeout parameter**
+&gt; 
+&gt; The `handleData` callback at line 816 uses a hardcoded `5000`ms inactivity timeout between data chunks, while the user-provided `timeout` parameter is used for connection and initial data reception timeouts. This means even if a caller passes `{ timeout: 100 }`, the function will wait up to 5 seconds after the last data chunk before resolving. This is likely intentional as a chunk-level inactivity timer distinct from the overall operation timeout, but it&apos;s undocumented and could surprise callers who expect their timeout to bound the entire operation.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 6 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 198)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 196, &quot;end_line&quot;: 198, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **bdecode parseString doesn&apos;t validate declared length against remaining data**
+&gt; 
+&gt; In `bdecode`&apos;s `parseString` at line 197, `position` is set to `start + length` without validating that this doesn&apos;t exceed `data.length`. A malicious DHT peer could send a bencode string with an inflated length claim, causing `position` to be set past the end of the buffer. While subsequent parsing eventually throws, the function first returns a silently truncated string/Uint8Array as a valid value. Per REVIEW.md&apos;s &quot;Content Trust&quot; requirement, untrusted network data should be validated before being processed — the length claim from a DHT peer should be bounds-checked.
+&gt; 
+&gt; ```suggestion
+&gt;     const start = position;
+&gt;     const end = start + length;
+&gt;     if (end &gt; data.length) {
+&gt;       throw new Error(`String length ${length} exceeds available data (${data.length - start} bytes remaining)`);
+&gt;     }
+&gt;     position = end;
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 7 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 847)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 841, &quot;end_line&quot;: 847, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **fetchFromPeer close handler doesn&apos;t clear the inactivity timeout, leaking a timer**
+&gt; 
+&gt; In `fetchFromPeer`, the `close` event handler at line 841 resolves the promise when chunks exist but never calls `clearTimeout(timeoutId)`. The 5-second inactivity timeout set by the last `handleData` call (line 816) continues running. When it fires, it calls `cleanup()` which destroys an already-closed socket and calls `resolve()` again (a no-op on the settled promise). This leaks a timer and performs unnecessary operations on a destroyed socket.
+&gt; 
+&gt; ```suggestion
+&gt;     socket.on(&quot;close&quot;, () =&gt; {
+&gt;       clearTimeout(timeoutId);
+&gt;       if (chunks.length &gt; 0) {
+&gt;         const total = concatenateUint8Arrays(chunks);
+&gt;         onProgress?.(total.length);
+&gt;         resolve(total);
+&gt;       }
+&gt;     });
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 8 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 12 potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 9 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 849)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0006&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 755, &quot;end_line&quot;: 849, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer doesn&apos;t implement BitTorrent wire protocol beyond handshake**
+&gt; 
+&gt; The `fetchFromPeer` function sends a BitTorrent handshake (68 bytes) but never sends `interested`, `unchoke`, or `request` messages. It collects raw TCP bytes (which would include the peer&apos;s handshake response, bitfield messages, and protocol framing) and returns them as-is. The SHA1 verification in `fetchFromBittorrent` at line 895 will always reject this data since it includes protocol overhead rather than pure file content. This means the BitTorrent layer will never successfully fetch data from real peers. The previous implementation was a stub throwing &apos;not yet implemented&apos; — this is effectively still non-functional for actual ROM retrieval, though the DHT discovery portion works correctly.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 10 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 588)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0006&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 538, &quot;end_line&quot;: 542, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **UDPTransceiver.close() does not clear pending request timers, causing resource leaks**
+&gt; 
+&gt; The `close()` method at `src/fetch/layers/bittorrent.ts:538-542` closes the underlying socket but does not clear the timers in `pendingRequests`. These timers continue to run after the transceiver is closed and will fire, attempting to reject promises and delete from the map after the socket is already closed. In the `fetchFromBittorrent` `finally` block (`src/fetch/layers/bittorrent.ts:836-838`), `dht.close()` is called which invokes this, leaving dangling timers.
+&gt; 
+&gt; ```suggestion
+&gt;   close(): void {
+&gt;     for (const [key, pending] of this.pendingRequests) {
+&gt;       clearTimeout(pending.timer);
+&gt;       pending.reject(new Error(&quot;Transceiver closed&quot;));
+&gt;     }
+&gt;     this.pendingRequests.clear();
+&gt;     if (this.socket) {
+&gt;       this.getSocket().close();
+&gt;     }
+&gt;   }
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 11 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 105)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-751c503fdabd4523b5c142fb9c8c8e73_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 88, &quot;end_line&quot;: 90, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **bencode uses JS string character count instead of UTF-8 byte length for string prefix**
+&gt; 
+&gt; In `bencode` (`src/fetch/layers/bittorrent.ts:88-90`), `data.length` is used as the bencode length prefix for strings. JavaScript&apos;s `String.length` returns the number of UTF-16 code units, but bencode requires the byte length of the encoded string. For any non-ASCII character (e.g., `&quot;é&quot;` has `length=1` but UTF-8 encoding is 2 bytes), the produced length prefix is incorrect. A decoder reading this would read fewer bytes than present, causing parse failures. Since `bencode` is exported as a public utility, any use with non-ASCII strings would produce corrupt output.
+&gt; 
+&gt; ```suggestion
+&gt;   if (typeof data === &quot;string&quot;) {
+&gt;     const encoded = new TextEncoder().encode(data);
+&gt;     return concatenateUint8Arrays([
+&gt;       new TextEncoder().encode(`${encoded.length}:`),
+&gt;       encoded,
+&gt;     ]);
+&gt;   }
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+
+### Instructions
+
+Please address all the review comments listed above. For each comment:
+1. Review the code in context at the specified file and line
+2. Make the necessary changes to resolve the reviewer&apos;s feedback
+3. Ensure changes follow existing code patterns and conventions
+4. Do not introduce regressions</description>
+    </feature>
+    <feature>
+      <name>Address 21 review comments on PR #16</name>
+      <description>## PR Review Comments Resolution
+
+**Pull Request:** #16 - Implement BitTorrent wire protocol with DHT support
+**Number of comments:** 21
+
+Please address all of the following review comments from this pull request.
+
+---
+
+### Comment 1 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 9 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 2 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 233)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0007&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 233, &quot;end_line&quot;: 233, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bdecode&apos;s String.fromCharCode spread can hit stack limit on large bencoded strings**
+&gt; 
+&gt; In `bdecode`&apos;s `parseString()` at `src/fetch/layers/bittorrent.ts:233`, `String.fromCharCode(...data.slice(start, end))` spreads all bytes as arguments. For a large bencoded string (e.g., a torrent&apos;s piece hashes field with thousands of bytes), this could exceed the JavaScript engine&apos;s maximum call stack size. The same pattern appears at line 217 for the length prefix digits, though that&apos;s bounded by digit count. For DHT messages, strings are typically small, so this is unlikely to cause issues in practice. However, for robustness, `TextDecoder` or a loop-based approach would be safer.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 3 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 851)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 848, &quot;end_line&quot;: 851, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Dead variables amChoking and peerInterested in fetchFromPeer**
+&gt; 
+&gt; `amChoking` is initialized to `true` at `src/fetch/layers/bittorrent.ts:848` but never modified anywhere in the function. `peerInterested` is set in handlers at lines 969 and 972 but never read. These variables track BitTorrent state that the current implementation doesn&apos;t use (since it only downloads, never uploads). They add confusion about the protocol implementation completeness without serving any purpose.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 4 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1163)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1148, &quot;end_line&quot;: 1163, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **BitTorrent protocol uses file content SHA1 as info_hash — won&apos;t find standard BT peers**
+&gt; 
+&gt; The `fetchFromBittorrent` function uses the file&apos;s content SHA1 (from No-Intro DAT) as the DHT info_hash for peer lookup (`src/fetch/layers/bittorrent.ts:1161`). In standard BitTorrent, the info_hash is the SHA1 of the bencoded info dictionary from .torrent metadata, NOT the file content&apos;s SHA1. This means the DHT lookup will never find peers from the standard BitTorrent network. This appears to be a deliberate design choice for a custom P2P mesh overlay, but it means the BitTorrent layer will only work with other MeshARKade peers (once they exist), not with the broader BitTorrent ecosystem. Worth confirming this is intentional.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 5 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 868)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 862, &quot;end_line&quot;: 868, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Multiple promise resolution paths in fetchFromPeer are safe but fragile**
+&gt; 
+&gt; The `fetchFromPeer` function can call `resolve()` or `reject()` from multiple event handlers (data timeout at line 1012-1016, error at line 1064-1078, close at line 1081-1097, connect timeout at line 890-898). While JavaScript promises safely ignore subsequent resolve/reject calls after the first, this makes it difficult to reason about which exit path actually fires. The `isClosed` flag and `cleanup()` function provide some coordination, but the error handler at line 1064 doesn&apos;t check `isClosed` before calling resolve/reject. In practice, `cleanup()` sets `isClosed = true` internally, so the close handler&apos;s early return works. But this pattern is fragile — any future modification could introduce a race between handlers.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 6 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 833)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 829, &quot;end_line&quot;: 833, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer resolves with partial/unverified data on multiple exit paths**
+&gt; 
+&gt; The `fetchFromPeer` function (`src/fetch/layers/bittorrent.ts:829-1098`) resolves with whatever data has been downloaded on four separate paths: 5-second inactivity timeout (line 1012-1017), connection timeout after some pieces (line 892-895), socket error with partial data (line 1066-1069), and socket close with partial data (line 1085-1088). This is not a bug because the caller `fetchFromBittorrent` at `src/fetch/layers/bittorrent.ts:1185` verifies SHA1 before returning. However, `fetchFromPeer` is exported (line 1224) as a public API without any TSDoc warning that its output is unverified. Per REVIEW.md&apos;s content trust principle (&quot;untrusted bytes must never be written to disk without verification&quot;), direct callers of `fetchFromPeer` could easily violate this if they don&apos;t know to verify.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 7 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1127)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1124, &quot;end_line&quot;: 1127, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **assemblePieces buffer size inconsistency: totalLength accounts for offsets but pieceData does not**
+&gt; 
+&gt; In `assemblePieces`, `totalLength` at `src/fetch/layers/bittorrent.ts:1112` is calculated as `index * pieceLength + block.offset + block.data.length` — correctly accounting for block offsets. But `pieceLengthCalc` at line 1124-1126 just sums `block.data.length` without considering gaps between blocks. If blocks have non-contiguous offsets (e.g., offsets 0 and 32768 each with 16384 bytes), `pieceLengthCalc` would be 32768 but the actual span is 49152 bytes. Then `result.set(pieceData, absoluteOffset)` at line 1136 writes a 32768-byte array where the result buffer expects up to 49152 bytes at that position, leaving the gap filled with zeros.
+&gt; 
+&gt; &lt;details&gt;
+&gt; &lt;summary&gt;Prompt for agents&lt;/summary&gt;
+&gt; 
+&gt; ```
+&gt; In src/fetch/layers/bittorrent.ts, the assemblePieces function (lines 1101-1139) has an inconsistency between totalLength calculation (which uses block.offset) and the pieceData assembly (which ignores block.offset). The fix should:
+&gt; 
+&gt; 1. Calculate pieceData size based on the maximum (block.offset + block.data.length) across sorted blocks, not just the sum of data lengths
+&gt; 2. Place each block at its declared offset within pieceData using block.offset
+&gt; 3. Remove the unused pieceEnd variable at line 1110
+&gt; 
+&gt; This ensures blocks with gaps are correctly positioned within each piece.
+&gt; ```
+&gt; 
+&gt; &lt;/details&gt;
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 8 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 272)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 270, &quot;end_line&quot;: 272, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **bdecode parseDict uses Uint8Array as object key when dict key contains bytes &gt;= 0x80**
+&gt; 
+&gt; In `bdecode`&apos;s `parseDict` (`src/fetch/layers/bittorrent.ts:270`), `const key = parse() as string` casts the parse result to `string`. However, `parseString()` (`src/fetch/layers/bittorrent.ts:229-231`) returns a `Uint8Array` when bytes &gt;= 0x80 are present. When a `Uint8Array` is used as an object property key at line 272 (`result[key] = value`), JavaScript calls `toString()`, producing comma-separated values like `&quot;192,168,1,1&quot;` instead of the actual binary key. This silently corrupts the parsed dictionary. While standard DHT message keys are ASCII and won&apos;t trigger this, any non-standard peer response or future protocol extension with binary keys would produce incorrect parsing.
+&gt; 
+&gt; ```suggestion
+&gt;       const rawKey = parse();
+&gt;       const key = rawKey instanceof Uint8Array ? String.fromCharCode(...rawKey) : rawKey as string;
+&gt;       const value = parse();
+&gt;       result[key] = value;
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 9 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1133)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1128, &quot;end_line&quot;: 1133, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **assemblePieces ignores block offsets, placing blocks sequentially instead of at their declared positions**
+&gt; 
+&gt; In `assemblePieces` (`src/fetch/layers/bittorrent.ts:1128-1133`), when a piece has multiple blocks, they are placed sequentially (at `offset += block.data.length`) rather than at their declared `block.offset` positions. This means if blocks within a piece have gaps or arrive in non-contiguous order, the resulting data is incorrectly laid out. The `totalLength` calculation at line 1112 correctly uses `block.offset`, creating an inconsistency with the actual placement logic. The SHA1 verification in `fetchFromBittorrent` will catch corrupted output, but the peer will be incorrectly marked as failed rather than having its data assembled properly.
+&gt; 
+&gt; &lt;details&gt;&lt;summary&gt;Incorrect placement vs correct placement&lt;/summary&gt;
+&gt; 
+&gt; Current code places blocks sequentially:
+&gt; ```
+&gt; pieceData.set(block.data, offset); // offset is cumulative sum of previous data lengths
+&gt; offset += block.data.length;
+&gt; ```
+&gt; 
+&gt; Correct code should use the block&apos;s declared offset:
+&gt; ```
+&gt; pieceData.set(block.data, block.offset);
+&gt; ```
+&gt; 
+&gt; &lt;/details&gt;
+&gt; 
+&gt; ```suggestion
+&gt;       pieceData = new Uint8Array(pieceLengthCalc);
+&gt;       for (const block of sortedBlocks) {
+&gt;         pieceData.set(block.data, block.offset);
+&gt;       }
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 10 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 566)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 565, &quot;end_line&quot;: 566, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **UDPTransceiver.handleMessage crashes on malformed DHT messages missing `t` field**
+&gt; 
+&gt; When `handleMessage` receives a UDP packet that bdecodes to a valid object but lacks a `t` (transaction ID) field, `msg.t` is `undefined`. Calling `transactionIdToHex(undefined)` at `src/fetch/layers/bittorrent.ts:566` falls through to the string branch at line 85 where `Array.from(undefined)` throws `TypeError: undefined is not iterable`. Since this executes inside a UDP socket `&apos;message&apos;` event handler (`src/fetch/layers/bittorrent.ts:537-546`) with no try-catch, the error propagates as an uncaught exception, crashing the process. Any malformed UDP packet from any source on the network can trigger this.
+&gt; 
+&gt; ```suggestion
+&gt;     const msg = parsed as DHTMessage;
+&gt;     if (!msg.t) {
+&gt;       return;
+&gt;     }
+&gt;     const t = transactionIdToHex(msg.t);
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 11 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 8 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 12 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 547)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 518, &quot;end_line&quot;: 547, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **UDPTransceiver.bind() error handler becomes a no-op after successful bind**
+&gt; 
+&gt; In `src/fetch/layers/bittorrent.ts:512-534`, the `bind()` method wraps socket setup in a Promise. The `socket.on(&apos;error&apos;, ...)` handler at line 520 calls `reject(err)`. After the bind callback fires and the promise resolves, subsequent socket errors still trigger the handler, but `reject()` is a no-op on an already-resolved promise. This means post-bind socket errors (e.g., network interface going down) are silently swallowed. The socket will stay open with no error propagation to the caller. This could lead to the DHTClient hanging indefinitely on `sendWithTransaction` if the socket silently fails.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 13 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1088)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1064, &quot;end_line&quot;: 1097, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer resolves with partial data on error/close/timeout paths**
+&gt; 
+&gt; The `fetchFromPeer` function at `src/fetch/layers/bittorrent.ts:816-1079` resolves the promise with partial data (whatever is in `downloadedPieces`) on socket error (line 1046-1049), close (line 1065-1068), and inactivity timeout (line 992-996). This means incomplete/corrupted data can be returned to the caller. The outer `fetchFromBittorrent` function at line 1143 does call `verifySha1(data, sha1)` before returning, which catches corrupt data and moves to the next peer. So the content trust guarantee from REVIEW.md is maintained at the API boundary. However, `fetchFromPeer` is exported (line 1182) and direct callers would receive unverified partial data.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 14 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 270)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 270, &quot;end_line&quot;: 270, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bdecode parseDict coerces Uint8Array keys to strings via implicit toString()**
+&gt; 
+&gt; In `src/fetch/layers/bittorrent.ts:270`, `parseDict()` does `const key = parse() as string`. But `parseString()` (line 208-234) returns `Uint8Array` when the string data contains bytes ≥ 0x80. If a dict key contained high bytes, it would be coerced to a string like `&apos;1,2,3&apos;` via Uint8Array&apos;s default toString(), corrupting the key. In practice, BitTorrent DHT dict keys are always ASCII (e.g., &apos;t&apos;, &apos;y&apos;, &apos;q&apos;, &apos;r&apos;, &apos;nodes&apos;, &apos;values&apos;), so this won&apos;t be triggered by real DHT messages. However, if this bencode implementation is reused for parsing .torrent files (which can have binary info_hash keys in some contexts), it could become an issue.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 15 - by @devin-ai-integration[bot]
+**File:** `tests/setup.ts` (line 21)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0002&quot;, &quot;file_path&quot;: &quot;tests/setup.ts&quot;, &quot;start_line&quot;: 13, &quot;end_line&quot;: 21, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Global bare-crypto mock in setup.ts returns constant &apos;mocked-hash&apos; which breaks hash-dependent tests**
+&gt; 
+&gt; The global `vi.mock(&apos;bare-crypto&apos;)` in `tests/setup.ts:13-21` returns `&apos;mocked-hash&apos;` for all `.digest()` calls. The `runtime-hashstreaming.test.ts` file overrides this with its own `vi.mock(&apos;bare-crypto&apos;)` at line 23-31, which also returns a constant `&apos;mocked-hash&apos;`. However, those tests use `vi.resetModules()` and re-import `runtime.js` dynamically, which causes the real Node `crypto` module to be used (since `Bare` is undefined). So the hash tests work correctly against real crypto, and the mock only affects the bare-crypto import path. This is correct but fragile — if a future test imports `runtime.ts` statically without resetting modules, it could get the mocked crypto instead of real crypto.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 16 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 966)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 960, &quot;end_line&quot;: 966, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: UNCHOKE handler sends INTERESTED backwards from typical protocol flow**
+&gt; 
+&gt; In the UNCHOKE handler at `src/fetch/layers/bittorrent.ts:946-951`, the code sends an INTERESTED message when receiving UNCHOKE if not already interested. In the standard BitTorrent protocol, the expected flow is: receive BITFIELD → send INTERESTED → receive UNCHOKE → begin requesting. The BITFIELD handler at line 974-978 already sends INTERESTED, so this UNCHOKE path is a redundant fallback. While not strictly a bug (some peers may send UNCHOKE before BITFIELD), it&apos;s unusual and could mask protocol ordering issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 17 - by @devin-ai-integration[bot]
+**File:** `tests/setup.ts` (line 21)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0006&quot;, &quot;file_path&quot;: &quot;tests/setup.ts&quot;, &quot;start_line&quot;: 13, &quot;end_line&quot;: 21, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bare-crypto mock in tests/setup.ts returns non-chainable hash object**
+&gt; 
+&gt; The global `bare-crypto` mock at `tests/setup.ts:13-21` returns `{ update: () =&gt; ({ digest: () =&gt; &apos;mocked-hash&apos; }) }` — calling `update()` returns an object with only `digest`, not another object with `update`. This means chained calls like `hash.update(a).update(b).digest(&apos;hex&apos;)` would fail. However, the production code in `runtime.ts:108-118` wraps bare-crypto in a chainable adapter (`getCrypto()`), so tests that use `getCrypto()` are fine. The mock only matters if a test directly imports bare-crypto, which none currently do.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 18 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 6 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 19 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 678)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 701, &quot;end_line&quot;: 753, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: DHTClient lookup can spin for maxIterations even when no new nodes are discovered**
+&gt; 
+&gt; In `src/fetch/layers/bittorrent.ts:688-739`, the iterative DHT lookup continues while `iterations &lt; maxIterations &amp;&amp; closestNodes.length &gt; 0`. Since `mergeClosestNodes` always returns up to 8 nodes from the combined set, `closestNodes.length &gt; 0` stays true as long as any nodes were found initially. If all 3 closest nodes per iteration are already in `contactedNodes`, the iteration produces no new nodes or peers but still increments the counter. This isn&apos;t a bug (it terminates after 8 iterations), but it wastes network round-trips. A convergence check (break when no new uncontacted nodes exist) would be more efficient.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 20 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 825)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1009, &quot;end_line&quot;: 1017, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Hardcoded 5-second inactivity timeout in fetchFromPeer ignores user timeout parameter**
+&gt; 
+&gt; The `handleData` callback at line 816 uses a hardcoded `5000`ms inactivity timeout between data chunks, while the user-provided `timeout` parameter is used for connection and initial data reception timeouts. This means even if a caller passes `{ timeout: 100 }`, the function will wait up to 5 seconds after the last data chunk before resolving. This is likely intentional as a chunk-level inactivity timer distinct from the overall operation timeout, but it&apos;s undocumented and could surprise callers who expect their timeout to bound the entire operation.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 21 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 12 potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+
+### Instructions
+
+Please address all the review comments listed above. For each comment:
+1. Review the code in context at the specified file and line
+2. Make the necessary changes to resolve the reviewer&apos;s feedback
+3. Ensure changes follow existing code patterns and conventions
+4. Do not introduce regressions</description>
+    </feature>
+    <feature>
+      <name>Address 24 review comments on PR #16</name>
+      <description>## PR Review Comments Resolution
+
+**Pull Request:** #16 - Implement BitTorrent wire protocol with DHT support
+**Number of comments:** 24
+
+Please address all of the following review comments from this pull request.
+
+---
+
+### Comment 1 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 7 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 2 - by @devin-ai-integration[bot]
+**File:** `package.json` (line 79)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0006&quot;, &quot;file_path&quot;: &quot;package.json&quot;, &quot;start_line&quot;: 75, &quot;end_line&quot;: 79, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bittorrent-dht dependency removed but bare-dgram/bare-net added as production dependencies**
+&gt; 
+&gt; The PR removes `bittorrent-dht` from dependencies and adds `bare-dgram` and `bare-net` as production dependencies in `package.json`. This aligns with the project&apos;s Bare-runtime-first philosophy (per AGENTS.md). However, `bare-dgram` and `bare-net` are Bare-specific modules that may not work in standard Node.js without polyfills. The bittorrent.ts code handles this with runtime detection (`typeof Bare !== &apos;undefined&apos;`) at `src/fetch/layers/bittorrent.ts:445-456`, falling back to Node&apos;s `dgram` and `net` modules. The dependency change is consistent with the dual-runtime pattern used elsewhere in the codebase (e.g., `bare-fs`, `bare-path` in runtime.ts).
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 3 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1110)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1108, &quot;end_line&quot;: 1110, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **assemblePieces uses hardcoded 262144 pieceLength without metadata from torrent**
+&gt; 
+&gt; The `assemblePieces` function at `src/fetch/layers/bittorrent.ts:1110` defaults to `pieceLength = 262144` (256KB). In the BitTorrent protocol, piece length varies per torrent (commonly 256KB-4MB) and is specified in the torrent&apos;s `info` dictionary. Since this implementation downloads data via the wire protocol without first obtaining the torrent metadata (no metadata exchange / BEP 9), the piece length is unknown. If the actual piece length differs from 262144, multi-piece files would be assembled incorrectly — blocks would be placed at wrong absolute offsets. The SHA1 verification in `fetchFromBittorrent` would catch this and reject the data, but it means the layer would always fail for torrents with non-default piece lengths. This is related to ANALYSIS-0001&apos;s custom swarm assumption.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 4 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1024)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1019, &quot;end_line&quot;: 1024, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **fetchFromPeer resolves with unverified partial data on inactivity timeout**
+&gt; 
+&gt; When the 5-second inactivity timeout fires (line 1019-1024) or a socket error/close occurs (lines 1071-1104), `fetchFromPeer` resolves the promise with whatever partial data has been assembled — even if only a fragment of the total file was received. While `fetchFromBittorrent` (line 1192) subsequently verifies the SHA1 hash and correctly discards mismatched data, this design means that for each peer attempt, the system may wait through the entire download + 5-second inactivity timeout before discovering the data is incomplete. Per REVIEW.md&apos;s content trust principle (&quot;Any code that fetches or persists data from the network must verify content hashes before acting on it&quot;), the function&apos;s resolve-with-partial-data pattern could be dangerous if any caller bypasses the SHA1 check in `fetchFromBittorrent` — `fetchFromPeer` is exported and callable directly.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 5 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 849)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 848, &quot;end_line&quot;: 849, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **Uses `any` type in violation of REVIEW.md&apos;s strict typing rule**
+&gt; 
+&gt; REVIEW.md mandates: &quot;No `any`. Use strict typing and interfaces.&quot; The bittorrent.ts file uses `any` three times (with eslint-disable comments): `src/fetch/layers/bittorrent.ts:499`, `src/fetch/layers/bittorrent.ts:516`, and `src/fetch/layers/bittorrent.ts:849`. All three are for the `on(event: string, callback: any)` socket event handler type. These should use overloaded signatures or a union type for the callback parameter.
+&gt; 
+&gt; &lt;details&gt;
+&gt; &lt;summary&gt;Prompt for agents&lt;/summary&gt;
+&gt; 
+&gt; ```
+&gt; Replace the three `any` type usages in src/fetch/layers/bittorrent.ts (lines 499, 516, and 849) with proper typed overloads or a callback union type. For example, define a SocketLike interface with overloaded `on()` signatures:
+&gt; 
+&gt; interface SocketLike {
+&gt;   on(event: &apos;data&apos;, callback: (data: Uint8Array) =&gt; void): unknown;
+&gt;   on(event: &apos;error&apos;, callback: (err: Error) =&gt; void): unknown;
+&gt;   on(event: &apos;close&apos;, callback: () =&gt; void): unknown;
+&gt;   on(event: &apos;connect&apos;, callback: () =&gt; void): unknown;
+&gt;   // ... other methods
+&gt; }
+&gt; 
+&gt; And for the UDP socket, similar overloads for &apos;message&apos;, &apos;error&apos;, &apos;listening&apos; events. Remove the eslint-disable comments.
+&gt; ```
+&gt; 
+&gt; &lt;/details&gt;
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 6 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 458)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 458, &quot;end_line&quot;: 458, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **Exported classes `UDPTransceiver` and `DHTClient` lack mandatory TSDoc**
+&gt; 
+&gt; REVIEW.md mandates: &quot;TSDoc shape is MANDATORY. Every public function/module must have: Intent, Guarantees, Constraints.&quot; The `UDPTransceiver` class (line 458) and `DHTClient` class (line 649) are both exported at `src/fetch/layers/bittorrent.ts:1228-1229` but have no TSDoc comments at all.
+&gt; 
+&gt; &lt;details&gt;
+&gt; &lt;summary&gt;Prompt for agents&lt;/summary&gt;
+&gt; 
+&gt; ```
+&gt; Add TSDoc comments with @intent, @guarantee, and @constraint tags to the UDPTransceiver class (line 458) and DHTClient class (line 649) in src/fetch/layers/bittorrent.ts. Each TSDoc must include:
+&gt; - @intent: Why this class exists
+&gt; - @guarantee: What it promises to callers
+&gt; - @constraint: Non-obvious warnings or usage rules (e.g., must call initialize() before lookup(), must call close() to avoid resource leaks)
+&gt; ```
+&gt; 
+&gt; &lt;/details&gt;
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 7 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 841)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 836, &quot;end_line&quot;: 841, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🔴 **Exported functions/classes `buf2hex`, `hex2buf`, `randomNodeId`, `xorDistance`, `createGetPeersQuery`, `fetchFromPeer` lack mandatory TSDoc**
+&gt; 
+&gt; REVIEW.md mandates: &quot;TSDoc shape is MANDATORY. Every public function/module must have: Intent, Guarantees, Constraints.&quot; Multiple exported functions have no TSDoc at all: `buf2hex` (line 70), `hex2buf` (line 90), `randomNodeId` (line 98), `xorDistance` (line 303), `createGetPeersQuery` (line 328), and `fetchFromPeer` (line 836). These are all in the `export { ... }` block at `src/fetch/layers/bittorrent.ts:1217-1232`, making them part of the public API.
+&gt; 
+&gt; &lt;details&gt;
+&gt; &lt;summary&gt;Prompt for agents&lt;/summary&gt;
+&gt; 
+&gt; ```
+&gt; Add TSDoc comments with @intent, @guarantee, and @constraint tags to all exported functions that currently lack them in src/fetch/layers/bittorrent.ts. The affected functions are:
+&gt; 
+&gt; 1. buf2hex (line 70) - Converts Uint8Array to hex string
+&gt; 2. hex2buf (line 90) - Converts hex string to Uint8Array
+&gt; 3. randomNodeId (line 98) - Generates 20-byte random node ID
+&gt; 4. xorDistance (line 303) - Calculates XOR distance between two byte arrays
+&gt; 5. createGetPeersQuery (line 328) - Creates bencoded get_peers DHT query
+&gt; 6. fetchFromPeer (line 836) - Fetches data from a BitTorrent peer via TCP wire protocol
+&gt; 
+&gt; Each TSDoc comment must follow the shape: @intent (why this exists), @guarantee (what it promises), @constraint (non-obvious warnings).
+&gt; ```
+&gt; 
+&gt; &lt;/details&gt;
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 8 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1128)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;BUG_pr-review-job-ce180ed2c9d64843b0591c948fc5a991_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1127, &quot;end_line&quot;: 1128, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🟡 **assemblePieces ignores block offset for single-block pieces, placing data at wrong position**
+&gt; 
+&gt; In `assemblePieces`, when a piece has exactly one block, the optimization at line 1128 uses `sortedBlocks[0].data` directly, ignoring the block&apos;s `offset` field. The data is then placed at `absoluteOffset` (line 1142-1143) which is the start of the piece. If the single block has a non-zero offset (e.g., `offset=16384`), the data is placed at the wrong position within the output array. The multi-block path (lines 1137-1140) correctly handles this by creating a piece-sized buffer and using `pieceData.set(block.data, block.offset)`. The `totalLength` calculation at line 1118 correctly accounts for non-zero offsets, so the output array is sized correctly, but the data placement is wrong.
+&gt; 
+&gt; &lt;details&gt;&lt;summary&gt;Example: single block at offset 16384&lt;/summary&gt;
+&gt; 
+&gt; With one block `{offset: 16384, data: [bytes]}` in piece 0:
+&gt; - Single-block path: `pieceData = data`, then `result.set(data, 0)` → data at position 0 (WRONG)
+&gt; - Multi-block path would: `pieceData.set(data, 16384)` → data at position 16384 (CORRECT)
+&gt; &lt;/details&gt;
+&gt; 
+&gt; ```suggestion
+&gt;     if (sortedBlocks.length === 1 &amp;&amp; sortedBlocks[0].offset === 0) {
+&gt;       pieceData = sortedBlocks[0].data;
+&gt; ```
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 9 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 9 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 10 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 233)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0007&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 233, &quot;end_line&quot;: 233, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bdecode&apos;s String.fromCharCode spread can hit stack limit on large bencoded strings**
+&gt; 
+&gt; In `bdecode`&apos;s `parseString()` at `src/fetch/layers/bittorrent.ts:233`, `String.fromCharCode(...data.slice(start, end))` spreads all bytes as arguments. For a large bencoded string (e.g., a torrent&apos;s piece hashes field with thousands of bytes), this could exceed the JavaScript engine&apos;s maximum call stack size. The same pattern appears at line 217 for the length prefix digits, though that&apos;s bounded by digit count. For DHT messages, strings are typically small, so this is unlikely to cause issues in practice. However, for robustness, `TextDecoder` or a loop-based approach would be safer.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 11 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 858)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 848, &quot;end_line&quot;: 851, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Dead variables amChoking and peerInterested in fetchFromPeer**
+&gt; 
+&gt; `amChoking` is initialized to `true` at `src/fetch/layers/bittorrent.ts:848` but never modified anywhere in the function. `peerInterested` is set in handlers at lines 969 and 972 but never read. These variables track BitTorrent state that the current implementation doesn&apos;t use (since it only downloads, never uploads). They add confusion about the protocol implementation completeness without serving any purpose.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 12 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1170)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1148, &quot;end_line&quot;: 1163, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **BitTorrent protocol uses file content SHA1 as info_hash — won&apos;t find standard BT peers**
+&gt; 
+&gt; The `fetchFromBittorrent` function uses the file&apos;s content SHA1 (from No-Intro DAT) as the DHT info_hash for peer lookup (`src/fetch/layers/bittorrent.ts:1161`). In standard BitTorrent, the info_hash is the SHA1 of the bencoded info dictionary from .torrent metadata, NOT the file content&apos;s SHA1. This means the DHT lookup will never find peers from the standard BitTorrent network. This appears to be a deliberate design choice for a custom P2P mesh overlay, but it means the BitTorrent layer will only work with other MeshARKade peers (once they exist), not with the broader BitTorrent ecosystem. Worth confirming this is intentional.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 13 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 875)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0003&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 862, &quot;end_line&quot;: 868, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Multiple promise resolution paths in fetchFromPeer are safe but fragile**
+&gt; 
+&gt; The `fetchFromPeer` function can call `resolve()` or `reject()` from multiple event handlers (data timeout at line 1012-1016, error at line 1064-1078, close at line 1081-1097, connect timeout at line 890-898). While JavaScript promises safely ignore subsequent resolve/reject calls after the first, this makes it difficult to reason about which exit path actually fires. The `isClosed` flag and `cleanup()` function provide some coordination, but the error handler at line 1064 doesn&apos;t check `isClosed` before calling resolve/reject. In practice, `cleanup()` sets `isClosed = true` internally, so the close handler&apos;s early return works. But this pattern is fragile — any future modification could introduce a race between handlers.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 14 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 840)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-a2544feb0d39495b8649f1436ed41b8a_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 836, &quot;end_line&quot;: 841, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer resolves with partial/unverified data on multiple exit paths**
+&gt; 
+&gt; The `fetchFromPeer` function (`src/fetch/layers/bittorrent.ts:829-1098`) resolves with whatever data has been downloaded on four separate paths: 5-second inactivity timeout (line 1012-1017), connection timeout after some pieces (line 892-895), socket error with partial data (line 1066-1069), and socket close with partial data (line 1085-1088). This is not a bug because the caller `fetchFromBittorrent` at `src/fetch/layers/bittorrent.ts:1185` verifies SHA1 before returning. However, `fetchFromPeer` is exported (line 1224) as a public API without any TSDoc warning that its output is unverified. Per REVIEW.md&apos;s content trust principle (&quot;untrusted bytes must never be written to disk without verification&quot;), direct callers of `fetchFromPeer` could easily violate this if they don&apos;t know to verify.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 15 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 8 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 16 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 551)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0005&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 522, &quot;end_line&quot;: 551, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **UDPTransceiver.bind() error handler becomes a no-op after successful bind**
+&gt; 
+&gt; In `src/fetch/layers/bittorrent.ts:512-534`, the `bind()` method wraps socket setup in a Promise. The `socket.on(&apos;error&apos;, ...)` handler at line 520 calls `reject(err)`. After the bind callback fires and the promise resolves, subsequent socket errors still trigger the handler, but `reject()` is a no-op on an already-resolved promise. This means post-bind socket errors (e.g., network interface going down) are silently swallowed. The socket will stay open with no error propagation to the caller. This could lead to the DHTClient hanging indefinitely on `sendWithTransaction` if the socket silently fails.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 17 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 1095)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1071, &quot;end_line&quot;: 1104, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 🚩 **fetchFromPeer resolves with partial data on error/close/timeout paths**
+&gt; 
+&gt; The `fetchFromPeer` function at `src/fetch/layers/bittorrent.ts:816-1079` resolves the promise with partial data (whatever is in `downloadedPieces`) on socket error (line 1046-1049), close (line 1065-1068), and inactivity timeout (line 992-996). This means incomplete/corrupted data can be returned to the caller. The outer `fetchFromBittorrent` function at line 1143 does call `verifySha1(data, sha1)` before returning, which catches corrupt data and moves to the next peer. So the content trust guarantee from REVIEW.md is maintained at the API boundary. However, `fetchFromPeer` is exported (line 1182) and direct callers would receive unverified partial data.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 18 - by @devin-ai-integration[bot]
+**File:** `tests/setup.ts` (line 21)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0002&quot;, &quot;file_path&quot;: &quot;tests/setup.ts&quot;, &quot;start_line&quot;: 35, &quot;end_line&quot;: 43, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Global vitest setup mock for bare-crypto returns &apos;mocked-hash&apos; for all hashes, potentially masking real test failures**
+&gt; 
+&gt; The test setup at `tests/setup.ts:35-43` mocks `bare-crypto` globally with `createHash` always returning `&apos;mocked-hash&apos;` for any digest call. This means any test that doesn&apos;t explicitly override this mock (via `vi.mock` or `vi.resetModules`) will get the same fake hash. The `runtime-hashstreaming.test.ts` file correctly uses `vi.resetModules()` in `beforeEach` and dynamically imports modules, so it gets real Node.js crypto. But other test files that import runtime utilities (e.g., through `verifySha1` in bittorrent.ts) would silently use mocked hashes. If a test accidentally relies on real crypto behavior, the mock would pass when it should fail.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 19 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 973)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-1f8398b32e2e4908b88c6d89c6518d5a_0001&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 967, &quot;end_line&quot;: 973, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: UNCHOKE handler sends INTERESTED backwards from typical protocol flow**
+&gt; 
+&gt; In the UNCHOKE handler at `src/fetch/layers/bittorrent.ts:946-951`, the code sends an INTERESTED message when receiving UNCHOKE if not already interested. In the standard BitTorrent protocol, the expected flow is: receive BITFIELD → send INTERESTED → receive UNCHOKE → begin requesting. The BITFIELD handler at line 974-978 already sends INTERESTED, so this UNCHOKE path is a redundant fallback. While not strictly a bug (some peers may send UNCHOKE before BITFIELD), it&apos;s unusual and could mask protocol ordering issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 20 - by @devin-ai-integration[bot]
+**File:** `tests/setup.ts` (line 21)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0006&quot;, &quot;file_path&quot;: &quot;tests/setup.ts&quot;, &quot;start_line&quot;: 35, &quot;end_line&quot;: 43, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: bare-crypto mock in tests/setup.ts returns non-chainable hash object**
+&gt; 
+&gt; The global `bare-crypto` mock at `tests/setup.ts:13-21` returns `{ update: () =&gt; ({ digest: () =&gt; &apos;mocked-hash&apos; }) }` — calling `update()` returns an object with only `digest`, not another object with `update`. This means chained calls like `hash.update(a).update(b).digest(&apos;hex&apos;)` would fail. However, the production code in `runtime.ts:108-118` wraps bare-crypto in a chainable adapter (`getCrypto()`), so tests that use `getCrypto()` are fine. The mock only matters if a test directly imports bare-crypto, which none currently do.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 21 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 6 new potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+---
+
+### Comment 22 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 678)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0004&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 701, &quot;end_line&quot;: 753, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: DHTClient lookup can spin for maxIterations even when no new nodes are discovered**
+&gt; 
+&gt; In `src/fetch/layers/bittorrent.ts:688-739`, the iterative DHT lookup continues while `iterations &lt; maxIterations &amp;&amp; closestNodes.length &gt; 0`. Since `mergeClosestNodes` always returns up to 8 nodes from the combined set, `closestNodes.length &gt; 0` stays true as long as any nodes were found initially. If all 3 closest nodes per iteration are already in `contactedNodes`, the iteration produces no new nodes or peers but still increments the counter. This isn&apos;t a bug (it terminates after 8 iterations), but it wastes network round-trips. A convergence check (break when no new uncontacted nodes exist) would be more efficient.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 23 - by @devin-ai-integration[bot]
+**File:** `src/fetch/layers/bittorrent.ts` (line 825)
+
+&gt; &lt;!-- devin-review-comment {&quot;id&quot;: &quot;ANALYSIS_pr-review-job-5afd0a3296d347bfabefc2eaa5c78e2c_0002&quot;, &quot;file_path&quot;: &quot;src/fetch/layers/bittorrent.ts&quot;, &quot;start_line&quot;: 1016, &quot;end_line&quot;: 1024, &quot;side&quot;: &quot;RIGHT&quot;} --&gt;
+&gt; 
+&gt; 📝 **Info: Hardcoded 5-second inactivity timeout in fetchFromPeer ignores user timeout parameter**
+&gt; 
+&gt; The `handleData` callback at line 816 uses a hardcoded `5000`ms inactivity timeout between data chunks, while the user-provided `timeout` parameter is used for connection and initial data reception timeouts. This means even if a caller passes `{ timeout: 100 }`, the function will wait up to 5 seconds after the last data chunk before resolving. This is likely intentional as a chunk-level inactivity timer distinct from the overall operation timeout, but it&apos;s undocumented and could surprise callers who expect their timeout to bound the entire operation.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+&gt; 
+&gt; ---
+&gt; *Was this helpful? React with 👍 or 👎 to provide feedback.*
+
+---
+
+### Comment 24 - by @devin-ai-integration[bot]
+
+&gt; **Devin Review** found 12 potential issues.
+&gt; 
+&gt; &lt;!-- devin-review-badge-begin --&gt;
+&gt; &lt;a href=&quot;https://app.devin.ai/review/lofi-monk/mesh-arkade/pull/16&quot; target=&quot;_blank&quot;&gt;
+&gt;   &lt;picture&gt;
+&gt;     &lt;source media=&quot;(prefers-color-scheme: dark)&quot; srcset=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-dark.svg?v=1&quot;&gt;
+&gt;     &lt;img src=&quot;https://static.devin.ai/assets/gh-open-in-devin-review-light.svg?v=1&quot; alt=&quot;Open in Devin Review&quot;&gt;
+&gt;   &lt;/picture&gt;
+&gt; &lt;/a&gt;
+&gt; &lt;!-- devin-review-badge-end --&gt;
+
+
+### Instructions
+
+Please address all the review comments listed above. For each comment:
+1. Review the code in context at the specified file and line
+2. Make the necessary changes to resolve the reviewer&apos;s feedback
+3. Ensure changes follow existing code patterns and conventions
+4. Do not introduce regressions</description>
+    </feature>
+    <feature>
+      <name>Fix two confirmed bugs in bittorrent.ts DHT and peer connection logic</name>
+      <description>Two real bugs identified in Devin&apos;s review that have not yet been fixed. Address only these two. Do not    
+  change any other behavior.
+
+  ---
+  Bug 1 — mergeClosestNodes does not deduplicate nodes (line ~850)
+
+  mergeClosestNodes concatenates existing and newNodes without deduplication. Duplicate nodes waste slots in 
+  the 8-node closest list, degrading DHT discovery.
+
+  Fix: deduplicate by address:port before sorting and slicing:
+
+  const allNodes = [...existing, ...newNodes];
+  const seen = new Set&lt;string&gt;();
+  const uniqueNodes = allNodes.filter((node) =&gt; {
+    const key = `${node.address}:${node.port}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  uniqueNodes.sort((a, b) =&gt; { ... }); // existing sort logic unchanged
+  return uniqueNodes.slice(0, 8);
+
+  Also add contactedNodes.add(nodeAddr) in the bootstrap loop (line ~717-742) so bootstrap nodes are not     
+  re-queried during the iterative phase.
+
+  ---
+  Bug 2 — Overall timeout cancelled on first data arrival (line ~893)
+
+  A single timeoutId is reused for both the overall operation timeout and the per-piece inactivity timeout.  
+  When the first PIECE arrives, clearTimeout(timeoutId) cancels the overall timeout and replaces it with a   
+  hardcoded 5-second inactivity timer. A slow or adversarial peer sending one small block every &lt;5 seconds   
+  can hold the connection alive indefinitely.
+
+  Fix: use two separate timers:
+  - deadlineTimer — set once on connection using the caller-provided timeout, never cleared by data arrival  
+  - inactivityTimer (rename existing timeoutId) — resets per piece, hardcoded 5 seconds
+  - cleanup() must clear both timers
+  - When deadlineTimer fires, call cleanup() and reject with FetchLayerTimeoutError
+
+  ---
+  Constraints:
+  - Do NOT change the SHA1-as-info_hash design — this is intentional (custom mesh-arkade protocol, not       
+  standard BitTorrent)
+  - Do NOT change bdecode behavior for high-byte strings — intentional and tested
+  - Do NOT change fetchFromPeer resolve-with-partial-data behavior — intentional layering, TSDoc already     
+  documents it
+  - Write tests for both fixes before implementing
+  - npm test must pass, branch coverage must stay above 80%</description>
+    </feature>
+    <feature>
+      <name>TSDoc fix</name>
+      <description> Fix TSDoc: BLOCK_SIZE constant in src/fetch/layers/bittorrent.ts is missing
+   a @guarantee or @contract tag, failing CI. Find the BLOCK_SIZE constant and 
+  add a compliant TSDoc comment following the project shape: @intent →
+  @guarantee → @constraint. Run node scripts/check-tsdoc.mjs --strict to       
+  verify. Do not change any other code.</description>
+    </feature>
   </implemented_features>
 
   <additional_requirements>
