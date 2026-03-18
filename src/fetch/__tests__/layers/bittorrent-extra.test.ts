@@ -47,7 +47,7 @@ describe("UDPTransceiver internal branches", () => {
     const socket = (dgram as any).createSocket();
     
     let messageHandler: any;
-    vi.mocked(socket.on).mockImplementation((event, cb) => {
+    vi.mocked(socket.on).mockImplementation((event: string, cb: any) => {
       if (event === "message") messageHandler = cb;
       return socket;
     });
@@ -67,13 +67,13 @@ describe("UDPTransceiver internal branches", () => {
     const dgram = await getDgram();
     const socket = (dgram as any).createSocket();
     
-    vi.mocked(socket.send).mockImplementation((data, port, addr, cb) => {
+    vi.mocked(socket.send).mockImplementation((data: any, port: any, addr: any, cb: any) => {
       if (cb) cb(new Error("Send failed"));
     });
     
     const transceiver = new UDPTransceiver();
     transceiver.bind(0);
-    expect(() => transceiver.send(new Uint8Array([1]), 1234, "127.0.0.1")).not.toThrow();
+    expect(() => transceiver.send(new Uint8Array([1]), "127.0.0.1", 1234)).not.toThrow();
     
     transceiver.close();
   });
@@ -98,7 +98,8 @@ describe("verifySha1 edge cases", () => {
 describe("DHTClient additional branches", () => {
   it("ignores messages with unknown transaction IDs", async () => {
     const transceiver = new UDPTransceiver();
-    const client = new DHTClient(transceiver);
+    const client = new DHTClient(new Uint8Array(20), 1000);
+    (client as any).transceiver = transceiver;
     const msg = {
       t: "unknown",
       y: "r",
@@ -109,7 +110,7 @@ describe("DHTClient additional branches", () => {
     const dgram = await getDgram();
     const socket = (dgram as any).createSocket();
     let messageHandler: any;
-    vi.mocked(socket.on).mockImplementation((event, cb) => {
+    vi.mocked(socket.on).mockImplementation((event: string, cb: any) => {
         if (event === "message") messageHandler = cb;
         return socket;
     });

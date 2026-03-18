@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleFetch } from "../../commands/fetch.js";
-import { CoreHub } from "../../../core/hub.js";
 import { FetchManager } from "../../../fetch/fetch-manager.js";
 
-vi.mock("../../../core/hub.js", () => ({
-  CoreHub: vi.fn().mockImplementation(() => ({
-    handleRequest: vi.fn(),
-  })),
-}));
+const createMockHub = (overrides = {}) => ({
+  handleRequest: vi.fn(),
+  getStatus: vi
+    .fn()
+    .mockReturnValue({ socketPath: "/test.sock", storagePath: "/test" }),
+  start: vi.fn(),
+  stop: vi.fn(),
+  ...overrides,
+});
 
 vi.mock("../../../fetch/fetch-manager.js", () => ({
   FetchManager: vi.fn().mockImplementation(() => ({
@@ -45,10 +48,10 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("successful fetch without known record in museum map (uses generic 'ROM')", async () => {
-    const mockHub = new CoreHub();
+    const mockHub = createMockHub();
     // 1st request: mounts list
     // 2nd request: lookup-sha1
-    vi.mocked(mockHub.handleRequest)
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ result: null }); // Null = unknown game
     
@@ -58,8 +61,8 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("successful fetch with known record", async () => {
-    const mockHub = new CoreHub();
-    vi.mocked(mockHub.handleRequest)
+    const mockHub = createMockHub();
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ result: { title: "Super Mario" } }); 
     
@@ -69,8 +72,8 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("successful fetch with JSON output", async () => {
-    const mockHub = new CoreHub();
-    vi.mocked(mockHub.handleRequest)
+    const mockHub = createMockHub();
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ result: { title: "Super Mario" } }); 
     
@@ -80,8 +83,8 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("handles FetchManager error", async () => {
-    const mockHub = new CoreHub();
-    vi.mocked(mockHub.handleRequest)
+    const mockHub = createMockHub();
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ result: { title: "Super Mario" } }); 
     
@@ -96,8 +99,8 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("handles FetchManager error with isSilent and isJson", async () => {
-    const mockHub = new CoreHub();
-    vi.mocked(mockHub.handleRequest)
+    const mockHub = createMockHub();
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ result: { title: "Super Mario" } }); 
     
@@ -114,8 +117,8 @@ describe("handleFetch Extra Branches", () => {
   });
 
   it("handles lookupResult.error without isSilent", async () => {
-    const mockHub = new CoreHub();
-    vi.mocked(mockHub.handleRequest)
+    const mockHub = createMockHub();
+    mockHub.handleRequest
       .mockResolvedValueOnce({ result: [{ path: "/test", status: "active" }] })
       .mockResolvedValueOnce({ error: { message: "Lookup failed", code: 500 } }); 
     

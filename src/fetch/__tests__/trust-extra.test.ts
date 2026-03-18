@@ -42,7 +42,7 @@ describe("trust.ts coverage extensions", () => {
     TRUSTED_DAT_SOURCES.length = 0;
     TRUSTED_DAT_SOURCES.push({
       systemId: "nes",
-      name: "Test Hash Source",
+      description: "Test Hash Source",
       url: "http://test.com",
       expectedHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     });
@@ -63,7 +63,7 @@ describe("trust.ts coverage extensions", () => {
     TRUSTED_DAT_SOURCES.length = 0;
     TRUSTED_DAT_SOURCES.push({
       systemId: "nes",
-      name: "Test Hash Source",
+      description: "Test Hash Source",
       url: "http://test.com",
       // sha1 of empty string
       expectedHash: "da39a3ee5e6b4b0d3255bfef95601890afd80709"
