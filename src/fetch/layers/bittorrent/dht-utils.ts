@@ -5,6 +5,11 @@
 
 import { bencode } from "./bencode.js";
 
+/**
+ * @intent Utility for generating transaction IDs to track DHT request-response pairs.
+ * @guarantee Provides a 2-byte random identifier.
+ * @constraint Non-cryptographically secure fallback used if crypto.getRandomValues is unavailable.
+ */
 export const DHTTransactionId = {
   generate(): Uint8Array {
     const arr = new Uint8Array(2);
@@ -73,7 +78,7 @@ export function randomNodeId(): Uint8Array {
 }
 
 /**
- * @intent Calculates XOR distance between two byte arrays for DHT Kademlia routing.
+ * @intent Calculates XOR distance between two byte arrays for DHT Kademlia routing.  
  * @guarantee Returns Uint8Array with XOR of corresponding bytes, zero-padded to max length.
  */
 export function xorDistance(a: Uint8Array, b: Uint8Array): Uint8Array {
@@ -87,12 +92,22 @@ export function xorDistance(a: Uint8Array, b: Uint8Array): Uint8Array {
   return result;
 }
 
+/**
+ * @intent Represents a peer node within the BitTorrent DHT network.
+ * @guarantee Provides a structured format for a node's Kademlia ID and network address.
+ * @constraint ID must be exactly 20 bytes to function correctly with XOR distance calculations.
+ */
 export interface DHTNode {
   id: Uint8Array;
   address: string;
   port: number;
 }
 
+/**
+ * @intent Defines the shape of a decoded KRPC message used in the BitTorrent DHT protocol.
+ * @guarantee Supports query (q), response (r), and error (e) message types as defined by BEP 5.
+ * @constraint Field 't' may be string or Uint8Array depending on whether bytes are in the printable ASCII range.
+ */
 export interface DHTMessage {
   t: Uint8Array | string;
   y: string;
@@ -100,7 +115,6 @@ export interface DHTMessage {
   r?: Record<string, unknown>;
   e?: unknown[];
 }
-
 /**
  * @intent Creates a bencoded DHT get_peers query message.
  * @guarantee Returns bencoded Uint8Array with valid DHT query format.

@@ -7,6 +7,10 @@ import { FetchLayerTimeoutError } from "../../errors.js";
 import { bdecode } from "./bencode.js";
 import { DHTMessage, buf2hex, transactionIdToHex } from "./dht-utils.js";
 
+/**
+ * @intent Resolves the UDP dgram module based on the current runtime.
+ * @guarantee Returns bare-dgram in Bare environment, or Node's dgram module otherwise.
+ */
 export async function getDgram(): Promise<unknown> {
   if (typeof Bare !== "undefined") {
     return (await import("bare-dgram")).default;

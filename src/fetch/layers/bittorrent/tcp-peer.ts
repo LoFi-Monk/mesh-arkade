@@ -28,6 +28,10 @@ export enum MessageId {
  */
 export const BLOCK_SIZE = 16384;
 
+/**
+ * @intent Resolves the TCP network module based on the current runtime.
+ * @guarantee Returns bare-net in Bare environment, or Node's net module otherwise.
+ */
 export async function getNet(): Promise<unknown> {
   if (typeof Bare !== "undefined") {
     return await import("bare-net");
@@ -308,6 +312,11 @@ export async function fetchFromPeer(
   });
 }
 
+/**
+ * @intent Assembles downloaded blocks into a single contiguous Uint8Array.
+ * @guarantee Handles out-of-order blocks and calculates total length based on piece indices.
+ * @constraint Default pieceLength is 256KB (262144 bytes).
+ */
 export function assemblePieces(
   pieces: Map<number, Array<{ offset: number; data: Uint8Array }>>,
   pieceLength: number = 262144,
