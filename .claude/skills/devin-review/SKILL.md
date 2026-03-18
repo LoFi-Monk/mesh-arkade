@@ -9,108 +9,125 @@ Devin is an automated PR reviewer that posts detailed code analysis on every com
 
 ## Key Behavior
 
-- **Devin re-reviews on every commit.** Expect repeat findings (e.g., `any` types, architectural notes). Keep responses concise — don't re-explain on every round.
+- **Devin re-reviews on every commit.** Expect repeat findings. Keep responses concise — don't re-explain on every round.
 - **Never reply "Fixed" before the fix is verified.** Delegate first, verify, then reply.
 - **Info-only items can be replied to immediately** since they don't require code changes.
+- **Intentional design decisions** get a reply explaining the reasoning (see AGENTS.md) then resolve — do not change them.
+
+## Tools
+
+All thread operations use the `gh pr-review` extension:
+
+```bash
+gh pr-review threads list --pr <N> -R LoFi-Monk/mesh-arkade
+gh pr-review comments reply -R LoFi-Monk/mesh-arkade --pr <N> --thread-id <ID> --body "..."
+gh pr-review threads resolve -R LoFi-Monk/mesh-arkade --pr <N> --thread-id <ID>
+```
+
+---
 
 ## Workflow
 
 ### Phase 1: Pull & Triage
 
-Fetch all unresolved Devin threads in one shot:
+Fetch all threads and filter to unresolved:
 
 ```bash
-bash scripts/devin-review.sh fetch [PR_NUMBER]
+gh pr-review threads list --pr <N> -R LoFi-Monk/mesh-arkade
 ```
 
-This prints a structured triage dump and saves thread IDs to `/tmp/devin-threads.txt` for use by `resolve`.
+Parse the JSON. Focus on `isResolved: false` threads. Cross-reference thread IDs with PR review comment bodies via:
 
-Categorize each comment into one of three buckets:
+```bash
+gh api repos/LoFi-Monk/mesh-arkade/pulls/<N>/comments --paginate
+```
+
+Categorize each unresolved thread:
 
 | Category | Icon | Action | Reply When |
 |----------|------|--------|------------|
-| **Bug** | 🔴 | Must fix — delegate to code agent | After fix is verified |
+| **Bug** | 🔴 | Must fix — delegate to Gemini | After fix is verified |
 | **Flag** | 🚩 | Should fix — delegate or track | After fix is verified |
 | **Info** | 📝 | Acknowledge only | Immediately |
+| **Intentional** | ✅ | Reply with documented reasoning | Immediately |
 
 Present the triage table to the user for approval before proceeding.
 
-### Phase 2: Acknowledge Info Items
+### Phase 2: Acknowledge Info & Intentional Items
 
-Reply to and resolve all Info (📝) items immediately. These don't need code changes.
+Reply to and resolve all Info (📝) and Intentional (✅) items immediately.
 
 Common response patterns for recurring findings:
+- **SHA1-as-info_hash**: "Intentional — documented in AGENTS.md. We use file SHA1 as DHT info_hash for our custom P2P mesh. Interoperability with public BT swarms is out of scope."
+- **bdecode Uint8Array**: "Intentional — TextDecoder('latin1') corrupts bytes 0x80–0x9F. Raw byte arithmetic is required. Documented in AGENTS.md."
+- **Dual timer in fetchFromPeer**: "Intentional — deadlineTimer prevents adversarial peers from holding connections open. Documented in AGENTS.md."
 - **`any` types (dual-runtime)**: "Pragmatic workaround for dual-runtime imports (Bare vs Node). Will tighten as Bare type ecosystem matures."
-- **Unused functions**: "Reserved for milestone-XX / will be cleaned up in refactor PR."
-- **Performance notes**: "Acceptable for CLI usage. Will optimize if profiling shows bottleneck."
 - **Bare runtime built-ins**: "`bare-*` modules are runtime built-ins, not npm dependencies."
-- **Top-level await**: "We target Bare/Node ESM, not bundlers."
 
 ### Phase 3: Delegate Fixes
 
-Generate a detailed prompt for the code agent (Opencode or Flash) covering all Bug and Flag items. The prompt must include:
+Generate a Gemini prompt covering all Bug and Flag items. The prompt must include:
 
-1. **Branch name** — so the agent works on the right branch
+1. **Worktree path** — so Gemini works in the right place
 2. **For each item**: file path, line number, what's wrong, what the fix should be
-3. **Verification command** — `npm test && npm run typecheck`
-4. **Constraint** — all existing tests must still pass
+3. **Verification command** — `npm test -- --coverage` (not `npm test`)
+4. **Constraint** — all 369+ tests must pass, coverage must stay above 80% all thresholds
+5. **Do not commit** — human commits after review
 
-Present the prompt to the user. User relays to the code agent.
+Present the prompt to the user. User pastes it into Gemini CLI.
 
 ### Phase 4: Verify Fixes
 
-When the code agent reports back:
-1. Review the diff for correctness
-2. Run `npm test` and `npm run typecheck` locally
-3. Check for any issues the code agent may have introduced (like the Flash `seedFlag` incident)
-4. Fix any issues found
+When Gemini reports back:
+1. Check `git diff --stat` — only expected files changed
+2. Run `npm test -- --coverage` locally to confirm
+3. Run `npm run typecheck`
 
 ### Phase 5: Commit & Push
 
-Commit the fixes and push. Use a descriptive commit message:
 ```
-fix: address Devin PR #{n} review findings ({count} items)
+fix: address Devin PR #<N> review findings (<count> items)
 ```
 
 ### Phase 6: Reply & Resolve Actionable Items
 
-Now that fixes are verified and pushed, reply to Bug and Flag threads using a body file (no shell-escaping issues with backticks):
+After fixes are verified and pushed, reply to Bug and Flag threads:
 
 ```bash
-# Write reply body to a temp file — use single-quoted heredoc to preserve backticks literally
-cat > /tmp/reply-123.txt << 'EOF'
-Fixed in abc1234. Added `mode?: string` to `CommandOptions`.
-EOF
-
-bash scripts/devin-review.sh reply <comment_id> /tmp/reply-123.txt
+gh pr-review comments reply -R LoFi-Monk/mesh-arkade --pr <N> \
+  --thread-id <ID> --body "Fixed in <sha>. <brief description>."
 ```
 
-Then resolve all threads (uses IDs cached by `fetch`, or re-fetches if cache is absent):
+Then resolve:
 
 ```bash
-bash scripts/devin-review.sh resolve [PR_NUMBER]
+gh pr-review threads resolve -R LoFi-Monk/mesh-arkade --pr <N> --thread-id <ID>
 ```
+
+Batch resolves in a loop when many threads need resolving at once.
 
 ### Phase 7: Wait for Re-review
 
-Devin will post a new review on the fix commit. Repeat from Phase 1. The cycle ends when:
-- All threads are resolved
-- CI is green
-- Only Info-only items remain (no new Bugs or Flags)
+Devin re-reviews on every push. Repeat from Phase 1 until:
+- All threads resolved
+- CI green
+- No new Bugs or Flags
+
+---
 
 ## Tracked Deferrals
 
-When items are acknowledged as "will fix in follow-up PR", track them here so they don't get lost:
+Items acknowledged as "will fix in follow-up PR":
 
-<!-- Update this list as items are deferred -->
-- Hub `stop()` should close Hyperbee/Corestore (resource leak) — refactor PR
-- `getSystemDefinition` loose `.includes()` matching — refactor PR
-- Dead `askQuestion` function cleanup — index.js refactor PR
-- `drawProgressBar` unused — wire up in milestone-05
+- Hub `stop()` should close Hyperbee/Corestore (resource leak) — backlog card exists
+- `getSystemDefinition` loose `.includes()` matching — backlog card exists
+- CLI command handlers in `index.js` — backlog card exists
+
+---
 
 ## Tips
 
-- **Use the script**: `scripts/devin-review.sh` handles fetch/reply/resolve. The `reply` subcommand reads the body from a file, so backticks and special characters render correctly on GitHub without any escaping.
-- **Devin repeats itself**: The `any` type findings came up in both review 1 and review 2. Keep a mental model of what's been addressed — responses can reference prior threads.
-- **Coverage threshold**: Fixes that change code may shift branch coverage below 80%. Always check coverage after fixes.
-- **Flash vs Opencode**: Use Flash for mechanical fixes (rename variable, remove debug log). Use Opencode for fixes requiring project context (architecture, Bare runtime patterns).
+- **Devin repeats itself**: Keep a mental model of what's been addressed. Reference prior threads in responses.
+- **Coverage**: Fixes that change code may shift branch coverage below 80%. Always check after fixes.
+- **Backticks in replies**: `gh pr-review comments reply --body` handles them fine — no escaping needed.
+- **Batch operations**: Loop over thread IDs for bulk resolves rather than calling one at a time when possible.
