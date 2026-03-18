@@ -30,4 +30,23 @@ describe("showStatus", () => {
     expect(output).toContain("bare");
     consoleLog.mockRestore();
   });
+
+  it("should output JSON with mode in JSON mode", () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    showStatus({ isJson: true, isSilent: false }, "production");
+    const output = JSON.parse(consoleLog.mock.calls[0][0] as string);
+    expect(output.status).toBe("ready");
+    expect(output.mode).toBe("production");
+    expect(output.version).toBe("0.1.0");
+    expect(typeof output.uptime).toBe("number");
+    consoleLog.mockRestore();
+  });
+
+  it("should use default mode when not provided", () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    showStatus({ isJson: false, isSilent: false });
+    const output = consoleLog.mock.calls.map((c) => c[0]).join("\n");
+    expect(output).toContain("development");
+    consoleLog.mockRestore();
+  });
 });

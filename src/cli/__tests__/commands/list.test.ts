@@ -51,4 +51,22 @@ describe("handleListMounts", () => {
     expect(consoleLog).toHaveBeenCalledWith(JSON.stringify(mounts));
     consoleLog.mockRestore();
   });
+
+  it("should handle hub error response", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      error: { message: "Hub error" },
+    });
+    await handleListMounts("", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Hub error");
+    consoleLog.mockRestore();
+  });
+
+  it("should handle exception from hub", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockRejectedValueOnce(new Error("Exception"));
+    await handleListMounts("", mockHub, { isJson: false, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Exception");
+    consoleLog.mockRestore();
+  });
 });

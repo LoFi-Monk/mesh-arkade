@@ -13,6 +13,19 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "bare-type": path.resolve(__dirname, "./tests/mocks/bare-type.ts"),
+      "bare-dns/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-tcp/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-net/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-pipe/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-dgram/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-os/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+      "bare-fs/binding": path.resolve(__dirname, "./tests/mocks/binding.ts"),
+    },
+    server: {
+      deps: {
+        // inline: [/bare-/], // Removed to stop Vite from analyzing bare-* bindings
+      },
     },
     coverage: {
       provider: "istanbul",

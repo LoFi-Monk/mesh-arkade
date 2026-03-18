@@ -29,6 +29,27 @@ vi.mock("fs", () => ({
   },
 }));
 
+vi.mock("bare-fs", () => ({
+  existsSync: vi.fn().mockReturnValue(true),
+  mkdirSync: vi.fn(),
+  promises: fsPromisesMock,
+  default: {
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
+    promises: fsPromisesMock,
+  },
+}));
+
+vi.mock("bare-path", () => ({
+  default: require("path"),
+  ...require("path"),
+}));
+
+vi.mock("bare-os", () => ({
+  default: require("os"),
+  ...require("os"),
+}));
+
 const mockPearApp = {
   args: [],
   key: null,

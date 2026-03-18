@@ -113,6 +113,44 @@ describe("fetchFromHyperswarm", () => {
     expect(progressCalls.length).toBeGreaterThan(0);
   });
 
+  it("Peer connects but never sends data: idle timeout fires and rejects", async () => {
+    const mockConnection = {
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        // Only register 'end' and 'error' handlers, NOT 'data'
+        // This simulates a peer that connects but never sends data
+        if (event === "end") {
+          // Never call end - peer just sits there
+        }
+        if (event === "error") {
+          // Never call error
+        }
+      }),
+      end: vi.fn(),
+    };
+
+    const Hyperswarm = (await import("hyperswarm")).default as any;
+    const mockSwarm = {
+      join: vi.fn().mockReturnValue({
+        flushed: vi.fn().mockResolvedValue(undefined),
+      }),
+      on: vi.fn().mockImplementation((event: string, cb: Function) => {
+        if (event === "connection") {
+          // Immediately connect to trigger the data-reading Promise
+          setTimeout(() => cb(mockConnection), 10);
+        }
+      }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    };
+    Hyperswarm.mockImplementation(() => mockSwarm);
+
+    // Very short timeout to trigger idle timeout quickly
+    await expect(
+      fetchFromHyperswarm("abc123def456789012345678901234567890abcd", {
+        timeout: 50,
+      }),
+    ).rejects.toThrow(FetchLayerTimeoutError);
+  }, 200);
+
   it("Peer connects but stream emits error: rejects with FetchLayerError", async () => {
     const mockConnection = {
       on: vi.fn().mockImplementation((event: string, cb: Function) => {

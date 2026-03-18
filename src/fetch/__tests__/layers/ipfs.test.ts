@@ -60,4 +60,38 @@ describe("fetchFromIpfs", () => {
       fetchFromIpfs("abc123def456789012345678901234567890abcd"),
     ).rejects.toThrow(FetchLayerError);
   });
+
+  it("fetch times out: throws FetchLayerTimeoutError", async () => {
+    vi.mocked(lookupCid).mockReturnValue("QmTestCid123456789");
+
+    const slowFetch = new Promise<{
+      ok: true;
+      arrayBuffer: () => Promise<ArrayBuffer>;
+    }>((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout")), 100);
+    }).then(() => ({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    }));
+
+    const mockFetch = vi.fn().mockResolvedValue(slowFetch);
+    vi.mocked(getFetch).mockResolvedValue(mockFetch);
+
+    await expect(
+      fetchFromIpfs("abc123def456789012345678901234567890abcd", {
+        timeout: 10,
+      }),
+    ).rejects.toThrow(FetchLayerTimeoutError);
+  });
+
+  it("fetch throws unexpected error: wraps in FetchLayerError", async () => {
+    vi.mocked(lookupCid).mockReturnValue("QmTestCid123456789");
+
+    const mockFetch = vi.fn().mockRejectedValue(new Error("Network failure"));
+    vi.mocked(getFetch).mockResolvedValue(mockFetch);
+
+    await expect(
+      fetchFromIpfs("abc123def456789012345678901234567890abcd"),
+    ).rejects.toThrow(FetchLayerError);
+  });
 });

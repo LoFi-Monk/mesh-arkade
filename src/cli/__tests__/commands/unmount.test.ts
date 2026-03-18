@@ -47,4 +47,50 @@ describe("handleUnmount", () => {
     expect(consoleLog).toHaveBeenCalledWith("Unmounted: /test/lib");
     consoleLog.mockRestore();
   });
+
+  it("should output JSON error when path missing in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleUnmount("", mockHub, { isJson: true, isSilent: false });
+    expect(consoleLog).toHaveBeenCalledWith(
+      '{"error":"Missing path argument"}',
+    );
+    consoleLog.mockRestore();
+  });
+
+  it("should output error when hub returns error", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      error: { message: "Not found" },
+    });
+    await handleUnmount("/test/lib", mockHub, {
+      isJson: false,
+      isSilent: false,
+    });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Not found");
+    consoleLog.mockRestore();
+  });
+
+  it("should output JSON result in JSON mode", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockResolvedValueOnce({
+      result: { unmounted: true },
+    });
+    await handleUnmount("/test/lib", mockHub, {
+      isJson: true,
+      isSilent: false,
+    });
+    expect(consoleLog).toHaveBeenCalledWith('{"unmounted":true}');
+    consoleLog.mockRestore();
+  });
+
+  it("should handle exception from hub", async () => {
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockHub.handleRequest.mockRejectedValueOnce(new Error("Exception"));
+    await handleUnmount("/test/lib", mockHub, {
+      isJson: false,
+      isSilent: false,
+    });
+    expect(consoleLog).toHaveBeenCalledWith("Error: Exception");
+    consoleLog.mockRestore();
+  });
 });

@@ -1,14 +1,40 @@
+/**
+ * @vitest-environment node
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as crypto from "crypto";
 
+vi.mock("bare-type", () => ({
+  type: (val: unknown): string => {
+    if (val === null) return "null";
+    if (val === undefined) return "undefined";
+    if (Array.isArray(val)) return "array";
+    return typeof val;
+  },
+  default: { type: (val: unknown): string => typeof val },
+}));
+
+vi.mock("bare-crypto", () => ({
+  default: {
+    createHash: (_algo: string) => ({
+      update: (_data: unknown) => ({
+        digest: (_encoding: string) => "mocked-hash",
+      }),
+    }),
+  },
+}));
+
 /**
  * Helpers to create and clean up real temp files for behavioral tests.
  */
 function writeTempFile(content: Buffer | string): string {
-  const tmpPath = path.join(os.tmpdir(), `mesh-arkade-hash-test-${Date.now()}-${Math.random().toString(36).slice(2)}.bin`);
+  const tmpPath = path.join(
+    os.tmpdir(),
+    `mesh-arkade-hash-test-${Date.now()}-${Math.random().toString(36).slice(2)}.bin`,
+  );
   fs.writeFileSync(tmpPath, content);
   return tmpPath;
 }
