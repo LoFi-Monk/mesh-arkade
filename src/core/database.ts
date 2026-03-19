@@ -228,11 +228,17 @@ export async function getWishlistBySha1(
  * @guarantee Safe to call when already closed; a subsequent getDatabase call will reinitialize cleanly.
  */
 export async function closeDatabase(): Promise<void> {
+  if (systemsBee) {
+    await systemsBee.close();
+    systemsBee = null;
+  }
+  if (wishlistBee) {
+    await wishlistBee.close();
+    wishlistBee = null;
+  }
   if (bee) {
     await bee.close();
     bee = null;
-    systemsBee = null;
-    wishlistBee = null;
   }
   if (store) {
     await store.close();
