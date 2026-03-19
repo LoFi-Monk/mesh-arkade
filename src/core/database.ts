@@ -104,9 +104,8 @@ export async function getDatabase(): Promise<Hyperbee> {
 export async function getSystem(
   systemId: string,
 ): Promise<SystemRecord | null> {
-  const db = await getDatabase();
-  const systems = db.sub("systems");
-  const result = await systems.get(systemId);
+  await getDatabase();
+  const result = await systemsBee!.get(systemId);
   return result ? (result.value as SystemRecord) : null;
 }
 
@@ -115,9 +114,8 @@ export async function getSystem(
  * @guarantee Idempotent — repeated calls with the same ID overwrite the previous value without error.
  */
 export async function upsertSystem(system: SystemRecord): Promise<void> {
-  const db = await getDatabase();
-  const systems = db.sub("systems");
-  await systems.put(system.id, {
+  await getDatabase();
+  await systemsBee!.put(system.id, {
     id: system.id,
     title: system.title,
     dat_url: system.dat_url,
@@ -134,10 +132,8 @@ export async function insertWishlistBatch(
 ): Promise<void> {
   if (records.length === 0) return;
 
-  const db = await getDatabase();
-  const wishlist = db.sub("wishlist");
-
-  const batch = wishlist.batch();
+  await getDatabase();
+  const batch = wishlistBee!.batch();
 
   for (let i = 0; i < records.length; i++) {
     const record = records[i];
@@ -176,13 +172,12 @@ export async function searchWishlist(
   systemId?: string,
   limit = 50,
 ): Promise<WishlistRecord[]> {
-  const db = await getDatabase();
-  const wishlist = db.sub("wishlist");
+  await getDatabase();
 
   const results: WishlistRecord[] = [];
   const lowerQuery = query.toLowerCase();
 
-  for await (const entry of wishlist.createReadStream()) {
+  for await (const entry of wishlistBee!.createReadStream()) {
     if (!entry.value) continue;
 
     const record = entry.value as WishlistRecord;
@@ -207,12 +202,11 @@ export async function searchWishlist(
 export async function getWishlistBySha1(
   sha1: string,
 ): Promise<WishlistRecord | null> {
-  const db = await getDatabase();
-  const wishlist = db.sub("wishlist");
+  await getDatabase();
 
   const normalizedSha1 = sha1.toLowerCase();
 
-  for await (const entry of wishlist.createReadStream()) {
+  for await (const entry of wishlistBee!.createReadStream()) {
     if (!entry.value) continue;
     const record = entry.value as WishlistRecord;
     if (record.sha1 && record.sha1.toLowerCase() === normalizedSha1) {
