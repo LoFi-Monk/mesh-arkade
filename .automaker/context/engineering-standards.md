@@ -26,11 +26,17 @@ Every exported function, type, and class needs a TSDoc comment. Required shape:
 /**
  * @intent What this does and why it exists.
  * @guarantee What the caller can rely on (invariants, return shape).
- * @constraint Anything the caller must know (error cases, side effects, limitations).
+ * @constraint Anything the caller must know (error cases, side effects, limitations, assumptions).
  */
 ```
 
-Vague or implementation-restating comments are forbidden. Explain intent and guarantees, not mechanics.
+**Rules:**
+
+- **No redundant descriptions** — do not restate the function name or signature. `getUser` does not need "Gets a user." It needs to explain *why* it exists and what the caller can rely on.
+- **Skip trivial symbols** — if the intent is genuinely self-evident and there are no constraints, TSDoc is optional. When in doubt, write it.
+- **Tag order is fixed** — always `@intent` → `@guarantee` → `@constraint`. Consistent ordering makes comments machine-parseable.
+- **`@constraint` is your risk surface** — use it to answer: Can this fail? Does it mutate state? What does it assume about its inputs? What must never change?
+- Vague or implementation-restating comments are forbidden. Explain intent and guarantees, not mechanics.
 
 ## SOLID + DRY
 

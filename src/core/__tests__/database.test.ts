@@ -343,5 +343,104 @@ describe("Database Module - with random-access-memory", () => {
       const db2 = await getDatabase();
       expect(db2).toBeDefined();
     });
+
+    it("should call close on bee, systemsBee, wishlistBee, and store", async () => {
+      vi.resetModules();
+
+      const closeCalls: string[] = [];
+
+      vi.doMock("hyperbee", () => ({
+        default: class MockHyperbee {
+          static sub = () => ({
+            ready: () => Promise.resolve(),
+            close: () => {
+              closeCalls.push("sub-bee");
+              return Promise.resolve();
+            },
+          });
+          ready = () => Promise.resolve();
+          close = () => {
+            closeCalls.push("main-bee");
+            return Promise.resolve();
+          };
+          sub = () => ({
+            ready: () => Promise.resolve(),
+            close: () => {
+              closeCalls.push("sub-bee");
+              return Promise.resolve();
+            },
+          });
+        },
+      }));
+
+      vi.doMock("corestore", () => ({
+        default: class MockCorestore {
+          get = () => ({ ready: () => Promise.resolve() });
+          close = () => {
+            closeCalls.push("store");
+            return Promise.resolve();
+          };
+        },
+      }));
+
+      const db = await import("../database.js");
+      await db.getDatabase();
+      await db.closeDatabase();
+
+      expect(closeCalls).toContain("main-bee");
+      expect(closeCalls).toContain("sub-bee");
+      expect(closeCalls).toContain("store");
+    });
+
+    it("should close all Hyperbee instances even when subsystems are created", async () => {
+      vi.resetModules();
+
+      const closeCalls: string[] = [];
+
+      vi.doMock("hyperbee", () => ({
+        default: class MockHyperbee {
+          static sub = () => ({
+            ready: () => Promise.resolve(),
+            close: () => {
+              closeCalls.push("sub-bee");
+              return Promise.resolve();
+            },
+          });
+          ready = () => Promise.resolve();
+          close = () => {
+            closeCalls.push("main-bee");
+            return Promise.resolve();
+          };
+          sub = () => ({
+            ready: () => Promise.resolve(),
+            close: () => {
+              closeCalls.push("sub-bee");
+              return Promise.resolve();
+            },
+          });
+        },
+      }));
+
+      vi.doMock("corestore", () => ({
+        default: class MockCorestore {
+          get = () => ({ ready: () => Promise.resolve() });
+          close = () => {
+            closeCalls.push("store");
+            return Promise.resolve();
+          };
+        },
+      }));
+
+      const db = await import("../database.js");
+      await db.getDatabase();
+      await db.closeDatabase();
+
+      expect(closeCalls).toContain("main-bee");
+      expect(closeCalls).toContain("sub-bee");
+      expect(closeCalls).toContain("store");
+      expect(
+        closeCalls.filter((c) => c === "sub-bee").length,
+      ).toBeGreaterThanOrEqual(2);
+    });
   });
 });
