@@ -46,8 +46,8 @@ export interface HubRequest {
 export interface HubResponse {
   /** The result of the command (if successful) */
   result?: unknown;
-  /** Error information (if failed) */
-  error?: { code: number; message: string };
+  /** Error information (if failed), null if successful */
+  error?: { code: number; message: string } | null;
   /** Matching request ID */
   id?: string | number;
 }
@@ -262,6 +262,41 @@ class CoreHub {
     return (await getWishlistBySha1(params.sha1)) ?? null;
   }
 
+  private async handleFetchRom(
+    params: Record<string, unknown> | undefined,
+  ): Promise<{ filename: string }> {
+    if (!params || typeof params !== "object") {
+      throw new Error("Invalid params for fetch:rom");
+    }
+    const { sha1, destDir } = params;
+    if (typeof sha1 !== "string") {
+      throw new Error("Missing required parameter: sha1");
+    }
+    if (typeof destDir !== "string") {
+      throw new Error("Missing required parameter: destDir");
+    }
+
+    const { getFs } = await import("./runtime.js");
+    const fs = await getFs();
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    const { FetchManager } = await import("../fetch/fetch-manager.js");
+    const { getWishlistBySha1 } = await import("./database.js");
+
+    const fetchManager = new FetchManager();
+    const records = await getWishlistBySha1(sha1);
+    const recordList = records ? [records] : undefined;
+    const filename = await fetchManager.fetchAndStage(
+      sha1,
+      destDir,
+      recordList,
+    );
+
+    return { filename };
+  }
+
   /**
    * Processes an incoming JSON-RPC request.
    *
@@ -308,11 +343,14 @@ class CoreHub {
           result = { success: true };
           break;
         }
+        case "fetch:rom":
+          result = await this.handleFetchRom(params);
+          break;
         default:
           throw new Error(`Unknown method: ${method}`);
       }
 
-      return { result, id };
+      return { result, error: null, id };
     } catch (error) {
       return {
         error: {

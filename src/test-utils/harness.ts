@@ -36,8 +36,6 @@ let originalStorage: string | undefined = undefined;
  * @constraint The returned cleanup function MUST be called after the test to restore state.
  */
 export async function setupTestEnv(): Promise<TestEnvResult> {
-  vi.resetModules();
-
   const os = await getOs();
   const tempDir = `${os.tmpdir()}/mesharkade-test-${Date.now()}`;
   currentTempDir = tempDir;
