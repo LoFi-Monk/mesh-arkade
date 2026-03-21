@@ -41,6 +41,7 @@ export default defineConfig({
         "src/core/__tests__/**",
         "src/fetch/__tests__/**",
         "src/cli/__tests__/**",
+        "src/test-utils/**",
       ],
       thresholds: {
         lines: 80,

@@ -1,44 +1,74 @@
-# Specification: Fix bare-type native addon test failure
+# Integration Test Harness — Shared Infrastructure
 
-## Problem Statement
+## 1. Problem Statement
 
-The test suite `runtime-hashstreaming.test.ts` fails with `TypeError: require.addon is not a function` because the jsdom environment conflicts with Bare runtime native addons that use `require.addon`.
+The MeshARKade codebase needs a shared test infrastructure layer to enable reliable end-to-end integration tests for the P2P fetch system (DHT lookup + peer connect + piece download). Without a unified harness, each test would duplicate setup/teardown logic, leading to flaky tests and maintenance burden.
 
-## Root Cause
+## 2. User Story
 
-The jsdom test environment doesn't provide the `require.addon` function that `bare-type` (a dependency of `bare-crypto`) requires. Switching to Node environment resolves this.
+As a developer, I want a reliable, reusable test harness so that I can write integration tests that exercise the full P2P fetch pipeline without boilerplate duplication.
 
-## Verification: No jsdom Dependencies
+## 3. Acceptance Criteria
 
-Ran grep for `window`, `document`, `localStorage` in test files:
+### Happy Path
 
-- No tests reference these jsdom globals
-- `branding.test.ts` explicitly tests that modules don't reference window/document
-- Safe to switch to Node environment
+- **GIVEN** a test file imports from `src/test-utils/harness.ts`, **WHEN** `setupTestEnv()` is called, **THEN** `Pear.app.storage` is stubbed to an OS temp directory and all modules are reset
+- **GIVEN** a test has run, **WHEN** `teardownTestEnv()` is called, **THEN** the database is closed, `CoreHub` singleton is reset, and temp directories are removed
+- **GIVEN** a test needs a mock peer, **WHEN** `createMockPeer(sha1, data)` is called, **THEN** a mock fetch layer is returned that serves the provided bytes when SHA1 matches
 
-## Technical Context
+### Edge Cases
 
-| Aspect     | Value                                                                        |
-| ---------- | ---------------------------------------------------------------------------- |
-| Root Cause | jsdom environment lacks `require.addon` API needed by bare-type native addon |
-| Fix        | Change vitest.config.ts environment from "jsdom" to "node"                   |
-| Risk       | Verified: no test files depend on jsdom-specific APIs                        |
+- **GIVEN** `setupTestEnv()` is called twice without teardown, **THEN** the second call resets state cleanly
+- **GIVEN** temp directory creation fails, **THEN** an informative error is thrown
 
-## Non-Goals
+### Error Handling
 
-- Not mocking bare-crypto globally - that would mask real failures in other tests
-- Not modifying production code in runtime.ts
+- **GIVEN** `createMockPeer` receives an empty `data` array, **WHEN** SHA1 lookup occurs, **THEN** the mock returns empty bytes gracefully
+- **GIVEN** `teardownTestEnv()` is called when nothing was setup, **THEN** it handles gracefully (no-op)
 
-## Implementation Tasks
+## 4. Technical Context
+
+| Aspect             | Value                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Affected Files     | `src/__fixtures__/test.dat`, `src/test-utils/harness.ts`, `src/test-utils/__tests__/harness.test.ts` |
+| Dependencies       | Vitest, `os` module via `runtime.ts`, `CoreHub`, `closeDatabase`                                     |
+| Constraints        | No `any` types, TSDoc on all exports, Bare-compatible (`os.tmpdir()` via `getOs()`)                  |
+| Patterns to Follow | Singleton reset pattern from `hub.test.ts`, runtime mock pattern from `curator.test.ts`              |
+
+## 5. Non-Goals
+
+- This harness does NOT include actual network simulation (DHT/peer mocks)
+- This harness does NOT include database seeding utilities (separate concern)
+- This harness does NOT replace Vitest configuration
+
+## 6. Implementation Tasks
 
 ```tasks
-## Phase 1: Verify no jsdom dependencies
-- [ ] T001: Grep test files for window, document, localStorage references - none found, safe to proceed | File: (grep verification)
+## Phase 1: Test Fixtures
+- [ ] T001: Write test for test.dat fixture | File: src/__fixtures__/test.dat
+- [ ] T002: Create minimal CLRMamePro DAT fixture with known SHA1 | File: src/__fixtures__/test.dat
 
-## Phase 2: Fix environment
-- [ ] T002: Change vitest.config.ts environment from "jsdom" to "node" | File: vitest.config.ts
-
-## Phase 3: Verify
-- [ ] T003: Run runtime-hashstreaming test suite to confirm tests pass | File: (test execution)
-- [ ] T004: Run full test suite to verify no regressions (339 tests should pass) | File: (test execution)
+## Phase 2: Harness Implementation
+- [ ] T003: Write test for setupTestEnv() | File: src/test-utils/__tests__/harness.test.ts
+- [ ] T004: Implement setupTestEnv() | File: src/test-utils/harness.ts
+- [ ] T005: Write test for teardownTestEnv() | File: src/test-utils/__tests__/harness.test.ts
+- [ ] T006: Implement teardownTestEnv() | File: src/test-utils/harness.ts
+- [ ] T007: Write test for createMockPeer() | File: src/test-utils/__tests__/harness.test.ts
+- [ ] T008: Implement createMockPeer() | File: src/test-utils/harness.ts
 ```
+
+## 7. Success Metrics
+
+- All three harness utilities have corresponding unit tests
+- Tests pass with `npm test -- --coverage`
+- Coverage threshold maintained at 80%
+- TSDoc comments on all exports with `@intent`, `@guarantee`, `@constraint`
+- Zero `any` types
+
+## 8. Risks & Mitigations
+
+| Risk                                   | Mitigation                                           |
+| -------------------------------------- | ---------------------------------------------------- |
+| Bare module mocking complexity         | Follow existing `tests/setup.ts` patterns            |
+| Singleton state bleeding between tests | Reset in `beforeEach` + explicit `teardownTestEnv()` |
+| Temp dir cleanup on Windows            | Use `getOs().tmpdir()` and handle async properly     |

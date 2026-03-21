@@ -32,7 +32,12 @@ vi.mock("bare-path", () => ({ default: require("path") }));
 vi.mock("bare-os", () => ({ default: require("os") }));
 vi.mock("bare-crypto", () => ({ default: require("crypto") }));
 
-import { fetchFromBittorrent, verifySha1, DHTClient, getNet } from "../../../layers/bittorrent.js";
+import {
+  fetchFromBittorrent,
+  verifySha1,
+  DHTClient,
+  getNet,
+} from "../../../layers/bittorrent.js";
 import { FetchLayerError } from "../../../errors.js";
 
 describe("verifySha1 edge cases", () => {
@@ -54,7 +59,9 @@ describe("verifySha1 edge cases", () => {
 describe("fetchFromBittorrent", () => {
   describe("input validation", () => {
     it("throws FetchLayerError for invalid SHA1 - too short", async () => {
-      await expect(fetchFromBittorrent("abc123")).rejects.toThrow(FetchLayerError);
+      await expect(fetchFromBittorrent("abc123")).rejects.toThrow(
+        FetchLayerError,
+      );
     });
 
     it("throws FetchLayerError for invalid SHA1 - not hex", async () => {
@@ -82,16 +89,27 @@ describe("fetchFromBittorrent", () => {
 
 describe("fetchFromBittorrent integration", () => {
   it("fetches successfully from a discovered peer", async () => {
-    const { fetchFromBittorrent, DHTClient, getNet } = await import("../../../layers/bittorrent.js");
-    
+    const { fetchFromBittorrent, DHTClient, getNet } =
+      await import("../../../layers/bittorrent.js");
+
     // Mock DHTClient to return a fake peer
     vi.spyOn(DHTClient.prototype, "initialize").mockResolvedValue(undefined);
-    vi.spyOn(DHTClient.prototype, "lookup").mockResolvedValue([{ host: "127.0.0.1", port: 6881 }]);
+    vi.spyOn(DHTClient.prototype, "lookup").mockResolvedValue([
+      { host: "127.0.0.1", port: 6881 },
+    ]);
     vi.spyOn(DHTClient.prototype, "close").mockImplementation(() => {});
 
     // Mock the socket so fetchFromPeer succeeds
-    let dataCallback: any;
-    const socketMock = {
+    let dataCallback: ((data: Uint8Array) => void) | undefined = undefined;
+    const socketMock: {
+      connect: ReturnType<typeof vi.fn>;
+      write: ReturnType<typeof vi.fn>;
+      on: (
+        event: string,
+        cb: (data: Uint8Array) => void,
+      ) => { on: ReturnType<typeof vi.fn> };
+      destroy: ReturnType<typeof vi.fn>;
+    } = {
       connect: vi.fn((port, host, cb) => setTimeout(() => cb && cb(), 0)),
       write: vi.fn(),
       on: vi.fn((event, cb) => {
@@ -104,20 +122,25 @@ describe("fetchFromBittorrent integration", () => {
     const net = await getNet();
     vi.mocked((net as any).Socket).mockReturnValue(socketMock);
 
-    const promise = fetchFromBittorrent("abc123def456789012345678901234567890abcd", { timeout: 1000 });
-    
-    await new Promise(r => setTimeout(r, 20));
-    
+    const promise = fetchFromBittorrent(
+      "abc123def456789012345678901234567890abcd",
+      { timeout: 1000 },
+    );
+
+    await new Promise((r) => setTimeout(r, 20));
+
     if (dataCallback) {
+      const callback = dataCallback as (data: Uint8Array) => void;
       // 1. Handshake
       const handshake = new Uint8Array(68).fill(0);
       handshake[0] = 19;
       const protocol = "BitTorrent protocol";
-      for (let i = 0; i < protocol.length; i++) handshake[i + 1] = protocol.charCodeAt(i);
-      dataCallback(handshake);
+      for (let i = 0; i < protocol.length; i++)
+        handshake[i + 1] = protocol.charCodeAt(i);
+      callback(handshake);
 
       // 2. UNCHOKE message (id 1)
-      dataCallback(new Uint8Array([0, 0, 0, 1, 1]));
+      callback(new Uint8Array([0, 0, 0, 1, 1]));
 
       // 3. PIECE message (id 7)
       // Length = 9 (prefix) + length of block
@@ -127,16 +150,18 @@ describe("fetchFromBittorrent integration", () => {
       pieceMsg[4] = 7; // PIECE
       view.setUint32(5, 0); // index
       view.setUint32(9, 0); // begin
-      dataCallback(pieceMsg);
+      callback(pieceMsg);
     }
-    
   });
 
   it("falls back to fallback peers when DHT peers fail", async () => {
-    const { fetchFromBittorrent, DHTClient, getNet } = await import("../../../layers/bittorrent.js");
-    
+    const { fetchFromBittorrent, DHTClient, getNet } =
+      await import("../../../layers/bittorrent.js");
+
     vi.spyOn(DHTClient.prototype, "initialize").mockResolvedValue(undefined);
-    vi.spyOn(DHTClient.prototype, "lookup").mockResolvedValue([{ host: "127.0.0.1", port: 6881 }]);
+    vi.spyOn(DHTClient.prototype, "lookup").mockResolvedValue([
+      { host: "127.0.0.1", port: 6881 },
+    ]);
     vi.spyOn(DHTClient.prototype, "close").mockImplementation(() => {});
 
     // Mock socket to immediately close, causing fetchFromPeer to fail
@@ -155,6 +180,10 @@ describe("fetchFromBittorrent integration", () => {
     const net = await getNet();
     vi.mocked((net as any).Socket).mockReturnValue(socketMock);
 
-    await expect(fetchFromBittorrent("abc123def456789012345678901234567890abcd", { timeout: 100 })).rejects.toThrow();
+    await expect(
+      fetchFromBittorrent("abc123def456789012345678901234567890abcd", {
+        timeout: 100,
+      }),
+    ).rejects.toThrow();
   });
 });

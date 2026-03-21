@@ -1,0 +1,9 @@
+clrmamepro (
+  name "Test System"
+  description "Synthetic DAT for integration test harness"
+)
+
+game (
+  name "MeshARKade Test ROM v1.0"
+  rom ( name "test.nes" size 16 crc 12345678 md5 098f6bcd4621d373cade4e832627b4f6 sha1 ca56432c553f3eb0c64311469c5fa44f980a9852 )
+)
