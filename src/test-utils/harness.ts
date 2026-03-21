@@ -3,7 +3,6 @@
  * @description Shared test infrastructure for integration test harness.
  */
 
-import { vi } from "vitest";
 import { getOs } from "../core/runtime.js";
 import { closeDatabase } from "../core/database.js";
 import { CoreHub } from "../core/hub.js";
