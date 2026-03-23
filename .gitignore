@@ -11,6 +11,7 @@ test-storage/
 # Agent directories
 CLAUDE.md
 .claude/
+.agent/
 .devin/
 .opencode/
 .gemini/
