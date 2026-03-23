@@ -1,0 +1,13 @@
+node_modules/
+.pear/
+dist/
+coverage/
+*.log
+
+# Test artifacts
+test-output*.txt
+test-storage/
+
+# OS
+.DS_Store
+Thumbs.db
