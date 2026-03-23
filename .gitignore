@@ -10,12 +10,17 @@ test-storage/
 
 # Agent directories
 CLAUDE.md
-!REVIEW.md
 .claude/
 .agent/
 .devin/
 .opencode/
 .gemini/
+
+# devin's review instructions
+!REVIEW.md
+
+# Local agent resources
+resources/
 
 # OS
 .DS_Store
