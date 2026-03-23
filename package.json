@@ -12,11 +12,17 @@
   "license": "MIT",
   "scripts": {
     "dev": "pear run -d .",
-    "test": "brittle test/*.test.js",
+    "test": "brittle test/*.test.ts",
     "lint": "eslint ."
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "brittle": "^3.0.0",
-    "pear-interface": "^1.0.0"
+    "eslint": "^10.1.0",
+    "eslint-plugin-tsdoc": "^0.5.2",
+    "pear-interface": "^1.0.0",
+    "typescript": "^5.9.3"
   }
 }
