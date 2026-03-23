@@ -10,6 +10,7 @@ test-storage/
 
 # Agent directories
 CLAUDE.md
+!REVIEW.md
 .claude/
 .agent/
 .devin/
