@@ -8,6 +8,12 @@ coverage/
 test-output*.txt
 test-storage/
 
+# Agent directories
+.claude/
+.devin/
+.opencode/
+.gemini/
+
 # OS
 .DS_Store
 Thumbs.db
