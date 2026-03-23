@@ -15,7 +15,12 @@
     "typecheck": "tsc --noEmit",
     "dev": "npm run build && pear run -d dist/",
     "test": "npm run build && brittle-bare dist/test/*.test.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "husky",
+    "test:coverage": "npm run build && brittle-bare --coverage dist/test/*.test.js",
+    "generate:coverage": "brittle-bare --coverage dist/test/*.test.js || true",
+    "coverage:check": "c8 --temp-directory ./coverage check-coverage --statements 80 --branches 80 --functions 80 --lines 80",
+    "precommit": "npm run lint && npm test && npm run generate:coverage && npm run coverage:check"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
@@ -24,8 +29,10 @@
     "@typescript-eslint/parser": "^8.57.1",
     "bare-runtime": "^1.28.1",
     "brittle": "^3.0.0",
+    "c8": "^11.0.0",
     "eslint": "^10.1.0",
     "eslint-plugin-tsdoc": "^0.5.2",
+    "husky": "^9.1.7",
     "pear-interface": "^1.0.0",
     "typescript": "^5.9.3"
   },

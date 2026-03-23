@@ -26,8 +26,11 @@ jobs:
       - name: Install bare-runtime
         run: npm i -g bare-runtime
 
-      - name: Test
-        run: npm test
-
       - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm run test:coverage
+
+      - name: Check Coverage
+        run: npm run coverage:check
