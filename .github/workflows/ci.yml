@@ -30,7 +30,7 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: npm run test:coverage
+        run: npm test && npm run generate:coverage
 
       - name: Check Coverage
         run: npm run coverage:check
