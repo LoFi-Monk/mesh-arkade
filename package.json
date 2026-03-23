@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A decentralized game preservation platform built on the Pear Runtime.",
   "author": "LoFi Monk",
-  "main": "index.js",
+  "main": "dist/index.js",
   "pear": {
     "name": "mesh-arkade",
     "type": "terminal"
@@ -11,8 +11,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "pear run -d .",
-    "test": "brittle test/*.test.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "npm run build && pear run -d dist/",
+    "test": "npm run build && brittle-pear dist/test/*.test.js",
     "lint": "eslint ."
   },
   "devDependencies": {
