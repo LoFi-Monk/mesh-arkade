@@ -2,13 +2,39 @@
   "name": "mesh-arkade",
   "version": "0.1.0",
   "description": "A decentralized game preservation platform built on the Pear Runtime.",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "test": "brittle test/**/*.test.js",
-    "lint": "eslint ."
-  },
-  "keywords": [],
   "author": "LoFi Monk",
-  "license": "MIT"
+  "main": "dist/index.js",
+  "pear": {
+    "name": "mesh-arkade",
+    "type": "terminal"
+  },
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "npm run build && pear run -d dist/",
+    "test": "npm run build && brittle-bare dist/test/*.test.js",
+    "lint": "eslint .",
+    "prepare": "husky",
+    "generate:coverage": "brittle-bare --coverage dist/test/*.test.js || true",
+    "coverage:check": "c8 --temp-directory ./coverage check-coverage --statements 80 --branches 80 --functions 80 --lines 80",
+    "precommit": "npm run lint && npm test && npm run generate:coverage && npm run coverage:check"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "bare-runtime": "^1.28.1",
+    "brittle": "^3.0.0",
+    "c8": "^11.0.0",
+    "eslint": "^10.1.0",
+    "eslint-plugin-tsdoc": "^0.5.2",
+    "husky": "^9.1.7",
+    "pear-interface": "^1.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "pino": "^10.3.1"
+  }
 }
