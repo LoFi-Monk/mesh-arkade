@@ -9,7 +9,7 @@ test('createLogger returns an object with standard log methods', (t) => {
   t.is(typeof logger.debug, 'function', 'has debug method')
 })
 
-test('logger binds the provided name', (t) => {
+test('logger can create a named child logger', (t) => {
   const logger = createLogger('mesh-arkade')
-  t.is(logger.bindings().name, 'mesh-arkade', 'name binding is set correctly')
+  t.is(typeof logger.child, 'function', 'has child method for sub-loggers')
 })

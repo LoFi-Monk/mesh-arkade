@@ -14,17 +14,22 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "npm run build && pear run -d dist/",
-    "test": "npm run build && brittle-pear dist/test/*.test.js",
+    "test": "npm run build && brittle-bare dist/test/*.test.js",
     "lint": "eslint ."
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "@types/pino": "^7.0.4",
     "@typescript-eslint/eslint-plugin": "^8.57.1",
     "@typescript-eslint/parser": "^8.57.1",
+    "bare-runtime": "^1.28.1",
     "brittle": "^3.0.0",
     "eslint": "^10.1.0",
     "eslint-plugin-tsdoc": "^0.5.2",
     "pear-interface": "^1.0.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "pino": "^10.3.1"
   }
 }
