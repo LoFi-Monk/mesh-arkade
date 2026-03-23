@@ -1,5 +1,3 @@
-/// <reference path="./types/pear.d.ts" />
-
 export {}
 
 const { versions } = Pear

@@ -30,7 +30,7 @@ declare global {
     const config: Config
   }
 
-  const Pear: typeof import('./pear').Pear
+
 }
 
 export {}
