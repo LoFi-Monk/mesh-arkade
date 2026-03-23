@@ -9,6 +9,7 @@ test-output*.txt
 test-storage/
 
 # Agent directories
+CLAUDE.md
 .claude/
 .devin/
 .opencode/
