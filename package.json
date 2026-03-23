@@ -1,0 +1,14 @@
+{
+  "name": "mesh-arkade",
+  "version": "0.1.0",
+  "description": "A decentralized game preservation platform built on the Pear Runtime.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "brittle test/**/*.test.js",
+    "lint": "eslint ."
+  },
+  "keywords": [],
+  "author": "LoFi Monk",
+  "license": "MIT"
+}
