@@ -17,7 +17,6 @@
     "test": "npm run build && brittle-bare dist/test/*.test.js",
     "lint": "eslint .",
     "prepare": "husky",
-    "test:coverage": "npm run build && brittle-bare --coverage dist/test/*.test.js",
     "generate:coverage": "brittle-bare --coverage dist/test/*.test.js || true",
     "coverage:check": "c8 --temp-directory ./coverage check-coverage --statements 80 --branches 80 --functions 80 --lines 80",
     "precommit": "npm run lint && npm test && npm run generate:coverage && npm run coverage:check"
