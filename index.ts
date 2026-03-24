@@ -1,3 +1,5 @@
+// @ts-expect-error - compat.js is a plain JS module that sets globals
+await import('./compat.js')
 import { createLogger } from './src/core/logger.js'
 
 console.log('Mesh ARKade | A Decent Game Collection')
