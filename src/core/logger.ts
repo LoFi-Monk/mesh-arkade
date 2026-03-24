@@ -1,4 +1,5 @@
-import pino from 'pino/browser'
+// @ts-expect-error - pino/browser.js resolution differs between Node and Bare
+import pino from 'pino/browser.js'
 
 /**
  * @intent Create a named, level-controlled logger instance for a given module or subsystem.
