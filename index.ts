@@ -1,5 +1,3 @@
-export {}
-
 import { createLogger } from './src/core/logger.js'
 
 console.log('Mesh ARKade | A Decent Game Collection')
