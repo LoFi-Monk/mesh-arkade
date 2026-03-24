@@ -22,7 +22,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
-      'tsdoc/syntax': 'warn',
+      'tsdoc/syntax': 'error',
       'jsdoc/require-jsdoc': ['error', {
         publicOnly: true,
         require: {
@@ -33,6 +33,9 @@ export default [
           FunctionExpression: true
         },
         contexts: ['ExportNamedDeclaration > VariableDeclaration']
+      }],
+      'jsdoc/check-tag-names': ['error', {
+        definedTags: ['intent', 'guarantee', 'constraint']
       }]
     }
   },
