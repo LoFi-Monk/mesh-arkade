@@ -2,8 +2,9 @@ import type { MeshStore } from './types.js'
 import type { LookupRomResult, StoredRomEntry } from './types.js'
 
 /**
- * @intent   Look up a ROM by hash with fallback chain (SHA1 -\> MD5 -\> CRC).
- * @guarantee On return, the first matching hash type is returned with matchedBy indicator.
+ * @intent   Look up a ROM by hash with fallback chain (SHA1 -\> MD5 -\> CRC -\> SHA256).
+ * @guarantee On return, the first matching hash type is returned with a matchedBy indicator; null if no match.
+ * @constraint Hash input is normalized to uppercase before lookup. Store must be initialized before calling.
  */
 export async function lookupRom(
   store: MeshStore,
