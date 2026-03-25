@@ -197,3 +197,10 @@ test('resolveSystemName returns empty array for blank query', async (t) => {
   t.is(resolveSystemName('', mockSystems).length, 0, 'empty string returns no results')
   t.is(resolveSystemName('   ', mockSystems).length, 0, 'whitespace-only returns no results')
 })
+
+test('resolveSystemName trims leading and trailing whitespace before matching', async (t) => {
+  const result = resolveSystemName('  Game Boy  ', mockSystems)
+
+  t.is(result.length, 3, 'padded query matches same as trimmed query')
+  t.ok(result.includes('Nintendo - Game Boy'))
+})

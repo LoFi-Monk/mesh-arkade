@@ -45,7 +45,7 @@ The GitHub Contents API (`/repos/:owner/:repo/contents/:path`) returns directory
 
 **Alternative considered:** Fuzzy matching (Levenshtein distance). Rejected for now — adds complexity, hard to get right without testing against real user input patterns. Substring matching covers the common cases. Can be upgraded later.
 
-**Rationale:** Substring matching handles "NES" matching "Nintendo - Nintendo Entertainment System", "Game Boy" matching "Nintendo - Game Boy", etc. When multiple matches occur (e.g., "Game Boy" matches both "Game Boy" and "Game Boy Advance" and "Game Boy Color"), the caller gets all matches and can prompt the user to disambiguate.
+**Rationale:** Substring matching handles partial names — "Super Nintendo" matching "Nintendo - Super Nintendo Entertainment System", "Game Boy" matching "Nintendo - Game Boy", etc. When multiple matches occur (e.g., "Game Boy" matches all three Game Boy variants), the caller gets all matches and can prompt the user to disambiguate. Acronym resolution ("NES" → Nintendo Entertainment System) requires alias mapping and is deferred to a future story.
 
 ### 4. Same error pattern as fetchDat()
 
@@ -61,4 +61,4 @@ The GitHub Contents API (`/repos/:owner/:repo/contents/:path`) returns directory
 
 **[API response shape changes]** → GitHub's Contents API is stable and widely used. Pin to the fields we need (`name`, `type`) and ignore the rest. If the API breaks, the error handling catches it.
 
-**[Substring ambiguity]** → "Game Boy" matches 3 systems. This is by design — the caller disambiguates. Single-match cases ("NES", "Genesis", "PlayStation") resolve cleanly.
+**[Substring ambiguity]** → "Game Boy" matches 3 systems. This is by design — the caller disambiguates. Single-match cases ("Genesis", "PlayStation") resolve cleanly. Acronyms like "NES" do not resolve via substring — they require alias mapping (future story).

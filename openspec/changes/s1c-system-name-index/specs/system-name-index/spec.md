@@ -34,16 +34,17 @@ The function SHALL return typed error results for network failures and GitHub AP
 The system SHALL provide a `resolveSystemName(query, systems)` function that performs case-insensitive substring matching against an array of canonical system names.
 
 #### Scenario: Exact substring match returns single result
-- **WHEN** `resolveSystemName("NES", systems)` is called with a systems array containing `"Nintendo - Nintendo Entertainment System"`
-- **THEN** the function returns an array containing `"Nintendo - Nintendo Entertainment System"`
+- **WHEN** `resolveSystemName("Super Nintendo", systems)` is called with a systems array containing `"Nintendo - Super Nintendo Entertainment System"`
+- **THEN** the function returns an array containing `"Nintendo - Super Nintendo Entertainment System"`
+- **NOTE**: Acronym resolution (e.g., "NES" → "Nintendo - Nintendo Entertainment System") requires alias mapping and is deferred to a future story. Substring matching resolves partial names, not abbreviations.
 
 #### Scenario: Partial match returns multiple results
 - **WHEN** `resolveSystemName("Game Boy", systems)` is called with a systems array containing `"Nintendo - Game Boy"`, `"Nintendo - Game Boy Advance"`, and `"Nintendo - Game Boy Color"`
 - **THEN** the function returns an array containing all three matching system names
 
 #### Scenario: Match is case-insensitive
-- **WHEN** `resolveSystemName("nes", systems)` is called
-- **THEN** the function returns the same results as `resolveSystemName("NES", systems)`
+- **WHEN** `resolveSystemName("game boy", systems)` is called
+- **THEN** the function returns the same results as `resolveSystemName("GAME BOY", systems)`
 
 #### Scenario: No match returns empty array
 - **WHEN** `resolveSystemName("nonexistent", systems)` is called

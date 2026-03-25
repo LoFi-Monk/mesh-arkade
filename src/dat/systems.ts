@@ -61,7 +61,8 @@ export async function fetchSystemIndex(): Promise<SystemIndexResult | SystemInde
  * @constraint Returns empty array if no matches found or query is blank. Returns multiple matches when query matches more than one system.
  */
 export function resolveSystemName(query: string, systems: string[]): string[] {
-  if (query.trim() === '') return []
-  const lowerQuery = query.toLowerCase()
+  const trimmed = query.trim()
+  if (trimmed === '') return []
+  const lowerQuery = trimmed.toLowerCase()
   return systems.filter((system) => system.toLowerCase().includes(lowerQuery))
 }
