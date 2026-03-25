@@ -20,7 +20,7 @@ export function createStore(storagePath?: string): MeshStore {
 
   const meshStore: MeshStore = {
     store,
-    db: new Hyperbee(store.get({ name: 'mesh-arkade-db', valueEncoding: 'json' }), {
+    db: new Hyperbee(store.get({ name: 'mesh-arkade-db' }), {
       keyEncoding: 'utf-8',
       valueEncoding: 'json',
     }),

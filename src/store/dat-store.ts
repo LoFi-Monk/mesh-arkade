@@ -3,8 +3,9 @@ import type { DatFile, DatRom } from '../dat/types.js'
 import type { StoreDatResult } from './types.js'
 
 /**
- * @intent   Store a parsed DAT file in the Hyperbee store.
- * @guarantee On return, all ROMs are written with quad-hash key schema and cross-references.
+ * @intent   Store a parsed DAT file in the Hyperbee store using quad-hash key schema.
+ * @guarantee On return, all ROMs are indexed by SHA1, MD5, CRC, and SHA256 (where present); header is written.
+ * @constraint systemName must be a canonical No-Intro/Libretro system name. Hash values are normalized to uppercase.
  */
 export async function storeDat(
   store: MeshStore,
