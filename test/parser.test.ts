@@ -372,6 +372,16 @@ test('empty string input returns appropriate error', (t) => {
   }
 })
 
+test('extra closing parenthesis returns parse-error', (t) => {
+  const result = parseDat('clrmamepro ( name "Test" ) )')
+
+  t.is(result.ok, false)
+  if (!result.ok) {
+    t.is(result.error.type, 'parse-error')
+    t.is(result.error.message, 'Unmatched closing parenthesis')
+  }
+})
+
 test('missing required header name returns error', (t) => {
   const noNameFixture = `clrmamepro ( description "No name field" )`
 

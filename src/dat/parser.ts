@@ -198,6 +198,16 @@ function parseTokens(tokens: Token[]): DatParseResult | DatParseError {
     }
   }
 
+  if (parenDepth < 0) {
+    return {
+      ok: false,
+      error: {
+        type: 'parse-error',
+        message: 'Unmatched closing parenthesis',
+      },
+    }
+  }
+
   let header: DatHeader = {
     name: '',
   }
