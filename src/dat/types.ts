@@ -31,3 +31,25 @@ export interface DatFetchOptions {
   ifNoneMatch?: string
   ifModifiedSince?: string
 }
+
+/**
+ * @intent   Represents a successful fetch of the system index from the Libretro Database.
+ * @guarantee On return, contains an array of available system names from the repository.
+ */
+export interface SystemIndexResult {
+  ok: true
+  systems: string[]
+}
+
+/**
+ * @intent   Represents a failed fetch of the system index with a typed error.
+ * @guarantee On return, contains error type and diagnostic information including the failing URL.
+ */
+export interface SystemIndexError {
+  ok: false
+  error: {
+    type: 'network-error' | 'rate-limited'
+    message: string
+    url: string
+  }
+}
