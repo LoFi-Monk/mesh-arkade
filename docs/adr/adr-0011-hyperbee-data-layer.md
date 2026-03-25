@@ -47,16 +47,21 @@ Key-value store built on Hypercore. Sorted keys, prefix queries, persistent, P2P
 ```
 Key schema (examples):
 
-dat:<system>:header       → { name, version, date }
-dat:<system>:crc:<hash>   → { gameName, romName, size, md5, sha1 }
-dat:<system>:sha1:<hash>  → { gameName, romName, size, crc, md5 }
-systems:managed           → [ "Nintendo - Nintendo Entertainment System", ... ]
-systems:index:<friendly>  → "Nintendo - Nintendo Entertainment System"
+dat:<canonical-system-name>:header         → { name, version }
+dat:<canonical-system-name>:sha1:<hash>    → { gameName, romName, size, crc32, md5, sha256? }
+dat:<canonical-system-name>:md5:<hash>     → { gameName, romName, size, crc32, sha1, sha256? }
+dat:<canonical-system-name>:crc:<hash>     → { gameName, romName, size, md5, sha1, sha256? }
+dat:<canonical-system-name>:sha256:<hash>  → { gameName, romName, size, crc32, md5, sha1 }   ← write only when present
+systems:managed:<canonical-system-name>    → true
+systems:index:<friendly>                   → <canonical-system-name>
 ```
 
-- **Dual hash keys** (CRC + SHA1) for O(1) ROM verification from either hash
-- **Prefix queries** (`dat:NES:*`) to enumerate all entries for a system
-- **Managed systems list** stored alongside DAT data
+- **Canonical system name as key prefix** — matches No-Intro/Libretro naming exactly (e.g. "Nintendo - Nintendo Entertainment System"). No slug derivation, no translation layer.
+- **Quad hash keys** (SHA1 + MD5 + CRC32 + SHA256 when available) for O(1) ROM verification from any hash
+- **Lookup priority**: SHA1 → MD5 → CRC32
+- **SHA256** written when present in DAT — serves as IPFS CIDv1 bridge for future distribution layer
+- **Prefix queries** (`dat:<canonical-system-name>:*`) to enumerate all entries for a system
+- **Per-system managed keys** — `systems:managed:<name>` → `true`. Atomic single-write per system, no read-modify-write array. Listing managed systems is a prefix scan on `systems:managed:`.
 - **Replication-ready** — when swarm features land, the Hyperbee can replicate to peers
 
 ### Verification scenarios this enables
@@ -91,3 +96,4 @@ On failure:
 ### Risks
 - Hyperbee performance with large DAT sets (PlayStation has ~1,800 entries) — needs benchmarking in S3
 - Bare compatibility of Hyperbee/Corestore — verify before committing to S3 implementation
+- Missing hashes are possible in older DAT entries — lookup layer must handle graceful fallback across all four hash types
