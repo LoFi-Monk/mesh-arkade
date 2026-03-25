@@ -152,14 +152,15 @@ test('resolveSystemName returns matching system names - NES', async (t) => {
 })
 
 test('resolveSystemName is case-insensitive', async (t) => {
-  const resultLower = resolveSystemName('nes', mockSystems)
-  const resultUpper = resolveSystemName('NES', mockSystems)
-  const resultMixed = resolveSystemName('NeS', mockSystems)
+  const resultLower = resolveSystemName('game gear', mockSystems)
+  const resultUpper = resolveSystemName('GAME GEAR', mockSystems)
+  const resultMixed = resolveSystemName('Game Gear', mockSystems)
 
   t.is(resultLower.length, 1, 'lowercase query works')
   t.is(resultUpper.length, 1, 'uppercase query works')
   t.is(resultMixed.length, 1, 'mixed case query works')
   t.alike(resultLower, resultUpper, 'case variations return same results')
+  t.is(resultLower[0], 'Sega - Game Gear', 'matches the correct system')
 })
 
 test('resolveSystemName returns multiple matches for ambiguous query', async (t) => {
@@ -190,4 +191,9 @@ test('resolveSystemName matches partial system names', async (t) => {
 
   t.is(result.length, 1)
   t.is(result[0], 'Atari - 2600')
+})
+
+test('resolveSystemName returns empty array for blank query', async (t) => {
+  t.is(resolveSystemName('', mockSystems).length, 0, 'empty string returns no results')
+  t.is(resolveSystemName('   ', mockSystems).length, 0, 'whitespace-only returns no results')
 })

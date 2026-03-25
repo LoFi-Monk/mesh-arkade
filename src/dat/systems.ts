@@ -57,10 +57,11 @@ export async function fetchSystemIndex(): Promise<SystemIndexResult | SystemInde
 
 /**
  * @intent   Resolves a user query to matching system names via case-insensitive substring matching.
- * @guarantee Returns all system names where the query appears as a substring (case-insensitive).
- * @constraint Returns empty array if no matches found. Returns multiple matches when query matches more than one system.
+ * @guarantee Returns all system names where the query appears as a substring (case-insensitive). Returns empty array for blank input.
+ * @constraint Returns empty array if no matches found or query is blank. Returns multiple matches when query matches more than one system.
  */
 export function resolveSystemName(query: string, systems: string[]): string[] {
+  if (query.trim() === '') return []
   const lowerQuery = query.toLowerCase()
   return systems.filter((system) => system.toLowerCase().includes(lowerQuery))
 }
