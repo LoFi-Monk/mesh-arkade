@@ -14,7 +14,11 @@ interface Token {
   line: number
 }
 
-function tokenize(content: string): Token[] {
+/**
+ * @intent   Tokenize CLRMamePro format content into a stream of tokens.
+ * @guarantee On return, contains an array of tokens with type, value, and line number.
+ */
+export function tokenize(content: string): Token[] {
   const normalized = content.replace(/\r\n/g, '\n')
   const tokens: Token[] = []
   let i = 0
@@ -44,6 +48,8 @@ function tokenize(content: string): Token[] {
           line++
         }
         if (c === '"') {
+          i++
+          inQuotes = false
           break
         }
         value += c

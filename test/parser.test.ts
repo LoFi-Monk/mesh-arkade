@@ -1,5 +1,32 @@
 import test from 'brittle'
-import { parseDat } from '../src/dat/index.js'
+import { parseDat, tokenize } from '../src/dat/parser.js'
+
+test('tokenizer: "Hello" produces exactly one literal token', (t) => {
+  const tokens = tokenize('"Hello"')
+  const literals = tokens.filter((t) => t.type === 'literal')
+  t.is(literals.length, 1, 'exactly one literal token')
+  t.is(literals[0]?.value, 'Hello', 'literal value is Hello')
+})
+
+test('tokenizer: "" produces exactly one empty literal token', (t) => {
+  const tokens = tokenize('""')
+  const literals = tokens.filter((t) => t.type === 'literal')
+  t.is(literals.length, 1, 'exactly one literal token')
+  t.is(literals[0]?.value, '', 'literal value is empty string')
+})
+
+test('tokenizer: no spurious empty literals between quoted strings', (t) => {
+  const tokens = tokenize('name "Hello" description "World"')
+  t.is(tokens.length, 4, 'four tokens total')
+  t.is(tokens[0]?.type, 'identifier')
+  t.is(tokens[0]?.value, 'name')
+  t.is(tokens[1]?.type, 'literal')
+  t.is(tokens[1]?.value, 'Hello')
+  t.is(tokens[2]?.type, 'identifier')
+  t.is(tokens[2]?.value, 'description')
+  t.is(tokens[3]?.type, 'literal')
+  t.is(tokens[3]?.value, 'World')
+})
 
 const nesDatFixture = `clrmamepro (
 	name "Nintendo - Nintendo Entertainment System"
