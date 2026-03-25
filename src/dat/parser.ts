@@ -32,6 +32,7 @@ function tokenize(content: string): Token[] {
 
     if (inQuotes) {
       if (char === '"') {
+        tokens.push({ type: 'literal', value: '', line })
         inQuotes = false
         i++
         continue
@@ -82,9 +83,6 @@ function tokenize(content: string): Token[] {
       if (c === ' ' || c === '\t' || c === '\n' || c === '(' || c === ')') {
         break
       }
-      if (c === '\n') {
-        line++
-      }
       value += c
       i++
     }
@@ -98,7 +96,7 @@ function tokenize(content: string): Token[] {
 }
 
 interface ParseContext {
-  type: 'root' | 'header' | 'clrmamepro' | 'game' | 'rom'
+  type: 'root' | 'header' | 'clrmamepro' | 'game' | 'rom' | 'skip'
   fields: Map<string, string>
   children: ParseContext[]
   parent?: ParseContext
@@ -133,6 +131,23 @@ function parseTokens(tokens: Token[]): DatParseResult | DatParseError {
         lastOpenLine = token.line
         const context: ParseContext = {
           type: token.value as 'header' | 'clrmamepro' | 'game' | 'rom',
+          fields: new Map(),
+          children: [],
+        }
+        const parent = stack[stack.length - 1]
+        if (parent) {
+          parent.children.push(context)
+        }
+        stack.push(context)
+        i++
+        continue
+      }
+
+      if (nextToken && nextToken.type === 'open') {
+        parenDepth++
+        lastOpenLine = token.line
+        const context: ParseContext = {
+          type: 'skip',
           fields: new Map(),
           children: [],
         }
@@ -218,19 +233,19 @@ function extractHeader(fields: Map<string, string>): DatHeader {
   }
 
   const description = fields.get('description')
-  if (description) header.description = description
+  if (description !== undefined) header.description = description
 
   const version = fields.get('version')
-  if (version) header.version = version
+  if (version !== undefined) header.version = version
 
   const author = fields.get('author')
-  if (author) header.author = author
+  if (author !== undefined) header.author = author
 
   const homepage = fields.get('homepage')
-  if (homepage) header.homepage = homepage
+  if (homepage !== undefined) header.homepage = homepage
 
   const url = fields.get('url')
-  if (url) header.url = url
+  if (url !== undefined) header.url = url
 
   return header
 }
@@ -245,10 +260,10 @@ function extractGame(context: ParseContext): DatGame | null {
   }
 
   const description = context.fields.get('description')
-  if (description) game.description = description
+  if (description !== undefined) game.description = description
 
   const comment = context.fields.get('comment')
-  if (comment) game.comment = comment
+  if (comment !== undefined) game.comment = comment
 
   for (const child of context.children) {
     if (child.type === 'rom') {

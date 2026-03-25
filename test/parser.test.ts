@@ -355,3 +355,40 @@ test('missing required header name returns error', (t) => {
     t.is(result.error.message, 'Missing required header name')
   }
 })
+
+test('unknown block types inside game are skipped cleanly', (t) => {
+  const unknownBlockFixture = `clrmamepro ( name "Test" )
+game (
+  name "Game1"
+  description "Test Game"
+  disk ( name "game1.bin" size 1024 )
+  rom ( name "game1.nes" size 4096 crc AABBCCDD )
+)`
+
+  const result = parseDat(unknownBlockFixture)
+
+  t.is(result.ok, true, 'parse succeeds with unknown block')
+  if (result.ok) {
+    t.is(result.dat.games.length, 1, 'one game parsed')
+    t.is(result.dat.games[0]?.name, 'Game1', 'game name correct')
+    t.is(result.dat.games[0]?.description, 'Test Game', 'description preserved')
+    t.is(result.dat.games[0]?.roms.length, 1, 'one ROM parsed')
+    t.is(result.dat.games[0]?.roms[0]?.name, 'game1.nes', 'ROM name correct')
+    t.is(result.dat.games[0]?.roms[0]?.crc, 'AABBCCDD', 'CRC correct')
+  }
+})
+
+test('empty quoted string "" is preserved as empty string', (t) => {
+  const emptyQuoteFixture = `clrmamepro ( name "Test" description "" )
+game ( name "Game1" description "" rom ( name "game.nes" size 1024 ) )`
+
+  const result = parseDat(emptyQuoteFixture)
+
+  t.is(result.ok, true)
+  if (result.ok) {
+    t.is(result.dat.header.name, 'Test')
+    t.is(result.dat.header.description, '', 'empty description preserved')
+    t.is(result.dat.games[0]?.name, 'Game1')
+    t.is(result.dat.games[0]?.description, '', 'empty game description preserved')
+  }
+})
