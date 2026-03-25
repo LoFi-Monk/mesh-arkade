@@ -13,7 +13,11 @@ declare module 'brittle' {
     execution (fn: () => unknown, message?: string): Promise<void>
     comment (message: string): void
     end (): void
+    teardown (fn: () => void | Promise<void>): void
     test (name: string, fn: (t: TestInstance) => void | Promise<void>): TestInstance
+    timeout (ms: number): void
+    tmp (): string
+    tmp (opts?: { dir?: string; name?: string }): string
   }
 
   function test (name: string, fn: (t: TestInstance) => void | Promise<void>): TestInstance

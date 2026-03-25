@@ -270,6 +270,32 @@ test('serial field extracted when present, undefined when absent', (t) => {
   }
 })
 
+test('ROM with sha256 field extracts correctly', (t) => {
+  const sha256Fixture = `clrmamepro ( name "Test" )
+game ( name "Game" rom ( name "test.nes" size 4096 sha256 aabbccdd11223344556677889900aabbccdd11223344556677889900aabb ) )`
+
+  const result = parseDat(sha256Fixture)
+
+  t.is(result.ok, true)
+  if (result.ok) {
+    const rom = result.dat.games[0]?.roms[0]
+    t.is(rom?.sha256, 'AABBCCDD11223344556677889900AABBCCDD11223344556677889900AABB', 'sha256 extracted and uppercased')
+  }
+})
+
+test('sha256 normalized to uppercase when mixed-case', (t) => {
+  const mixedCaseFixture = `clrmamepro ( name "Test" )
+game ( name "Game" rom ( name "test.nes" size 4096 sha256 aabbccdd11223344556677889900aabbccdd11223344556677889900aabb ) )`
+
+  const result = parseDat(mixedCaseFixture)
+
+  t.is(result.ok, true)
+  if (result.ok) {
+    const rom = result.dat.games[0]?.roms[0]
+    t.is(rom?.sha256, 'AABBCCDD11223344556677889900AABBCCDD11223344556677889900AABB', 'sha256 uppercased')
+  }
+})
+
 test('checksums normalized to uppercase (mixed-case input -> uppercase output)', (t) => {
   const mixedCaseFixture = `clrmamepro ( name "Test" )
 game ( name "Game" rom ( name "test.nes" size 4096 crc aabbccdd md5 aabbccddeeff00112233445566778899 sha1 aabbccddeeff00112233445566778899aabbccdd ) )`

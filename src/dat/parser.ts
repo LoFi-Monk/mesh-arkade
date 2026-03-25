@@ -310,6 +310,9 @@ function extractRom(fields: Map<string, string>): DatRom {
   const sha1 = fields.get('sha1')
   if (sha1) rom.sha1 = sha1.toUpperCase()
 
+  const sha256 = fields.get('sha256')
+  if (sha256) rom.sha256 = sha256.toUpperCase()
+
   const serial = fields.get('serial')
   if (serial) rom.serial = serial
 

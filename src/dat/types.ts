@@ -21,6 +21,7 @@ export interface DatRom {
   crc?: string
   md5?: string
   sha1?: string
+  sha256?: string
   serial?: string
 }
 
