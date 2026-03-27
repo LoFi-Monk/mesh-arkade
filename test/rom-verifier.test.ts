@@ -34,7 +34,9 @@ test('verifyRom returns Verified for a ROM with known hash', async (t) => {
     }
   })
 
-  const { sha1, crc32 } = await hashRom(filePath)
+  const hashResult = await hashRom(filePath)
+  t.is(hashResult.ok, true, 'hashRom succeeds')
+  if (!hashResult.ok) return
 
   const datFile: DatFile = {
     header: { name: 'Test System' },
@@ -45,8 +47,8 @@ test('verifyRom returns Verified for a ROM with known hash', async (t) => {
           {
             name: 'test.nes',
             size: mockData.length,
-            sha1: sha1,
-            crc: crc32,
+            sha1: hashResult.sha1,
+            crc: hashResult.crc32,
           },
         ],
       },
@@ -57,11 +59,13 @@ test('verifyRom returns Verified for a ROM with known hash', async (t) => {
 
   const result = await verifyRom(filePath, 'Test System', store)
 
-  t.is(result.status, 'Verified', 'ROM is verified')
-  t.ok(result.entry, 'entry is present for verified ROM')
-  if (result.entry) {
-    t.is(result.entry.gameName, 'Test Game', 'gameName matches')
-    t.is(result.entry.romName, 'test.nes', 'romName matches')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Verified', 'ROM is verified')
+    if (result.entry) {
+      t.is(result.entry.gameName, 'Test Game', 'gameName matches')
+      t.is(result.entry.romName, 'test.nes', 'romName matches')
+    }
   }
 })
 
@@ -104,8 +108,11 @@ test('verifyRom returns Unknown for a ROM with unknown hash', async (t) => {
 
   const result = await verifyRom(filePath, 'Test System', store)
 
-  t.is(result.status, 'Unknown', 'ROM is unknown')
-  t.absent(result.entry, 'entry is absent for unknown ROM')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Unknown', 'ROM is unknown')
+    t.absent(result.entry, 'entry is absent for unknown ROM')
+  }
 })
 
 test('verifyRom returns Unknown (not BadDump) per ADR-0014', async (t) => {
@@ -129,10 +136,13 @@ test('verifyRom returns Unknown (not BadDump) per ADR-0014', async (t) => {
 
   const result = await verifyRom(filePath, 'Empty System', store)
 
-  t.is(result.status, 'Unknown', 'returns Unknown, not BadDump')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Unknown', 'returns Unknown, not BadDump')
+  }
 })
 
-test('verifyRom throws for non-existent file', async (t) => {
+test('verifyRom returns error Result for non-existent file', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   const store = createStore(tmpPath)
@@ -147,11 +157,11 @@ test('verifyRom throws for non-existent file', async (t) => {
     }
   })
 
-  try {
-    await verifyRom(path.join(tmpPath, 'nonexistent.rom'), 'Test System', store)
-    t.fail('should have thrown')
-  } catch {
-    t.pass('throws error for non-existent file')
+  const result = await verifyRom(path.join(tmpPath, 'nonexistent.rom'), 'Test System', store)
+
+  t.is(result.ok, false, 'result is not ok')
+  if (!result.ok) {
+    t.is(result.error.type, 'file-error', 'error type is file-error')
   }
 })
 
@@ -174,7 +184,9 @@ test('verifyRom uses O(1) lookup via hash key', async (t) => {
     }
   })
 
-  const { sha1, crc32 } = await hashRom(filePath)
+  const hashResult = await hashRom(filePath)
+  t.is(hashResult.ok, true, 'hashRom succeeds')
+  if (!hashResult.ok) return
 
   const datFile: DatFile = {
     header: { name: 'Test System' },
@@ -185,8 +197,8 @@ test('verifyRom uses O(1) lookup via hash key', async (t) => {
           {
             name: 'o1test.nes',
             size: mockData.length,
-            sha1: sha1,
-            crc: crc32,
+            sha1: hashResult.sha1,
+            crc: hashResult.crc32,
           },
         ],
       },
@@ -197,8 +209,11 @@ test('verifyRom uses O(1) lookup via hash key', async (t) => {
 
   const result = await verifyRom(filePath, 'Test System', store)
 
-  t.is(result.status, 'Verified', 'O(1) lookup succeeded')
-  if (result.entry) {
-    t.is(result.entry.sha1, sha1, 'sha1 matches')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Verified', 'O(1) lookup succeeded')
+    if (result.entry) {
+      t.is(result.entry.sha1, hashResult.sha1, 'sha1 matches')
+    }
   }
 })

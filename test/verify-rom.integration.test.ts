@@ -34,7 +34,9 @@ test('end-to-end: create mock ROM, seed DAT store, verify ROM', async (t) => {
     }
   })
 
-  const { sha1, crc32 } = await hashRom(mockRomPath)
+  const hashResult = await hashRom(mockRomPath)
+  t.is(hashResult.ok, true, 'hashRom succeeds')
+  if (!hashResult.ok) return
 
   const datFile: DatFile = {
     header: { name: 'Integration Test System' },
@@ -45,8 +47,8 @@ test('end-to-end: create mock ROM, seed DAT store, verify ROM', async (t) => {
           {
             name: 'mock-game.nes',
             size: mockData.length,
-            sha1: sha1,
-            crc: crc32,
+            sha1: hashResult.sha1,
+            crc: hashResult.crc32,
           },
         ],
       },
@@ -57,12 +59,15 @@ test('end-to-end: create mock ROM, seed DAT store, verify ROM', async (t) => {
 
   const result = await verifyRom(mockRomPath, 'Integration Test System', store)
 
-  t.is(result.status, 'Verified', 'ROM verified end-to-end')
-  t.ok(result.entry, 'entry returned')
-  if (result.entry) {
-    t.is(result.entry.gameName, 'Mock Game', 'correct game name')
-    t.is(result.entry.romName, 'mock-game.nes', 'correct rom name')
-    t.is(result.entry.size, mockData.length, 'correct size')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Verified', 'ROM verified end-to-end')
+    t.ok(result.entry, 'entry returned')
+    if (result.entry) {
+      t.is(result.entry.gameName, 'Mock Game', 'correct game name')
+      t.is(result.entry.romName, 'mock-game.nes', 'correct rom name')
+      t.is(result.entry.size, mockData.length, 'correct size')
+    }
   }
 })
 
@@ -105,8 +110,11 @@ test('end-to-end: unknown ROM returns Unknown status', async (t) => {
 
   const result = await verifyRom(unknownRomPath, 'Another System', store)
 
-  t.is(result.status, 'Unknown', 'unknown ROM returns Unknown status')
-  t.absent(result.entry, 'no entry for unknown ROM')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok && 'status' in result) {
+    t.is(result.status, 'Unknown', 'unknown ROM returns Unknown status')
+    t.absent(result.entry, 'no entry for unknown ROM')
+  }
 })
 
 test('end-to-end: temporary files and databases are cleaned up', async (t) => {

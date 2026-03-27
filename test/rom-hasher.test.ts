@@ -28,10 +28,13 @@ test('hashRom returns CRC32 and SHA1 hashes for a file', async (t) => {
 
   const result = await hashRom(filePath)
 
-  t.is(typeof result.crc32, 'string', 'crc32 is a string')
-  t.is(typeof result.sha1, 'string', 'sha1 is a string')
-  t.is(result.crc32.length, 8, 'CRC32 is 8 hex characters')
-  t.is(result.sha1.length, 40, 'SHA1 is 40 hex characters')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok) {
+    t.is(typeof result.crc32, 'string', 'crc32 is a string')
+    t.is(typeof result.sha1, 'string', 'sha1 is a string')
+    t.is(result.crc32.length, 8, 'CRC32 is 8 hex characters')
+    t.is(result.sha1.length, 40, 'SHA1 is 40 hex characters')
+  }
 })
 
 test('hashRom computes consistent hashes for the same data', async (t) => {
@@ -52,8 +55,12 @@ test('hashRom computes consistent hashes for the same data', async (t) => {
   const result1 = await hashRom(filePath)
   const result2 = await hashRom(filePath)
 
-  t.is(result1.crc32, result2.crc32, 'CRC32 is consistent')
-  t.is(result1.sha1, result2.sha1, 'SHA1 is consistent')
+  t.is(result1.ok, true, 'result1 is ok')
+  t.is(result2.ok, true, 'result2 is ok')
+  if (result1.ok && result2.ok) {
+    t.is(result1.crc32, result2.crc32, 'CRC32 is consistent')
+    t.is(result1.sha1, result2.sha1, 'SHA1 is consistent')
+  }
 })
 
 test('hashRom produces known hash values', async (t) => {
@@ -73,11 +80,14 @@ test('hashRom produces known hash values', async (t) => {
 
   const result = await hashRom(filePath)
 
-  t.is(result.crc32.toUpperCase(), '8BB98613', 'CRC32 matches expected value')
-  t.is(result.sha1.toUpperCase(), 'A02A05B025B928C039CF1AE7E8EE04E7C190C0DB', 'SHA1 matches expected value')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok) {
+    t.is(result.crc32.toUpperCase(), '8BB98613', 'CRC32 matches expected value')
+    t.is(result.sha1.toUpperCase(), 'A02A05B025B928C039CF1AE7E8EE04E7C190C0DB', 'SHA1 matches expected value')
+  }
 })
 
-test('hashRom throws error for non-existent file', async (t) => {
+test('hashRom returns error Result for non-existent file', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
 
@@ -89,11 +99,12 @@ test('hashRom throws error for non-existent file', async (t) => {
     }
   })
 
-  try {
-    await hashRom(path.join(tmpPath, 'nonexistent.rom'))
-    t.fail('should have thrown')
-  } catch {
-    t.pass('throws error for non-existent file')
+  const result = await hashRom(path.join(tmpPath, 'nonexistent.rom'))
+
+  t.is(result.ok, false, 'result is not ok')
+  if (!result.ok) {
+    t.is(result.error.type, 'file-error', 'error type is file-error')
+    t.is(typeof result.error.message, 'string', 'error message is a string')
   }
 })
 
@@ -113,8 +124,11 @@ test('hashRom handles empty file', async (t) => {
 
   const result = await hashRom(filePath)
 
-  t.is(typeof result.crc32, 'string', 'crc32 is a string for empty file')
-  t.is(typeof result.sha1, 'string', 'sha1 is a string for empty file')
-  t.is(result.crc32.length, 8, 'CRC32 is 8 hex characters')
-  t.is(result.sha1.length, 40, 'SHA1 is 40 hex characters')
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok) {
+    t.is(typeof result.crc32, 'string', 'crc32 is a string for empty file')
+    t.is(typeof result.sha1, 'string', 'sha1 is a string for empty file')
+    t.is(result.crc32.length, 8, 'CRC32 is 8 hex characters')
+    t.is(result.sha1.length, 40, 'SHA1 is 40 hex characters')
+  }
 })

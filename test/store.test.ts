@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { createStore } from '../src/store/store.js'
 import { storeDat } from '../src/store/dat-store.js'
-import { lookupRom } from '../src/store/dat-lookup.js'
+import { lookupRom, lookupByType } from '../src/store/dat-lookup.js'
 import { addManagedSystem, listManagedSystems } from '../src/store/systems.js'
 import type { DatFile } from '../src/dat/types.js'
 
@@ -577,6 +577,188 @@ test('lookupRom falls back to CRC after SHA1 and MD5 miss', async (t) => {
   if (result) {
     t.is(result.matchedBy, 'crc', 'falls back to CRC')
   }
+
+  await store.close()
+})
+
+test('lookupByType finds entry by SHA1 type', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Test Game',
+        roms: [
+          {
+            name: 'test.rom',
+            size: 1024,
+            sha1: 'AABBCCDDEEFF00112233445566778899AABBCCDD',
+          },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+
+  const result = await lookupByType(store, 'Test System', 'sha1', 'AABBCCDDEEFF00112233445566778899AABBCCDD')
+
+  t.ok(result, 'lookup succeeds')
+  if (result) {
+    t.is(result.matchedBy, 'sha1', 'matched by sha1')
+    t.is(result.entry.gameName, 'Test Game', 'gameName matches')
+  }
+
+  await store.close()
+})
+
+test('lookupByType finds entry by CRC type', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Test Game',
+        roms: [
+          {
+            name: 'test.rom',
+            size: 1024,
+            crc: 'CAFEBABE',
+          },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+
+  const result = await lookupByType(store, 'Test System', 'crc', 'CAFEBABE')
+
+  t.ok(result, 'lookup succeeds')
+  if (result) {
+    t.is(result.matchedBy, 'crc', 'matched by crc')
+    t.is(result.entry.gameName, 'Test Game', 'gameName matches')
+  }
+
+  await store.close()
+})
+
+test('lookupByType returns null when hash type does not match', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Test Game',
+        roms: [
+          {
+            name: 'test.rom',
+            size: 1024,
+            sha1: 'AABBCCDDEEFF00112233445566778899AABBCCDD',
+          },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+
+  const result = await lookupByType(store, 'Test System', 'crc', 'AABBCCDDEEFF00112233445566778899AABBCCDD')
+
+  t.is(result, null, 'returns null when looking up sha1 hash as crc')
+
+  await store.close()
+})
+
+test('lookupByType returns null for unknown hash', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const result = await lookupByType(store, 'Test System', 'sha1', '0000000000000000000000000000000000000000')
+
+  t.is(result, null, 'returns null for unknown hash')
+
+  await store.close()
+})
+
+test('lookupByType is case-insensitive', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Test Game',
+        roms: [
+          {
+            name: 'test.rom',
+            size: 1024,
+            sha1: 'AABBCCDDEEFF00112233445566778899AABBCCDD',
+          },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+
+  const upperResult = await lookupByType(store, 'Test System', 'sha1', 'AABBCCDDEEFF00112233445566778899AABBCCDD')
+  const lowerResult = await lookupByType(store, 'Test System', 'sha1', 'aabbccddeeff00112233445566778899aabbccdd')
+
+  t.ok(upperResult, 'uppercase lookup succeeds')
+  t.ok(lowerResult, 'lowercase lookup succeeds')
 
   await store.close()
 })

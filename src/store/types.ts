@@ -45,3 +45,69 @@ export interface MeshStore {
   ready(): Promise<void>
   close(): Promise<void>
 }
+
+/**
+ * @intent   Represents the successful result of hashing a ROM file.
+ * @guarantee On return, both crc32 and sha1 are uppercase hex strings; sha1 is 40 chars, crc32 is 8 chars.
+ */
+export interface HashRomSuccess {
+  ok: true
+  crc32: string
+  sha1: string
+}
+
+/**
+ * @intent   Represents a failed ROM hash operation.
+ * @guarantee On return, error contains the failure reason.
+ */
+export interface HashRomError {
+  ok: false
+  error: {
+    type: 'file-error'
+    message: string
+  }
+}
+
+/**
+ * @intent   Represents the result of a ROM hash operation.
+ * @guarantee On return, either success with both hashes, or failure with error details.
+ */
+export type HashRomResult = HashRomSuccess | HashRomError
+
+/**
+ * @intent   Represents a successfully verified ROM.
+ * @guarantee On return, status is 'Verified' with entry metadata.
+ */
+export interface VerifyRomVerified {
+  ok: true
+  status: 'Verified'
+  entry: StoredRomEntry
+}
+
+/**
+ * @intent   Represents an unknown (unverified) ROM.
+ * @guarantee On return, status is 'Unknown', entry is null.
+ */
+export interface VerifyRomUnknown {
+  ok: true
+  status: 'Unknown'
+  entry: null
+}
+
+/**
+ * @intent   Represents a failed verification due to hashing error.
+ * @guarantee On return, error contains the failure reason.
+ */
+export interface VerifyRomHashError {
+  ok: false
+  error: {
+    type: 'file-error'
+    message: string
+  }
+}
+
+/**
+ * @intent   Represents the result of a ROM verification operation.
+ * @guarantee On return, either Verified with metadata, Unknown without metadata, or error.
+ */
+export type VerifyRomResult = VerifyRomVerified | VerifyRomUnknown | VerifyRomHashError

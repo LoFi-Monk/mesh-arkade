@@ -1,6 +1,8 @@
 import type { MeshStore } from './types.js'
 import type { LookupRomResult, StoredRomEntry } from './types.js'
 
+export type HashType = 'sha1' | 'md5' | 'crc' | 'sha256'
+
 /**
  * @intent   Look up a ROM by hash with fallback chain (SHA1 -\> MD5 -\> CRC -\> SHA256).
  * @guarantee On return, the first matching hash type is returned with a matchedBy indicator; null if no match.
@@ -49,6 +51,35 @@ export async function lookupRom(
       ok: true,
       entry: sha256Result.value as StoredRomEntry,
       matchedBy: 'sha256',
+    }
+  }
+
+  return null
+}
+
+/**
+ * @intent   Look up a ROM by a specific hash type with a direct key query.
+ * @guarantee On return, the entry if found with the specified hash type; null if no match.
+ * @constraint Hash input is normalized to uppercase before lookup. Store must be initialized before calling.
+ */
+export async function lookupByType(
+  store: MeshStore,
+  systemName: string,
+  hashType: HashType,
+  hash: string
+): Promise<LookupRomResult | null> {
+  await store.ready()
+
+  const db = store.db.sub('dat').sub(systemName)
+  const normalizedHash = hash.toUpperCase()
+  const key = `${hashType}:${normalizedHash}`
+
+  const result = await db.get(key)
+  if (result) {
+    return {
+      ok: true,
+      entry: result.value as StoredRomEntry,
+      matchedBy: hashType,
     }
   }
 
