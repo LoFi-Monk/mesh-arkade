@@ -1,6 +1,8 @@
 import test from 'brittle'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as crypto from 'crypto'
+import CRC32 from 'crc-32'
 import { hashRom } from '../src/core/rom-hasher.js'
 
 function getTmpDir(): string {
@@ -130,5 +132,38 @@ test('hashRom handles empty file', async (t) => {
     t.is(typeof result.sha1, 'string', 'sha1 is a string for empty file')
     t.is(result.crc32.length, 8, 'CRC32 is 8 hex characters')
     t.is(result.sha1.length, 40, 'SHA1 is 40 hex characters')
+  }
+})
+
+test('hashRom streaming matches synchronous result for large multi-chunk file', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  const filePath = path.join(tmpPath, 'large.rom')
+
+  const bufferSize = 200 * 1024
+  const largeData = Buffer.alloc(bufferSize)
+  for (let i = 0; i < bufferSize; i++) {
+    largeData[i] = i % 256
+  }
+
+  const expectedSha1 = crypto.createHash('sha1').update(largeData).digest('hex').toUpperCase()
+  const expectedCrc32 = (CRC32.buf(largeData) >>> 0).toString(16).toUpperCase().padStart(8, '0')
+
+  fs.writeFileSync(filePath, largeData)
+
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const result = await hashRom(filePath)
+
+  t.is(result.ok, true, 'result is ok')
+  if (result.ok) {
+    t.is(result.crc32, expectedCrc32, 'CRC32 matches synchronous computation for large file')
+    t.is(result.sha1, expectedSha1, 'SHA1 matches synchronous computation for large file')
   }
 })
