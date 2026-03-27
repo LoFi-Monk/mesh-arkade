@@ -22,3 +22,15 @@ CLAUDE.md
 # OS
 .DS_Store
 Thumbs.db
+
+# Games
+games/
+
+# Agent notes
+/docs/agent-notes.md
+
+# DAT files
+*.dat
+*.zip
+*.7z
+*.rar

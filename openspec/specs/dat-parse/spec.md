@@ -54,7 +54,7 @@ The system SHALL extract all `game (...)` blocks and their nested `rom (...)` bl
 - **THEN** `game.description` and `game.comment` are `undefined`
 
 ### Requirement: Handle optional and partial checksum fields
-The system SHALL treat all checksum fields (crc, md5, sha1) as optional on ROM entries.
+The system SHALL treat all checksum fields (crc, md5, sha1, sha256) as optional on ROM entries.
 
 #### Scenario: ROM with all checksums
 - **WHEN** a ROM entry has crc, md5, and sha1 fields
@@ -68,6 +68,10 @@ The system SHALL treat all checksum fields (crc, md5, sha1) as optional on ROM e
 - **WHEN** a ROM entry has only name and size (no checksum fields)
 - **THEN** all checksum fields are `undefined`
 
+#### Scenario: ROM with SHA256 field
+- **WHEN** a ROM entry has a sha256 field
+- **THEN** `rom.sha256` contains the uppercase-normalized hash value
+
 ### Requirement: Handle serial field for disc-based systems
 The system SHALL extract the `serial` field from ROM entries when present.
 
@@ -80,11 +84,15 @@ The system SHALL extract the `serial` field from ROM entries when present.
 - **THEN** `rom.serial` is `undefined`
 
 ### Requirement: Normalize checksum casing
-The system SHALL normalize all checksum values (crc, md5, sha1) to uppercase.
+The system SHALL normalize all checksum values (crc, md5, sha1, sha256) to uppercase.
 
 #### Scenario: Mixed-case checksums normalized to uppercase
 - **WHEN** a ROM entry has `crc abcd1234` and `sha1 AbCdEf0123456789...`
 - **THEN** `rom.crc` is `"ABCD1234"` and `rom.sha1` is `"ABCDEF0123456789..."`
+
+#### Scenario: SHA256 normalized to uppercase
+- **WHEN** a ROM entry has a sha256 field with mixed-case value
+- **THEN** `rom.sha256` is normalized to uppercase
 
 ### Requirement: Normalize line endings
 The system SHALL normalize `\r\n` line endings to `\n` before parsing.
