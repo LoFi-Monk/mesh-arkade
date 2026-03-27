@@ -12,7 +12,7 @@ export function getFetch (): typeof fetch {
 /**
  * @intent   Provide a single access point for the filesystem module across Bare and Node runtimes.
  * @guarantee Returns the fs module — resolves to bare-node-fs in Bare, the built-in fs in Node, via package.json imports alias.
- * @constraint Callers must not assume stream-based fs APIs are available — use callback or promise variants only.
+ * @constraint Stream-based fs APIs are fully supported in both runtimes.
  */
 export function getFs (): typeof fs {
   return fs

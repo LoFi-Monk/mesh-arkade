@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && cp compat.js dist/compat.js",
+    "build": "tsc && node -e \"require('fs').copyFileSync('compat.js', 'dist/compat.js')\"",
     "typecheck": "tsc --noEmit",
     "dev": "npm run build && pear run -d dist/",
     "test:node": "npm run build && brittle dist/test/setup.js dist/test/*.test.js",
@@ -40,6 +40,7 @@
   "dependencies": {
     "buffer": "npm:bare-node-buffer@^1.0.0",
     "corestore": "^7.9.2",
+    "crc-32": "^1.2.2",
     "crypto": "npm:bare-node-crypto@^1.0.0",
     "fetch": "npm:bare-node-fetch@^1.0.0",
     "fs": "npm:bare-node-fs@^1.0.0",
