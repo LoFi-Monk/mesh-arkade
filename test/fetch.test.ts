@@ -191,3 +191,79 @@ test('fetchDat handles network errors without response object', async (t) => {
 
   globalThis.fetch = originalFetch
 })
+
+test('fetchDat uses default basePath "dat" when not specified', async (t) => {
+  const originalFetch = globalThis.fetch
+  let capturedUrl = ''
+
+  globalThis.fetch = async (url) => {
+    capturedUrl = url as string
+    return {
+      status: 200,
+      ok: true,
+      text: async () => 'content',
+      headers: new Map([]),
+    } as unknown as Response
+  }
+
+  await fetchDat('Nintendo - NES')
+
+  t.alike(
+    capturedUrl,
+    'https://raw.githubusercontent.com/libretro/libretro-database/master/dat/Nintendo%20-%20NES.dat',
+    'default path is /dat/'
+  )
+
+  globalThis.fetch = originalFetch
+})
+
+test('fetchDat uses custom basePath when specified', async (t) => {
+  const originalFetch = globalThis.fetch
+  let capturedUrl = ''
+
+  globalThis.fetch = async (url) => {
+    capturedUrl = url as string
+    return {
+      status: 200,
+      ok: true,
+      text: async () => 'content',
+      headers: new Map([]),
+    } as unknown as Response
+  }
+
+  await fetchDat('Nintendo - NES', { basePath: 'metadat/developer' })
+
+  t.alike(
+    capturedUrl,
+    'https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/developer/Nintendo%20-%20NES.dat',
+    'custom basePath is used'
+  )
+
+  globalThis.fetch = originalFetch
+})
+
+test('fetchDat constructs metadat URLs correctly for supplementary DATs', async (t) => {
+  const originalFetch = globalThis.fetch
+  const capturedUrls: string[] = []
+
+  globalThis.fetch = async (url) => {
+    capturedUrls.push(url as string)
+    return {
+      status: 200,
+      ok: true,
+      text: async () => 'content',
+      headers: new Map([]),
+    } as unknown as Response
+  }
+
+  await fetchDat('Nintendo - NES', { basePath: 'metadat/developer' })
+  await fetchDat('Nintendo - NES', { basePath: 'metadat/genre' })
+  await fetchDat('Nintendo - NES', { basePath: 'metadat/publisher' })
+
+  t.is(capturedUrls.length, 3)
+  t.is(capturedUrls[0]?.includes('/metadat/developer/'), true)
+  t.is(capturedUrls[1]?.includes('/metadat/genre/'), true)
+  t.is(capturedUrls[2]?.includes('/metadat/publisher/'), true)
+
+  globalThis.fetch = originalFetch
+})

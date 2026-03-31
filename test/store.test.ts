@@ -427,7 +427,7 @@ test('prefix scan returns all entries for a system', async (t) => {
     entries.push(entry.key)
   }
 
-  t.is(entries.length, 4, '4 entries (3 ROMs + 1 header)')
+  t.is(entries.length, 6, '6 entries (3 CRC + 2 name + 1 header)')
   t.ok(entries.includes('header'), 'header key present')
   t.ok(entries.includes('crc:AAAA1111'), 'CRC1 key present')
   t.ok(entries.includes('crc:BBBB2222'), 'CRC2 key present')
@@ -759,6 +759,209 @@ test('lookupByType is case-insensitive', async (t) => {
 
   t.ok(upperResult, 'uppercase lookup succeeds')
   t.ok(lowerResult, 'lowercase lookup succeeds')
+
+  await store.close()
+})
+
+test('storeDat creates name index entries', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Donkey Kong',
+        roms: [
+          { name: 'donkeykong.nes', size: 24576, crc: '6B0C2D41' },
+        ],
+      },
+      {
+        name: 'Metroid',
+        roms: [
+          { name: 'metroid.nes', size: 262144, crc: '45534F58' },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+  await store.ready()
+
+  const nameIndex = store.db.sub('dat').sub('Test System').sub('name')
+  const entries: string[] = []
+
+  for await (const entry of nameIndex.createReadStream()) {
+    entries.push(entry.key)
+  }
+
+  t.is(entries.length, 2, '2 name index entries created')
+  t.ok(entries.includes('donkey kong'), 'normalized name "donkey kong" indexed')
+  t.ok(entries.includes('metroid'), 'normalized name "metroid" indexed')
+
+  await store.close()
+})
+
+test('name index supports prefix scan', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Donkey Kong',
+        roms: [
+          { name: 'donkeykong.nes', size: 24576, crc: '6B0C2D41' },
+        ],
+      },
+      {
+        name: 'Donkey Kong Junior',
+        roms: [
+          { name: 'donkeykongjr.nes', size: 24576, crc: 'F5A52E62' },
+        ],
+      },
+      {
+        name: 'Donkey Kong 3',
+        roms: [
+          { name: 'donkeykong3.nes', size: 24576, crc: 'AABBCCDD' },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+  await store.ready()
+
+  const nameIndex = store.db.sub('dat').sub('Test System').sub('name')
+
+  const entriesStartingWithDonkey: string[] = []
+  for await (const entry of nameIndex.createReadStream({ gte: 'donkey', lt: 'donkey\xff' })) {
+    entriesStartingWithDonkey.push(entry.key)
+  }
+
+  t.is(entriesStartingWithDonkey.length, 3, 'all 3 Donkey Kong games found via prefix scan')
+
+  await store.close()
+})
+
+test('name index rebuilds on re-store', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile1: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Game A',
+        roms: [
+          { name: 'gamea.nes', size: 1024, crc: 'AAAA1111' },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile1)
+
+  const datFile2: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Game B',
+        roms: [
+          { name: 'gameb.nes', size: 2048, crc: 'BBBB2222' },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile2)
+  await store.ready()
+
+  const nameIndex = store.db.sub('dat').sub('Test System').sub('name')
+  const entries: string[] = []
+
+  for await (const entry of nameIndex.createReadStream()) {
+    entries.push(entry.key)
+  }
+
+  t.is(entries.length, 1, 'only 1 name entry after re-store')
+  t.ok(entries.includes('game b'), 'new game indexed')
+  t.ok(!entries.includes('game a'), 'old game removed')
+
+  await store.close()
+})
+
+test('ROM without CRC does not create name index entry', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const store = createStore(tmpPath)
+
+  const datFile: DatFile = {
+    header: { name: 'Test System' },
+    games: [
+      {
+        name: 'Game With CRC',
+        roms: [
+          { name: 'game1.nes', size: 1024, crc: 'AAAA1111' },
+        ],
+      },
+      {
+        name: 'Game Without CRC',
+        roms: [
+          { name: 'game2.nes', size: 2048 },
+        ],
+      },
+    ],
+  }
+
+  await storeDat(store, 'Test System', datFile)
+  await store.ready()
+
+  const nameIndex = store.db.sub('dat').sub('Test System').sub('name')
+  const entries: string[] = []
+
+  for await (const entry of nameIndex.createReadStream()) {
+    entries.push(entry.key)
+  }
+
+  t.is(entries.length, 1, 'only 1 name entry for ROM with CRC')
+  t.ok(entries.includes('game with crc'), 'game with CRC indexed')
 
   await store.close()
 })
