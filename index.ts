@@ -109,11 +109,8 @@ Mesh ARKade Commands:
     }
   } catch (err) {
     console.error('Error:', err instanceof Error ? err.message : err)
-    await store.close()
     process.exit(1)
   }
-
-  await store.close()
 }
 
 main().catch((err) => {
