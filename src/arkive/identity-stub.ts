@@ -10,6 +10,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Create identity - stub throws.
    * @guarantee Always throws Not implemented.
+   * @constraint Stub only — not implemented yet.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createIdentity(_displayName: string): Promise<Identity> {
@@ -37,6 +38,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Create profile - stub throws IdentityRequiredError.
    * @guarantee Always throws IdentityRequiredError.
+   * @constraint Stub only — requires Identity to be implemented first.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createProfile(_displayName: string): Promise<ChildProfile> {
@@ -46,6 +48,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Get profiles - stub throws IdentityRequiredError.
    * @guarantee Always throws IdentityRequiredError.
+   * @constraint Stub only — requires Identity to be implemented first.
    */
   async getProfiles(): Promise<ChildProfile[]> {
     throw new IdentityRequiredError('Identity required for this operation')
@@ -54,6 +57,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Get active profile - stub throws IdentityRequiredError.
    * @guarantee Always throws IdentityRequiredError.
+   * @constraint Stub only — requires Identity to be implemented first.
    */
   async getActiveProfile(): Promise<ChildProfile | null> {
     throw new IdentityRequiredError('Identity required for this operation')
@@ -62,6 +66,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Set active profile - stub throws IdentityRequiredError.
    * @guarantee Always throws IdentityRequiredError.
+   * @constraint Stub only — requires Identity to be implemented first.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async setActiveProfile(_profileId: string): Promise<void> {
@@ -71,6 +76,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Get collections - stub returns empty.
    * @guarantee Always returns empty array.
+   * @constraint Stub only — not implemented yet.
    */
   async getCollections(): Promise<Collection[]> {
     return []
@@ -79,6 +85,7 @@ export class IdentityServiceStub implements IdentityService {
   /**
    * @intent   Get playlists - stub returns empty.
    * @guarantee Always returns empty array.
+   * @constraint Stub only — not implemented yet.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getPlaylists(_profileId: string): Promise<Playlist[]> {
