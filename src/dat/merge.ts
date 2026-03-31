@@ -13,6 +13,7 @@ const REGION_ALLOWLIST = new Set([
   'worldwide',
   'asia',
   'china',
+  'cn',
   'korea',
   'kr',
   'brazil',
@@ -22,6 +23,7 @@ const REGION_ALLOWLIST = new Set([
   'russia',
   'ru',
   'italy',
+  'it',
   'france',
   'fr',
   'germany',
@@ -31,6 +33,7 @@ const REGION_ALLOWLIST = new Set([
   'uk',
   'united kingdom',
   'sweden',
+  'se',
   'nl',
   'netherlands',
   'poland',
@@ -38,8 +41,11 @@ const REGION_ALLOWLIST = new Set([
   'czech',
   'hungary',
   'finland',
+  'fi',
   'norway',
+  'no',
   'denmark',
+  'dk',
   'canada',
   'ca',
   'mexico',
@@ -67,6 +73,7 @@ const REGION_ALLOWLIST = new Set([
   'india',
   'in',
   'israel',
+  'il',
   'south africa',
   'za',
   'new zealand',
@@ -82,6 +89,7 @@ export interface MergeResult {
   ok: true
   mainDat: DatFile
   supplementary: SupplementaryDatResult[]
+  rawMainContent: string
 }
 
 export interface MergeError {
@@ -179,6 +187,7 @@ export async function mergeDat(
     ok: true,
     mainDat: mergedDat,
     supplementary: supplementaryResults,
+    rawMainContent: mainFetchResult.content,
   }
 }
 
@@ -356,6 +365,8 @@ function canonicalRegion(token: string): string | null {
     cn: 'China',
     china: 'China',
     asia: 'Asia',
+    czech: 'Czech',
+    hungary: 'Hungary',
   }
 
   return mapping[token] || token

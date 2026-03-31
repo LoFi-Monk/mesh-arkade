@@ -10,7 +10,6 @@ import { ProfileRequiredError } from './types.js'
 import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { getAppRootPath, saveDatCache } from './app-root.js'
-import { fetchDat } from '../dat/fetch.js'
 import { lookupRom } from '../store/dat-lookup.js'
 
 /**
@@ -117,12 +116,9 @@ export class ArkiveService {
 
     await storeDat(this.store, system, mergeResult.mainDat)
 
-    // Save raw DAT to cache
-    const mainDatResult = await fetchDat(system, { basePath: 'dat' })
-    if (mainDatResult.ok) {
-      const appRoot = getAppRootPath()
-      await saveDatCache(system, mainDatResult.content, appRoot)
-    }
+    // Save raw DAT to cache using content from mergeResult
+    const appRoot = getAppRootPath()
+    await saveDatCache(system, mergeResult.rawMainContent, appRoot)
   }
 
   /**

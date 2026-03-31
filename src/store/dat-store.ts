@@ -57,13 +57,15 @@ export async function storeDat(
         const sha256Key = `sha256:${rom.sha256.toUpperCase()}`
         await db.put(sha256Key, entry)
       }
+    }
 
-      if (rom.crc) {
-        const normalizedName = normalizeName(game.name)
-        const nameKey = normalizedName
-        const nameValue = { crc: rom.crc.toUpperCase() }
-        await nameIndex.put(nameKey, nameValue)
-      }
+    // Write name index entry once per game (using first ROM's CRC)
+    const firstRom = game.roms[0]
+    if (firstRom && firstRom.crc) {
+      const normalizedName = normalizeName(game.name)
+      const nameKey = normalizedName
+      const nameValue = { crc: firstRom.crc.toUpperCase() }
+      await nameIndex.put(nameKey, nameValue)
     }
   }
 

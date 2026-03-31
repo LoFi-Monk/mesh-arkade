@@ -39,13 +39,13 @@ ArkiveService is a facade, not a rewrite. It composes `fetchDat()`, `parseDat()`
 
 **Alternative considered:** Rewriting store/fetch into service methods directly — rejected because it would duplicate tested code and create maintenance burden.
 
-### 2. Merge Strategy — CRC as join key, last-write-wins per field
+### 2. Merge Strategy — Normalized game name as join key, last-write-wins per field
 
-Main DAT provides `gameName`, `romName`, `size`, `crc`, `md5`, `sha1`, `sha256`. Supplementary DATs provide one field each (developer, genre, releaseyear, releasemonth, publisher). Merge joins on uppercase CRC.
+Main DAT provides `gameName`, `romName`, `size`, `crc`, `md5`, `sha1`, `sha256`. Supplementary DATs provide one field each (developer, genre, releaseyear, releasemonth, publisher). Merge joins on normalized game name (strip all trailing parenthetical groups, convert to lowercase).
 
-**Why:** CRC is the only reliable identifier present in both main and supplementary DATs. Supplementary DATs use `comment` field for the game identifier (CRC-matched).
+**Why:** Libretro's `metadat/` DATs don't contain CRC values — they use the `comment` field with the game name. CRC-based joining isn't possible. Normalized game name is the only identifier available.
 
-**Alternative considered:** Name-based matching — rejected because name formats differ between main and supplementary DATs.
+**Alternative considered:** CRC-based matching — rejected because supplementary DATs don't contain CRC. The libretro metadat files use `comment` as the game identifier.
 
 ### 3. Region Parsing — Allowlist extraction from game name string
 

@@ -57,6 +57,10 @@ async function main() {
           console.error('Usage: info <crc>')
           process.exit(1)
         }
+        if (!/^[0-9a-fA-F]{8}$/.test(crc)) {
+          console.error('Invalid CRC: must be 8-character hex string')
+          process.exit(1)
+        }
         const entry = await arkive.getTitle('nes', crc)
         if (entry) {
           console.log('Title Info:')
@@ -102,10 +106,11 @@ Mesh ARKade Commands:
     }
   } catch (err) {
     console.error('Error:', err instanceof Error ? err.message : err)
-    process.exit(1)
-  } finally {
     await store.close()
+    process.exit(1)
   }
+
+  await store.close()
 }
 
 main()
