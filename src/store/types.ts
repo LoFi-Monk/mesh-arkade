@@ -14,6 +14,12 @@ export interface StoredRomEntry {
   sha1: string | null
   sha256: string | null
   serial?: string
+  developer?: string
+  genre?: string
+  releaseyear?: string
+  releasemonth?: string
+  publisher?: string
+  region?: string
 }
 
 /**

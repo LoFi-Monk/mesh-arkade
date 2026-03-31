@@ -1,6 +1,7 @@
 export { fetchDat } from './fetch.js'
 export { fetchSystemIndex, resolveSystemName } from './systems.js'
 export { parseDat } from './parser.js'
+export { mergeDat, parseRegion } from './merge.js'
 export type {
   DatFile,
   DatHeader,

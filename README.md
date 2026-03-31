@@ -4,9 +4,15 @@ A decentralized game preservation platform built on the [Pear Runtime](https://p
 
 CLI-first. Agents and humans are equal users.
 
+## Why
+
+Myrient shut down on March 31, 2026. Before that, there was Vimm's Lair, and before that others. Centralized preservation services are fragile — someone has to pay the bills, and one day they can't.
+
+Mesh ARKade is the answer to that pattern. Preservation that lives in the network, not on a server. DAT-verified, swarm-distributed, self-annealing. No single point of failure.
+
 ## What it does
 
-Mesh ARKade is a headless preservation tool — it organizes, verifies, and retrieves ROM archives using a triple-layer P2P fetch stack (BitTorrent DHT, IPFS, Hyperswarm). No centralized servers. No third-party dependencies.
+Mesh ARKade is a headless preservation tool — it organizes, verifies, and distributes ROM archives over a P2P swarm. Verification is backed by No-Intro and Redump DAT files. The swarm is built on Hyperswarm. No centralized servers. No third-party dependencies.
 
 ## Status
 

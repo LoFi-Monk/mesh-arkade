@@ -1,6 +1,6 @@
 import type { DatFetchOptions, DatFetchResult, DatFetchError } from './types.js'
 
-const BASE_URL = 'https://raw.githubusercontent.com/libretro/libretro-database/master/dat'
+const BASE_URL = 'https://raw.githubusercontent.com/libretro/libretro-database/master'
 
 /**
  * @intent   Fetches a CLRMamePro DAT file from the Libretro Database GitHub repository by system name.
@@ -11,7 +11,8 @@ export async function fetchDat(
   systemName: string,
   options?: DatFetchOptions
 ): Promise<DatFetchResult | DatFetchError> {
-  const url = `${BASE_URL}/${encodeURIComponent(systemName)}.dat`
+  const basePath = options?.basePath ?? 'dat'
+  const url = `${BASE_URL}/${basePath}/${encodeURIComponent(systemName)}.dat`
 
   const headers: Record<string, string> = {}
   if (options?.ifNoneMatch) {
