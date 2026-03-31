@@ -21,11 +21,9 @@ export function getAppRootPath(customRoot?: string): string {
  */
 export async function initAppRoot(customRoot?: string): Promise<void> {
   const appRoot = getAppRootPath(customRoot)
-  const datsDir = path.join(appRoot, 'DATs')
   const configPath = path.join(appRoot, 'config.json')
 
   await ensureDir(appRoot)
-  await ensureDir(datsDir)
 
   if (!fileExists(configPath)) {
     const config = {
@@ -34,23 +32,6 @@ export async function initAppRoot(customRoot?: string): Promise<void> {
     }
     await writeFile(configPath, JSON.stringify(config, null, 2))
   }
-}
-
-/**
- * @intent   Save raw DAT content to the DATs cache directory.
- * @guarantee Writes file to DATs/<system>.dat.
- * @constraint systemName is sanitized — special characters replaced with underscore. Caller must ensure content is non-empty.
- */
-export async function saveDatCache(systemName: string, content: string, customRoot?: string): Promise<void> {
-  const appRoot = getAppRootPath(customRoot)
-  const datsDir = path.join(appRoot, 'DATs')
-
-  await ensureDir(datsDir)
-
-  const safeName = systemName.replace(/[^a-zA-Z0-9 -]/g, '_')
-  const filePath = path.join(datsDir, `${safeName}.dat`)
-
-  await writeFile(filePath, content)
 }
 
 async function ensureDir(dirPath: string): Promise<void> {
