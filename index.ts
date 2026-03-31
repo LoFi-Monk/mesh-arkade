@@ -16,10 +16,13 @@ console.log('Mesh ARKade | A Decent Game Collection')
 console.log('Pear terminal application running')
 console.log(await versions())
 
+const NES_SYSTEM = 'Nintendo - Nintendo Entertainment System'
+
 async function main() {
   await initAppRoot()
 
   const store = createStore()
+  Pear.teardown(() => store.close())
   const profile = new ProfileServiceStub()
   const arkive = new ArkiveService({ store, profile })
 
@@ -81,7 +84,7 @@ async function main() {
 
       case 'refresh': {
         console.log('Refreshing NES catalog...')
-        await arkive.refreshCatalog('nes')
+        await arkive.refreshCatalog(NES_SYSTEM)
         console.log('Catalog refreshed!')
         break
       }
@@ -113,4 +116,7 @@ Mesh ARKade Commands:
   await store.close()
 }
 
-main()
+main().catch((err) => {
+  console.error('Fatal:', err instanceof Error ? err.message : err)
+  process.exit(1)
+})

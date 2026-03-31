@@ -24,6 +24,7 @@ export class ArkiveService {
   /**
    * @intent   Construct ArkiveService with store and optional profile.
    * @guarantee Store is required, profile is optional.
+   * @constraint Store must be created via createStore() before passing. Profile absence restricts collection methods.
    */
   constructor(options: ArkiveServiceOptions) {
     this.store = options.store
@@ -33,6 +34,7 @@ export class ArkiveService {
   /**
    * @intent   List all titles for a system.
    * @guarantee Returns array of title entries with name and CRC.
+   * @constraint Store must be initialized. Returns name-indexed entries only — games without CRC are excluded.
    */
   async listTitles(options: ListTitlesOptions): Promise<TitleEntry[]> {
     const { system, limit = 100, offset = 0 } = options
@@ -66,6 +68,7 @@ export class ArkiveService {
   /**
    * @intent   Search for titles by name prefix (case-insensitive).
    * @guarantee Returns matching title entries.
+   * @constraint Query is normalized to lowercase before matching. Only prefix matching is supported.
    */
   async searchByName(options: SearchOptions): Promise<TitleEntry[]> {
     const { system, query, limit = 50 } = options
@@ -97,6 +100,7 @@ export class ArkiveService {
   /**
    * @intent   Look up a title by CRC.
    * @guarantee Returns full stored entry or null if not found.
+   * @constraint CRC should be 8-character uppercase hex. Uses lookupRom fallback chain (SHA1→MD5→CRC→SHA256).
    */
   async getTitle(system: string, crc: string): Promise<StoredRomEntry | null> {
     const result = await lookupRom(this.store, system, crc)
@@ -106,6 +110,7 @@ export class ArkiveService {
   /**
    * @intent   Refresh catalog by fetching and merging DATs, then storing.
    * @guarantee Saves raw DAT content to App Root cache directory.
+   * @constraint system must be a canonical Libretro system name (e.g. 'Nintendo - Nintendo Entertainment System'). Throws on fetch or parse failure.
    */
   async refreshCatalog(system: string): Promise<void> {
     const mergeResult = await mergeDat(system)
@@ -124,6 +129,7 @@ export class ArkiveService {
   /**
    * @intent   Create a new collection.
    * @guarantee Throws ProfileRequiredError if no profile is set.
+   * @constraint Not yet implemented. Always throws. Implementation deferred to CORE-008/CORE-009.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createCollection(_name: string): Promise<void> {
@@ -143,6 +149,7 @@ export class ArkiveService {
   /**
    * @intent   Add a game to a collection.
    * @guarantee Throws ProfileRequiredError if no profile is set.
+   * @constraint Not yet implemented. Always throws. Implementation deferred to CORE-008/CORE-009.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async addToCollection(_collectionId: string, _crc: string): Promise<void> {

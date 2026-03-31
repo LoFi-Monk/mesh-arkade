@@ -7,6 +7,7 @@ const APP_DIR_NAME = 'mesh-arkade'
 /**
  * @intent   Get the path to the app root directory.
  * @guarantee Returns path to ~/mesh-arkade.
+ * @constraint Uses os.homedir() via bare-node-os alias. customRoot bypasses home directory resolution entirely.
  */
 export function getAppRootPath(customRoot?: string): string {
   const homeDir = os.homedir()
@@ -16,6 +17,7 @@ export function getAppRootPath(customRoot?: string): string {
 /**
  * @intent   Initialize the app root directory structure.
  * @guarantee Creates directories and config file if they don't exist. Idempotent.
+ * @constraint Safe to call on every startup. Does not overwrite existing config.json.
  */
 export async function initAppRoot(customRoot?: string): Promise<void> {
   const appRoot = getAppRootPath(customRoot)
@@ -37,6 +39,7 @@ export async function initAppRoot(customRoot?: string): Promise<void> {
 /**
  * @intent   Save raw DAT content to the DATs cache directory.
  * @guarantee Writes file to DATs/<system>.dat.
+ * @constraint systemName is sanitized — special characters replaced with underscore. Caller must ensure content is non-empty.
  */
 export async function saveDatCache(systemName: string, content: string, customRoot?: string): Promise<void> {
   const appRoot = getAppRootPath(customRoot)
