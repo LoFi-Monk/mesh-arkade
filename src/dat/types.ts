@@ -23,6 +23,12 @@ export interface DatRom {
   sha1?: string
   sha256?: string
   serial?: string
+  developer?: string
+  genre?: string
+  releaseyear?: string
+  releasemonth?: string
+  publisher?: string
+  region?: string
 }
 
 /**
@@ -99,6 +105,7 @@ export interface DatFetchError {
 export interface DatFetchOptions {
   ifNoneMatch?: string
   ifModifiedSince?: string
+  basePath?: string
 }
 
 /**

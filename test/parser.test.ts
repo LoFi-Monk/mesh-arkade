@@ -455,3 +455,81 @@ game ( name "Game1" description "" rom ( name "game.nes" size 1024 ) )`
     t.is(result.dat.games[0]?.description, '', 'empty game description preserved')
   }
 })
+
+const supplementaryDatFixture = `clrmamepro (
+	name "Nintendo - Nintendo Entertainment System - Developer"
+	description "Nintendo - NES Developer Metadata"
+	author "Libretro"
+)
+
+game (
+	comment "Donkey Kong"
+	rom ( name "donkeykong.nes" size 24576 crc 6B0C2D41 )
+)
+
+game (
+	comment "Donkey Kong Junior"
+	rom ( name "donkeykongjr.nes" size 24576 crc F5A52E62 )
+)
+
+game (
+	comment "Metroid"
+	description "Metroid (FDS conversion)"
+	rom ( name "metroid.nes" size 262144 crc 45534F58 )
+)`
+
+const noNameNoCommentFixture = `clrmamepro (
+	name "Test Supplementary"
+)
+
+game (
+	description "This has no name or comment"
+	rom ( name "test.nes" size 1024 crc AABBCCDD )
+)
+
+game (
+	name "Valid Game"
+	rom ( name "valid.nes" size 2048 crc DDEEFF00 )
+)`
+
+test('supplementary DAT: game with comment but no name uses comment as name', (t) => {
+  const result = parseDat(supplementaryDatFixture)
+
+  t.is(result.ok, true, 'parse succeeds')
+  if (result.ok) {
+    t.is(result.dat.games.length, 3, '3 games parsed')
+    t.is(result.dat.games[0]?.name, 'Donkey Kong', 'comment used as name')
+    t.is(result.dat.games[0]?.comment, 'Donkey Kong', 'comment field preserved')
+    t.is(result.dat.games[1]?.name, 'Donkey Kong Junior', 'comment used as name for second game')
+    t.is(result.dat.games[2]?.name, 'Metroid', 'comment used as name for third game')
+    t.is(result.dat.games[2]?.description, 'Metroid (FDS conversion)', 'description also extracted')
+  }
+})
+
+test('supplementary DAT: game with neither name nor comment is skipped', (t) => {
+  const result = parseDat(noNameNoCommentFixture)
+
+  t.is(result.ok, true, 'parse succeeds')
+  if (result.ok) {
+    t.is(result.dat.games.length, 1, 'only 1 game parsed (the valid one)')
+    t.is(result.dat.games[0]?.name, 'Valid Game', 'game with name is parsed')
+  }
+})
+
+test('supplementary DAT: game with both name and comment uses name (not comment)', (t) => {
+  const bothFixture = `clrmamepro ( name "Test" )
+game (
+	name "Official Name"
+	comment "Alternative Name"
+	rom ( name "game.nes" size 1024 crc AABBCCDD )
+)`
+
+  const result = parseDat(bothFixture)
+
+  t.is(result.ok, true)
+  if (result.ok) {
+    t.is(result.dat.games.length, 1)
+    t.is(result.dat.games[0]?.name, 'Official Name', 'name takes precedence over comment')
+    t.is(result.dat.games[0]?.comment, 'Alternative Name', 'comment still preserved')
+  }
+})

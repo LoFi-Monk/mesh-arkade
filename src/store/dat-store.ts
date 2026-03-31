@@ -15,8 +15,16 @@ export async function storeDat(
   await store.ready()
 
   const db = store.db.sub('dat').sub(systemName)
+  const nameIndex = db.sub('name')
 
   let romCount = 0
+
+  // Note: Hyperbee doesn't have a clear() method, we need to delete entries individually
+  const existingNames: string[] = []
+  for await (const entry of nameIndex.createReadStream()) {
+    existingNames.push(entry.key)
+  }
+  await Promise.all(existingNames.map((key) => nameIndex.del(key)))
 
   const headerKey = 'header'
   const headerValue = {
@@ -50,9 +58,22 @@ export async function storeDat(
         await db.put(sha256Key, entry)
       }
     }
+
+    // Write name index entry once per game (using first ROM's CRC)
+    const firstRom = game.roms[0]
+    if (firstRom && firstRom.crc) {
+      const normalizedName = normalizeName(game.name)
+      const nameKey = normalizedName
+      const nameValue = { crc: firstRom.crc.toUpperCase() }
+      await nameIndex.put(nameKey, nameValue)
+    }
   }
 
   return { ok: true, romCount }
+}
+
+function normalizeName(name: string): string {
+  return name.toLowerCase().trim()
 }
 
 function createRomEntry(gameName: string, rom: DatRom): StoredRomEntry {
@@ -68,6 +89,30 @@ function createRomEntry(gameName: string, rom: DatRom): StoredRomEntry {
 
   if (rom.serial) {
     entry.serial = rom.serial
+  }
+
+  if (rom.developer) {
+    entry.developer = rom.developer
+  }
+
+  if (rom.genre) {
+    entry.genre = rom.genre
+  }
+
+  if (rom.releaseyear) {
+    entry.releaseyear = rom.releaseyear
+  }
+
+  if (rom.releasemonth) {
+    entry.releasemonth = rom.releasemonth
+  }
+
+  if (rom.publisher) {
+    entry.publisher = rom.publisher
+  }
+
+  if (rom.region) {
+    entry.region = rom.region
   }
 
   return entry

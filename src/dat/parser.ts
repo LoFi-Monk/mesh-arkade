@@ -268,17 +268,19 @@ function extractHeader(fields: Map<string, string>): DatHeader {
 
 function extractGame(context: ParseContext): DatGame | null {
   const name = context.fields.get('name')
-  if (!name) return null
+  const comment = context.fields.get('comment')
+  if (!name && !comment) return null
+
+  const gameName = name ?? comment ?? ''
 
   const game: DatGame = {
-    name,
+    name: gameName,
     roms: [],
   }
 
   const description = context.fields.get('description')
   if (description !== undefined) game.description = description
 
-  const comment = context.fields.get('comment')
   if (comment !== undefined) game.comment = comment
 
   for (const child of context.children) {
