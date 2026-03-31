@@ -89,7 +89,6 @@ export interface MergeResult {
   ok: true
   mainDat: DatFile
   supplementary: SupplementaryDatResult[]
-  rawMainContent: string
 }
 
 export interface MergeError {
@@ -187,7 +186,6 @@ export async function mergeDat(
     ok: true,
     mainDat: mergedDat,
     supplementary: supplementaryResults,
-    rawMainContent: mainFetchResult.content,
   }
 }
 

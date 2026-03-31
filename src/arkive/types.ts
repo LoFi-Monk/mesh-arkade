@@ -1,42 +1,83 @@
 import type { MeshStore } from '../store/types.js'
 
 /**
- * @intent   Represents a user's profile with identity and ratio information.
- * @guarantee Contains public key for identity and ratio for trust scoring.
+ * @intent   Represents a user's identity with keypair and trust information.
+ * @guarantee Contains public key for mesh identity and trust metrics.
  */
-export interface Profile {
+export interface Identity {
   id: string
   publicKey: string
   ratio: number
+  displayName: string
+  rep: number
+  trustScore: number
 }
 
 /**
- * @intent   Service interface for managing user profile identity.
- * @guarantee Provides methods to get profile and check if profile exists.
+ * @intent   Service interface for managing user identity.
+ * @guarantee Provides methods to create, get, and check identity existence.
  */
-export interface ProfileService {
-  getProfile(): Promise<Profile | null>
-  hasProfile(): Promise<boolean>
+export interface IdentityService {
+  createIdentity(displayName: string): Promise<Identity>
+  getIdentity(): Promise<Identity | null>
+  hasIdentity(): Promise<boolean>
+  createProfile(displayName: string): Promise<ChildProfile>
+  getProfiles(): Promise<ChildProfile[]>
+  getActiveProfile(): Promise<ChildProfile | null>
+  setActiveProfile(profileId: string): Promise<void>
+  getCollections(): Promise<Collection[]>
+  getPlaylists(profileId: string): Promise<Playlist[]>
 }
 
 /**
- * @intent   Error thrown when an operation requires a profile but none is set.
- * @guarantee Error message indicates profile is required.
+ * @intent   Error thrown when an operation requires an identity but none is set.
+ * @guarantee Error message indicates identity is required.
  */
-export class ProfileRequiredError extends Error {
+export class IdentityRequiredError extends Error {
   /**
    * @intent   Construct error with default message.
-   * @guarantee Error name is set to ProfileRequiredError.
+   * @guarantee Error name is set to IdentityRequiredError.
    */
-  constructor(message = 'Profile required for this operation') {
+  constructor(message = 'Identity required for this operation') {
     super(message)
-    this.name = 'ProfileRequiredError'
+    this.name = 'IdentityRequiredError'
   }
+}
+
+export interface Collection {
+  id: string
+  name: string
+  ownerPublicKey: string
+  gameCount: number
+  createdAt: number
+}
+
+export interface Playlist {
+  id: string
+  name: string
+  profileId: string
+  gameCount: number
+  createdAt: number
+}
+
+export interface PlaylistEntry {
+  playlistId: string
+  crc: string
+  addedAt: number
+}
+
+export interface ChildProfile {
+  id: string
+  displayName: string
+  avatar: string
+  settings: Record<string, unknown>
+  active: boolean
+  createdAt: number
 }
 
 export interface ArkiveServiceOptions {
   store: MeshStore
-  profile?: ProfileService
+  identity?: IdentityService
 }
 
 export interface TitleEntry {

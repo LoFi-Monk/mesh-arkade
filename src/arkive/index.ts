@@ -1,12 +1,16 @@
 export { ArkiveService } from './arkive-service.js'
-export { ProfileServiceStub } from './profile-stub.js'
-export { getAppRootPath, initAppRoot, saveDatCache } from './app-root.js'
+export { IdentityServiceStub } from './identity-stub.js'
+export { getAppRootPath, initAppRoot } from './app-root.js'
 export {
-  ProfileRequiredError,
-  type Profile,
-  type ProfileService,
+  IdentityRequiredError,
+  type Identity,
+  type IdentityService,
   type ArkiveServiceOptions,
   type TitleEntry,
   type ListTitlesOptions,
   type SearchOptions,
+  type Collection,
+  type Playlist,
+  type PlaylistEntry,
+  type ChildProfile,
 } from './types.js'

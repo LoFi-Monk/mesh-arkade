@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { createStore } from '../src/store/store.js'
 import { storeDat } from '../src/store/dat-store.js'
-import { ArkiveService, ProfileServiceStub, ProfileRequiredError } from '../src/arkive/index.js'
+import { ArkiveService, IdentityServiceStub, IdentityRequiredError } from '../src/arkive/index.js'
 import type { DatFile } from '../src/dat/types.js'
 
 function getTmpDir(): string {
@@ -47,7 +47,7 @@ test('listTitles returns all stored titles after catalog refresh', async (t) => 
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
   const titles = await arkive.listTitles({ system: 'nes' })
 
   t.is(titles.length, 3, 'returns 3 titles')
@@ -70,7 +70,7 @@ test('listTitles returns empty array on empty store', async (t) => {
   })
 
   const store = createStore(tmpPath)
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const titles = await arkive.listTitles({ system: 'nes' })
 
@@ -112,7 +112,7 @@ test('searchByName returns matching titles (case-insensitive)', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const results1 = await arkive.searchByName({ system: 'nes', query: 'super mario' })
   t.is(results1.length, 2, 'finds 2 results for "super mario"')
@@ -151,7 +151,7 @@ test('searchByName returns empty array on no match', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const results = await arkive.searchByName({ system: 'nes', query: 'zzz' })
   t.is(results.length, 0, 'returns empty array for no match')
@@ -195,7 +195,7 @@ test('getTitle returns full enriched entry for known CRC', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const entry = await arkive.getTitle('nes', '6B0C2D41')
 
@@ -227,7 +227,7 @@ test('getTitle returns null for unknown CRC', async (t) => {
   })
 
   const store = createStore(tmpPath)
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const entry = await arkive.getTitle('nes', 'FFFFFFFF')
 
@@ -236,7 +236,7 @@ test('getTitle returns null for unknown CRC', async (t) => {
   await store.close()
 })
 
-test('createCollection throws ProfileRequiredError when no profile provided', async (t) => {
+test('createCollection throws IdentityRequiredError when no identity provided', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   t.teardown(() => {
@@ -254,13 +254,13 @@ test('createCollection throws ProfileRequiredError when no profile provided', as
     await arkive.createCollection('My Collection')
     t.fail('should have thrown')
   } catch (err) {
-    t.ok(err instanceof ProfileRequiredError, 'throws ProfileRequiredError')
+    t.ok(err instanceof IdentityRequiredError, 'throws IdentityRequiredError')
   }
 
   await store.close()
 })
 
-test('addToCollection throws ProfileRequiredError when no profile provided', async (t) => {
+test('addToCollection throws IdentityRequiredError when no identity provided', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   t.teardown(() => {
@@ -278,7 +278,7 @@ test('addToCollection throws ProfileRequiredError when no profile provided', asy
     await arkive.addToCollection('collection-id', '6B0C2D41')
     t.fail('should have thrown')
   } catch (err) {
-    t.ok(err instanceof ProfileRequiredError, 'throws ProfileRequiredError')
+    t.ok(err instanceof IdentityRequiredError, 'throws IdentityRequiredError')
   }
 
   await store.close()
@@ -310,7 +310,7 @@ test('listTitles respects limit and offset', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, profile: new ProfileServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
 
   const firstTwo = await arkive.listTitles({ system: 'nes', limit: 2 })
   t.is(firstTwo.length, 2, 'limit returns correct count')

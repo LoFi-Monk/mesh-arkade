@@ -1,7 +1,7 @@
 import test from 'brittle'
 import * as fs from 'fs'
 import * as path from 'path'
-import { getAppRootPath, initAppRoot, saveDatCache } from '../src/arkive/app-root.js'
+import { getAppRootPath, initAppRoot } from '../src/arkive/app-root.js'
 
 function getTmpDir(): string {
   return process.env.TEMP || process.env.TMPDIR || process.env.TMP || '/tmp'
@@ -11,7 +11,7 @@ function createTmpPath(): string {
   return path.join(getTmpDir(), `mesh-arkade-approot-test-${Date.now()}-${Math.random().toString(16).slice(2)}`)
 }
 
-test('initAppRoot creates config.json and DATs/ on first run', async (t) => {
+test('initAppRoot creates config.json on first run', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   t.teardown(() => {
@@ -23,12 +23,10 @@ test('initAppRoot creates config.json and DATs/ on first run', async (t) => {
   })
 
   const configPath = path.join(tmpPath, 'config.json')
-  const datsDir = path.join(tmpPath, 'DATs')
 
   await initAppRoot(tmpPath)
 
   t.ok(fs.existsSync(configPath), 'config.json created')
-  t.ok(fs.existsSync(datsDir), 'DATs/ directory created')
 
   const configContent = fs.readFileSync(configPath, 'utf-8')
   const config = JSON.parse(configContent)
@@ -72,7 +70,7 @@ test('getAppRootPath returns custom path when provided', (t) => {
   t.is(appRoot, customPath, 'returns custom path')
 })
 
-test('saveDatCache writes file to DATs/<systemName>.dat', async (t) => {
+test('initAppRoot does NOT create DATs/ directory', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   t.teardown(() => {
@@ -84,41 +82,10 @@ test('saveDatCache writes file to DATs/<systemName>.dat', async (t) => {
   })
 
   const datsDir = path.join(tmpPath, 'DATs')
-  fs.mkdirSync(datsDir, { recursive: true })
 
-  const content = 'Mock DAT file content'
-  const systemName = 'Nintendo - NES'
+  await initAppRoot(tmpPath)
 
-  await saveDatCache(systemName, content, tmpPath)
-
-  const expectedFile = path.join(datsDir, 'Nintendo - NES.dat')
-  t.ok(fs.existsSync(expectedFile), 'DAT file created')
-
-  const writtenContent = fs.readFileSync(expectedFile, 'utf-8')
-  t.is(writtenContent, content, 'content matches')
-})
-
-test('saveDatCache handles special characters in system name', async (t) => {
-  const tmpPath = createTmpPath()
-  fs.mkdirSync(tmpPath, { recursive: true })
-  t.teardown(() => {
-    try {
-      fs.rmSync(tmpPath, { recursive: true, force: true })
-    } catch {
-      // Ignore cleanup errors
-    }
-  })
-
-  const datsDir = path.join(tmpPath, 'DATs')
-  fs.mkdirSync(datsDir, { recursive: true })
-
-  const content = 'DAT content'
-  const systemName = 'Sega - Mega Drive/Genesis!'
-
-  await saveDatCache(systemName, content, tmpPath)
-
-  const files = fs.readdirSync(datsDir)
-  t.is(files.length, 1, 'one file created')
+  t.absent(fs.existsSync(datsDir), 'DATs/ directory NOT created')
 })
 
 test('initAppRoot creates directory structure in correct location', async (t) => {
@@ -133,11 +100,9 @@ test('initAppRoot creates directory structure in correct location', async (t) =>
   })
 
   const configPath = path.join(tmpPath, 'config.json')
-  const datsDir = path.join(tmpPath, 'DATs')
 
   await initAppRoot(tmpPath)
 
   t.ok(fs.existsSync(tmpPath), 'app root directory exists')
   t.ok(fs.existsSync(configPath), 'config.json exists')
-  t.ok(fs.existsSync(datsDir), 'DATs directory exists')
 })
