@@ -16,6 +16,7 @@ import type { IdentityService as IIdentityService } from './types.js'
  */
 export class IdentityService implements IIdentityService {
   private store: MeshStore
+  private _profileIndexLock: Promise<void> = Promise.resolve()
 
   /**
    * @intent   Construct IdentityService with a MeshStore.
@@ -166,10 +167,13 @@ export class IdentityService implements IIdentityService {
     await profileDb.put('active', false)
     await profileDb.put('createdAt', now)
 
-    const indexEntry = await this.profilesDb.get('index')
-    const index: string[] = indexEntry ? (indexEntry.value as string[]) : []
-    index.push(id)
-    await this.profilesDb.put('index', index)
+    this._profileIndexLock = this._profileIndexLock.then(async () => {
+      const indexEntry = await this.profilesDb.get('index')
+      const index: string[] = indexEntry ? (indexEntry.value as string[]) : []
+      index.push(id)
+      await this.profilesDb.put('index', index)
+    })
+    await this._profileIndexLock
 
     return {
       id,
