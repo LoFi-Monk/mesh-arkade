@@ -22,8 +22,7 @@ export async function mountCollection(
  * @guarantee Returns an async iterator that yields sync events.
  * @constraint Requires both the Hyperdrive and Localdrive to be ready.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function syncCollection(drive: Hyperdrive, collectionPath: string): Promise<any> {
+export async function syncCollection(drive: Hyperdrive, collectionPath: string): Promise<unknown> {
   const localdrive = new Localdrive(collectionPath)
   await localdrive.ready()
   return drive.mirror(localdrive)

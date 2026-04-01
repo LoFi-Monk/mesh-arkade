@@ -3,7 +3,7 @@ await import('./compat.js')
 import * as path from 'path'
 import { createLogger } from './src/core/logger.js'
 import { createStore } from './src/store/store.js'
-import { ArkiveService, initAppRoot, getAppRootPath, IdentityServiceStub } from './src/arkive/index.js'
+import { ArkiveService, initAppRoot, getAppRootPath, IdentityServiceImpl } from './src/arkive/index.js'
 
 /**
  * @intent Provide the root application logger for mesh-arkade.
@@ -24,7 +24,7 @@ async function main() {
 
   const store = createStore()
   Pear.teardown(() => store.close())
-  const identity = new IdentityServiceStub()
+  const identity = new IdentityServiceImpl(store)
   const arkive = new ArkiveService({ store, identity })
 
   const args = process.argv.slice(2)

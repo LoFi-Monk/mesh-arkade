@@ -16,7 +16,7 @@ import { lookupRom } from '../store/dat-lookup.js'
 import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
 import type { ListCollectionInfo } from '../core/collection-registry.js'
 import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
-import { getAppRootPath, addCollectionToConfig } from './app-root.js'
+import { getAppRootPath, addCollectionToConfig, readConfig } from './app-root.js'
 
 /**
  * @intent   Service facade for managing the game catalog.
@@ -220,6 +220,7 @@ export class ArkiveService {
    * @intent   Scan a collection directory, hash files, and verify against catalog.
    * @guarantee Returns manifest data with verification status for each file. Writes to .mesh-arkade/manifest.json.
    * @constraint Requires identity. Uses empty catalog for verification - to be enhanced with global catalog later.
+   *             Looks up collection from global config.json to support external paths.
    */
   async scanCollection(options: ScanCollectionOptions): Promise<unknown> {
     if (!this.identity) {
@@ -231,17 +232,20 @@ export class ArkiveService {
       throw new IdentityRequiredError('Identity required to scan collection')
     }
 
-    const collections = await listCollectionsFromRegistry(this.getAppRoot())
-    const collection = collections.find((c) => c.id === options.collectionId)
+    const config = readConfig(this.customRoot)
+    if (!config) {
+      throw new Error('App config not found')
+    }
 
-    if (!collection) {
+    const collectionEntry = config.collections.find((c) => c.uuid === options.collectionId)
+    if (!collectionEntry) {
       throw new Error(`Collection not found: ${options.collectionId}`)
     }
 
     const catalog = new Map<string, boolean>()
     const manifest = await scanCollectionFromScanner(
-      collection.path,
-      collection.id,
+      collectionEntry.path,
+      collectionEntry.uuid,
       catalog
     )
 
