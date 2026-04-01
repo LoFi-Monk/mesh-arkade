@@ -13,6 +13,7 @@ import { IdentityRequiredError } from './types.js'
 import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { lookupRom } from '../store/dat-lookup.js'
+import * as path from 'path'
 import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
 import type { ListCollectionInfo } from '../core/collection-registry.js'
 import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
@@ -189,7 +190,8 @@ export class ArkiveService {
       throw new IdentityRequiredError('Identity required to add collection')
     }
 
-    const result = await registerCollection(options.path, options.name)
+    const absolutePath = path.resolve(options.path)
+    const result = await registerCollection(absolutePath, options.name)
 
     if (!result.ok) {
       throw new Error(result.error.message)

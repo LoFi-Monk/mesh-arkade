@@ -1,5 +1,6 @@
 // @ts-expect-error - compat.js is a plain JS module that sets globals
 await import('./compat.js')
+import * as fs from 'fs'
 import * as path from 'path'
 import { createLogger } from './src/core/logger.js'
 import { createStore } from './src/store/store.js'
@@ -99,8 +100,9 @@ async function main() {
               console.error('Usage: collection add <path> [name]')
               process.exit(1)
             }
-            const collectionName = args[3] ?? path.basename(collectionPath)
-            const result = await arkive.addCollection({ name: collectionName, path: collectionPath })
+            const absolutePath = path.resolve(collectionPath)
+            const collectionName = args[3] ?? path.basename(absolutePath)
+            const result = await arkive.addCollection({ name: collectionName, path: absolutePath })
             console.log(`Collection added: ${result.name} (${result.id})`)
             break
           }
@@ -112,7 +114,8 @@ async function main() {
             } else {
               console.log('Collections:')
               for (const col of config.collections) {
-                console.log(`  ${col.name} [${col.uuid}] (disconnected)`)
+                const status = fs.existsSync(col.path) ? 'connected' : 'disconnected'
+                console.log(`  ${col.name} [${col.uuid}] (${status})`)
               }
             }
             break

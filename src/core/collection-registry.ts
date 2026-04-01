@@ -94,7 +94,7 @@ export async function registerCollection(
 }
 
 /**
- * @intent   Discover collections in a root directory by scanning for .mesh-arkade/ folders.
+ * @intent   Discover unregistered collections in a root directory by scanning for .mesh-arkade/ folders. This is a discovery tool; for the global list of registered collections (including external paths), read config.json directly.
  * @guarantee Returns array of ListCollectionInfo with connected/disconnected status based on folder presence.
  * @constraint The rootPath must exist. Searches only immediate subdirectories.
  */

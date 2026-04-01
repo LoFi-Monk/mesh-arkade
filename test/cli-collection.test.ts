@@ -190,3 +190,81 @@ test('CLI list surfaces externally added collection from config.json', async (t)
     t.is(config.collections[0].uuid, '1234567890abcdef1234567890abcdef', 'collection uuid matches')
   }
 })
+
+test('CLI collection add resolves relative path to absolute path', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identity = new IdentityServiceImpl(store)
+  await identity.createIdentity('Test User')
+  const arkive = new ArkiveService({ store, identity, customRoot: tmpPath })
+
+  const collectionDir = path.join(tmpPath, 'my-roms')
+  fs.mkdirSync(collectionDir, { recursive: true })
+  fs.writeFileSync(path.join(collectionDir, 'game.nes'), 'test')
+
+  const relativePath = path.relative(process.cwd(), collectionDir)
+  const result = await arkive.addCollection({ name: 'Test Collection', path: relativePath })
+
+  const config = readConfig(tmpPath)
+  t.ok(config, 'config exists')
+  const collection = config?.collections.find((c) => c.uuid === result.id)
+  t.ok(collection, 'collection exists in config')
+  t.is(collection?.name, 'Test Collection', 'collection name matches')
+  t.is(collection?.path, path.resolve(relativePath), 'path is resolved to absolute path')
+  t.ok(path.isAbsolute(collection?.path ?? ''), 'stored path is absolute')
+
+  await store.close()
+})
+
+test('CLI collection list shows connected/disconnected based on path existence', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const connectedPath = path.join(tmpPath, 'connected-collection')
+  fs.mkdirSync(connectedPath, { recursive: true })
+  addCollectionToConfig({
+    uuid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    name: 'Connected Collection',
+    path: connectedPath,
+  }, tmpPath)
+
+  const disconnectedPath = path.join(tmpPath, 'missing-collection')
+  addCollectionToConfig({
+    uuid: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    name: 'Missing Collection',
+    path: disconnectedPath,
+  }, tmpPath)
+
+  const config = readConfig(tmpPath)
+  t.ok(config, 'config exists')
+  t.is(config?.collections.length, 2, 'has two collections')
+
+  const connected = config?.collections.find((c) => c.uuid === 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+  const disconnected = config?.collections.find((c) => c.uuid === 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+
+  t.ok(connected, 'connected collection exists')
+  t.ok(disconnected, 'disconnected collection exists')
+
+  t.is(fs.existsSync(connected?.path ?? ''), true, 'connected path exists')
+  t.is(fs.existsSync(disconnected?.path ?? ''), false, 'disconnected path does not exist')
+})
