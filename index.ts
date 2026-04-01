@@ -108,7 +108,9 @@ async function main() {
 
           case 'list': {
             const rootPath = args[2]
-            const collections = await arkive.listCollections({ rootPath: rootPath ?? '' })
+            const collections = rootPath 
+              ? await arkive.listCollections({ rootPath })
+              : await arkive.listCollections({})
             if (collections.length === 0) {
               console.log('No collections found')
             } else {
