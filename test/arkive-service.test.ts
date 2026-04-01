@@ -492,3 +492,46 @@ test('scanCollection performs case-insensitive ID lookup', async (t) => {
 
   await store.close()
 })
+
+test('scanCollection returns ManifestData type', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+  fs.writeFileSync(path.join(collectionPath, 'game.nes'), 'rom-data')
+
+  const result = await arkive.addCollection({ name: 'Test Collection', path: collectionPath })
+
+  const manifest = await arkive.scanCollection({ collectionId: result.id })
+
+  t.ok(manifest, 'returns manifest')
+  t.is(typeof manifest.collectionId, 'string', 'has collectionId string')
+  t.is(typeof manifest.scannedAt, 'number', 'scannedAt is number')
+  t.ok(Array.isArray(manifest.files), 'files is array')
+
+  if (manifest.files && manifest.files.length > 0) {
+    const firstFile = manifest.files[0]
+    if (firstFile) {
+      t.is(typeof firstFile.path, 'string', 'file has path')
+      t.is(typeof firstFile.crc32, 'string', 'file has crc32')
+    }
+  }
+
+  await store.close()
+})

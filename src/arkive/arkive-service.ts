@@ -18,6 +18,7 @@ import * as fs from 'fs'
 import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
 import type { ListCollectionInfo } from '../core/collection-registry.js'
 import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
+import type { ManifestData } from '../core/collection-scanner.js'
 import { getAppRootPath, addCollectionToConfig, readConfig } from './app-root.js'
 
 /**
@@ -245,7 +246,7 @@ export class ArkiveService {
    *             Looks up collection from global config.json to support external paths.
    *             Validates collectionId is a 32-character hex string.
    */
-  async scanCollection(options: ScanCollectionOptions): Promise<unknown> {
+  async scanCollection(options: ScanCollectionOptions): Promise<ManifestData> {
     if (!/^[0-9a-fA-F]{32}$/.test(options.collectionId)) {
       throw new Error('Invalid collection ID: must be a 32-character hex string')
     }
