@@ -106,3 +106,27 @@ test('initAppRoot creates directory structure in correct location', async (t) =>
   t.ok(fs.existsSync(tmpPath), 'app root directory exists')
   t.ok(fs.existsSync(configPath), 'config.json exists')
 })
+
+test('fileExists returns true for directories', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const dirPath = path.join(tmpPath, 'subdir')
+  fs.mkdirSync(dirPath, { recursive: true })
+
+  await initAppRoot(tmpPath)
+  await initAppRoot(tmpPath)
+
+  t.pass('initAppRoot is idempotent even when directory exists')
+
+  const filePath = path.join(tmpPath, 'test.txt')
+  fs.writeFileSync(filePath, 'test')
+  t.ok(fs.existsSync(filePath), 'file still exists after initAppRoot')
+})

@@ -125,8 +125,8 @@ async function ensureDir(dirPath: string): Promise<void> {
 
 function fileExists(filePath: string): boolean {
   try {
-    const stat = fs.statSync(filePath)
-    return stat.isFile()
+    fs.statSync(filePath)
+    return true
   } catch {
     return false
   }
