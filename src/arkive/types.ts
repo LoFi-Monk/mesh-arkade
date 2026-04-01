@@ -78,6 +78,7 @@ export interface ChildProfile {
 export interface ArkiveServiceOptions {
   store: MeshStore
   identity?: IdentityService
+  customRoot?: string
 }
 
 export interface TitleEntry {
@@ -100,4 +101,17 @@ export interface SearchOptions {
   system: string
   query: string
   limit?: number
+}
+
+export interface AddCollectionOptions {
+  name: string
+  path: string
+}
+
+export interface ScanCollectionOptions {
+  collectionId: string
+}
+
+export interface ListCollectionsOptions {
+  rootPath: string
 }

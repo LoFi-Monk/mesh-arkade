@@ -5,11 +5,18 @@ import type {
   TitleEntry,
   ListTitlesOptions,
   SearchOptions,
+  AddCollectionOptions,
+  ScanCollectionOptions,
+  ListCollectionsOptions,
 } from './types.js'
 import { IdentityRequiredError } from './types.js'
 import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { lookupRom } from '../store/dat-lookup.js'
+import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
+import type { ListCollectionInfo } from '../core/collection-registry.js'
+import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
+import { getAppRootPath, addCollectionToConfig } from './app-root.js'
 
 /**
  * @intent   Service facade for managing the game catalog.
@@ -19,6 +26,7 @@ import { lookupRom } from '../store/dat-lookup.js'
 export class ArkiveService {
   private store: MeshStore
   private identity: IdentityService | undefined
+  private customRoot: string | undefined
 
   /**
    * @intent   Construct ArkiveService with store and optional identity.
@@ -28,6 +36,11 @@ export class ArkiveService {
   constructor(options: ArkiveServiceOptions) {
     this.store = options.store
     this.identity = options.identity
+    this.customRoot = options.customRoot
+  }
+
+  private getAppRoot(): string {
+    return getAppRootPath(this.customRoot)
   }
 
   /**
@@ -159,5 +172,79 @@ export class ArkiveService {
 
     // TODO: Implement adding to collection
     throw new Error('Not implemented')
+  }
+
+  /**
+   * @intent   Register a new collection at the specified path.
+   * @guarantee Returns collection info on success, throws IdentityRequiredError if no identity. Updates App Root config.
+   * @constraint The path must exist on the filesystem. Creates .mesh-arkade/ marker folder. Adds to config.json.
+   */
+  async addCollection(options: AddCollectionOptions): Promise<ListCollectionInfo> {
+    if (!this.identity) {
+      throw new IdentityRequiredError('Identity required to add collection')
+    }
+
+    const identity = await this.identity.getIdentity()
+    if (!identity) {
+      throw new IdentityRequiredError('Identity required to add collection')
+    }
+
+    const result = await registerCollection(options.path, options.name)
+
+    if (!result.ok) {
+      throw new Error(result.error.message)
+    }
+
+    addCollectionToConfig({
+      uuid: result.collection.id,
+      name: result.collection.name,
+      path: result.collection.path,
+    }, this.customRoot)
+
+    return {
+      ...result.collection,
+      connected: true,
+    }
+  }
+
+  /**
+   * @intent   List all collections under a root path.
+   * @guarantee Returns array of collection info with connected/disconnected status.
+   * @constraint Requires rootPath to exist. Reads .mesh-arkade/collection.json from subdirectories.
+   */
+  async listCollections(options: ListCollectionsOptions): Promise<ListCollectionInfo[]> {
+    return listCollectionsFromRegistry(options.rootPath)
+  }
+
+  /**
+   * @intent   Scan a collection directory, hash files, and verify against catalog.
+   * @guarantee Returns manifest data with verification status for each file. Writes to .mesh-arkade/manifest.json.
+   * @constraint Requires identity. Uses empty catalog for verification - to be enhanced with global catalog later.
+   */
+  async scanCollection(options: ScanCollectionOptions): Promise<unknown> {
+    if (!this.identity) {
+      throw new IdentityRequiredError('Identity required to scan collection')
+    }
+
+    const identity = await this.identity.getIdentity()
+    if (!identity) {
+      throw new IdentityRequiredError('Identity required to scan collection')
+    }
+
+    const collections = await listCollectionsFromRegistry(this.getAppRoot())
+    const collection = collections.find((c) => c.id === options.collectionId)
+
+    if (!collection) {
+      throw new Error(`Collection not found: ${options.collectionId}`)
+    }
+
+    const catalog = new Map<string, boolean>()
+    const manifest = await scanCollectionFromScanner(
+      collection.path,
+      collection.id,
+      catalog
+    )
+
+    return manifest
   }
 }

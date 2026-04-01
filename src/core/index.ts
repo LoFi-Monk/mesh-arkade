@@ -1,3 +1,8 @@
 export { getFetch, getFs } from './runtime.js'
 export { hashRom } from './rom-hasher.js'
 export { verifyRom } from './rom-verifier.js'
+export { registerCollection, listCollections } from './collection-registry.js'
+export type { CollectionInfo, ListCollectionInfo, RegisterCollectionResult } from './collection-registry.js'
+export { walkDirectory, hashAndMatch, writeManifest, scanCollection } from './collection-scanner.js'
+export type { ScannedFile, ManifestData, HashAndMatchResult } from './collection-scanner.js'
+export { mountCollection, unmountCollection, syncCollection } from './virtual-mirror.js'
