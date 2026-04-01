@@ -455,3 +455,40 @@ test('scanCollection throws IdentityRequiredError when no identity', async (t) =
 
   await store.close()
 })
+
+test('scanCollection performs case-insensitive ID lookup', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+  fs.writeFileSync(path.join(collectionPath, 'game.nes'), 'rom-data')
+
+  const result = await arkive.addCollection({ name: 'Test Collection', path: collectionPath })
+
+  const lowercaseId = result.id
+  const uppercaseId = lowercaseId.toUpperCase()
+
+  t.is(lowercaseId, uppercaseId.toLowerCase(), 'UUID is lowercase')
+
+  const scanResult = await arkive.scanCollection({ collectionId: uppercaseId })
+
+  t.ok(scanResult, 'scanCollection succeeds with uppercase ID')
+
+  await store.close()
+})

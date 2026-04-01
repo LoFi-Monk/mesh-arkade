@@ -14,6 +14,7 @@ import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { lookupRom } from '../store/dat-lookup.js'
 import * as path from 'path'
+import * as fs from 'fs'
 import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
 import type { ListCollectionInfo } from '../core/collection-registry.js'
 import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
@@ -210,12 +211,31 @@ export class ArkiveService {
   }
 
   /**
-   * @intent   List all collections under a root path.
+   * @intent   List collections from config.json or discover collections in a root path.
    * @guarantee Returns array of collection info with connected/disconnected status.
-   * @constraint Requires rootPath to exist. Reads .mesh-arkade/collection.json from subdirectories.
+   * @constraint If rootPath is empty/omitted: reads from global config.json and checks path existence for connected status.
+   *             If rootPath is provided: calls discovery tool to find .mesh-arkade folders in subdirectories.
    */
   async listCollections(options: ListCollectionsOptions): Promise<ListCollectionInfo[]> {
-    return listCollectionsFromRegistry(options.rootPath)
+    const { rootPath } = options
+
+    if (!rootPath || rootPath === '' || rootPath === undefined) {
+      const customRoot = this.customRoot
+      const config = readConfig(customRoot)
+      if (!config || config.collections.length === 0) {
+        return []
+      }
+
+      return config.collections.map((col) => ({
+        id: col.uuid,
+        name: col.name,
+        path: col.path,
+        createdAt: 0,
+        connected: fs.existsSync(col.path),
+      }))
+    }
+
+    return listCollectionsFromRegistry(rootPath)
   }
 
   /**
@@ -244,7 +264,10 @@ export class ArkiveService {
       throw new Error('App config not found')
     }
 
-    const collectionEntry = config.collections.find((c) => c.uuid === options.collectionId)
+    const collectionIdLower = options.collectionId.toLowerCase()
+    const collectionEntry = config.collections.find(
+      (c) => c.uuid.toLowerCase() === collectionIdLower
+    )
     if (!collectionEntry) {
       throw new Error(`Collection not found: ${options.collectionId}`)
     }

@@ -2,8 +2,8 @@ import test from 'brittle'
 import * as fs from 'fs'
 import * as path from 'path'
 import { createStore } from '../src/store/store.js'
-import { ArkiveService, IdentityServiceImpl } from '../src/arkive/index.js'
-import { readConfig, initAppRoot, addCollectionToConfig } from '../src/arkive/index.js'
+import { ArkiveService, IdentityServiceImpl, readConfig, initAppRoot, addCollectionToConfig } from '../src/arkive/index.js'
+import type { ListCollectionInfo } from '../src/core/collection-registry.js'
 
 function getTmpDir(): string {
   return process.env.TEMP || process.env.TMPDIR || process.env.TMP || '/tmp'
@@ -267,4 +267,119 @@ test('CLI collection list shows connected/disconnected based on path existence',
 
   t.is(fs.existsSync(connected?.path ?? ''), true, 'connected path exists')
   t.is(fs.existsSync(disconnected?.path ?? ''), false, 'disconnected path does not exist')
+})
+
+test('CLI collection list uses rootPath argument to discover collections', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identity = new IdentityServiceImpl(store)
+  await identity.createIdentity('Test User')
+  const arkive = new ArkiveService({ store, identity, customRoot: tmpPath })
+
+  const discoverPath = path.join(tmpPath, 'discoverable')
+  fs.mkdirSync(discoverPath, { recursive: true })
+
+  const collectionPath = path.join(discoverPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+
+  const markerPath = path.join(collectionPath, '.mesh-arkade')
+  fs.mkdirSync(markerPath, { recursive: true })
+  const collectionJson = path.join(markerPath, 'collection.json')
+  fs.writeFileSync(collectionJson, JSON.stringify({
+    id: 'discovery123456789012345678901234',
+    name: 'Discovered Collection',
+    path: collectionPath,
+    createdAt: Date.now(),
+  }), 'utf-8')
+
+  const collections = await arkive.listCollections({ rootPath: discoverPath })
+
+  t.is(collections.length, 1, 'discovers one collection')
+  const firstCol = collections[0] as ListCollectionInfo
+  t.is(firstCol.name, 'Discovered Collection', 'discovered collection name matches')
+  t.is(firstCol.id, 'discovery123456789012345678901234', 'discovered collection id matches')
+
+  await store.close()
+})
+
+test('CLI collection list reads from config when no rootPath provided', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  addCollectionToConfig({
+    uuid: 'cccccccccccccccccccccccccccccccc',
+    name: 'Config Collection',
+    path: path.join(tmpPath, 'config-collection'),
+  }, tmpPath)
+
+  const configBefore = readConfig(tmpPath)
+  t.is(configBefore?.collections.length, 1, 'config has collection before store creation')
+
+  const storePath = path.join(tmpPath, 'store')
+  fs.mkdirSync(storePath, { recursive: true })
+  const store = createStore(storePath)
+  await store.ready()
+
+  const identity = new IdentityServiceImpl(store)
+  await identity.createIdentity('Test User')
+  const arkive = new ArkiveService({ store, identity, customRoot: tmpPath })
+
+  const collections = await arkive.listCollections({})
+
+  t.is(collections.length, 1, 'returns collection from config')
+  const firstCol = collections[0] as ListCollectionInfo
+  t.is(firstCol.name, 'Config Collection', 'collection name matches')
+  t.is(firstCol.id, 'cccccccccccccccccccccccccccccccc', 'collection id matches')
+
+  await store.close()
+})
+
+test('CLI collection list accepts rootPath argument for discovery', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  const discoverPath = path.join(tmpPath, 'my-games')
+  fs.mkdirSync(discoverPath, { recursive: true })
+
+  const storePath = path.join(tmpPath, 'store')
+  fs.mkdirSync(storePath, { recursive: true })
+  const store = createStore(storePath)
+  await store.ready()
+
+  const identity = new IdentityServiceImpl(store)
+  await identity.createIdentity('Test User')
+  const arkive = new ArkiveService({ store, identity, customRoot: tmpPath })
+
+  const collections = await arkive.listCollections({ rootPath: discoverPath })
+
+  t.is(collections.length, 0, 'returns empty for non-existent collection')
+
+  await store.close()
 })

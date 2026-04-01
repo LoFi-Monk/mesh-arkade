@@ -1,10 +1,9 @@
 // @ts-expect-error - compat.js is a plain JS module that sets globals
 await import('./compat.js')
-import * as fs from 'fs'
 import * as path from 'path'
 import { createLogger } from './src/core/logger.js'
 import { createStore } from './src/store/store.js'
-import { ArkiveService, initAppRoot, IdentityServiceImpl, readConfig } from './src/arkive/index.js'
+import { ArkiveService, initAppRoot, IdentityServiceImpl } from './src/arkive/index.js'
 
 /**
  * @intent Provide the root application logger for mesh-arkade.
@@ -108,14 +107,15 @@ async function main() {
           }
 
           case 'list': {
-            const config = readConfig()
-            if (!config || config.collections.length === 0) {
+            const rootPath = args[2]
+            const collections = await arkive.listCollections({ rootPath: rootPath ?? '' })
+            if (collections.length === 0) {
               console.log('No collections found')
             } else {
               console.log('Collections:')
-              for (const col of config.collections) {
-                const status = fs.existsSync(col.path) ? 'connected' : 'disconnected'
-                console.log(`  ${col.name} [${col.uuid}] (${status})`)
+              for (const col of collections) {
+                const status = col.connected ? 'connected' : 'disconnected'
+                console.log(`  ${col.name} [${col.id}] (${status})`)
               }
             }
             break

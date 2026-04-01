@@ -20,7 +20,7 @@ export interface AppConfig {
  */
 export function getAppRootPath(customRoot?: string): string {
   const homeDir = os.homedir()
-  return customRoot ?? path.join(homeDir, APP_DIR_NAME)
+  return customRoot && customRoot !== '' ? customRoot : path.join(homeDir, APP_DIR_NAME)
 }
 
 /**
@@ -125,7 +125,8 @@ async function ensureDir(dirPath: string): Promise<void> {
 
 function fileExists(filePath: string): boolean {
   try {
-    return fs.existsSync(filePath)
+    const stat = fs.statSync(filePath)
+    return stat.isFile()
   } catch {
     return false
   }

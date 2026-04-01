@@ -113,5 +113,5 @@ export interface ScanCollectionOptions {
 }
 
 export interface ListCollectionsOptions {
-  rootPath: string
+  rootPath?: string
 }
