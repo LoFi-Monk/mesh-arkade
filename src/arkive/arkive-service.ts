@@ -221,8 +221,13 @@ export class ArkiveService {
    * @guarantee Returns manifest data with verification status for each file. Writes to .mesh-arkade/manifest.json.
    * @constraint Requires identity. Uses empty catalog for verification - to be enhanced with global catalog later.
    *             Looks up collection from global config.json to support external paths.
+   *             Validates collectionId is a 32-character hex string.
    */
   async scanCollection(options: ScanCollectionOptions): Promise<unknown> {
+    if (!/^[0-9a-fA-F]{32}$/.test(options.collectionId)) {
+      throw new Error('Invalid collection ID: must be a 32-character hex string')
+    }
+
     if (!this.identity) {
       throw new IdentityRequiredError('Identity required to scan collection')
     }

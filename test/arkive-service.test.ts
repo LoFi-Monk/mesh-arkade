@@ -447,7 +447,7 @@ test('scanCollection throws IdentityRequiredError when no identity', async (t) =
   const arkive = new ArkiveService({ store })
 
   try {
-    await arkive.scanCollection({ collectionId: 'test-id' })
+    await arkive.scanCollection({ collectionId: 'a'.repeat(32) })
     t.fail('should have thrown')
   } catch (err) {
     t.ok(err instanceof IdentityRequiredError, 'throws IdentityRequiredError')

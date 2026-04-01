@@ -3,7 +3,7 @@ await import('./compat.js')
 import * as path from 'path'
 import { createLogger } from './src/core/logger.js'
 import { createStore } from './src/store/store.js'
-import { ArkiveService, initAppRoot, getAppRootPath, IdentityServiceImpl } from './src/arkive/index.js'
+import { ArkiveService, initAppRoot, IdentityServiceImpl, readConfig } from './src/arkive/index.js'
 
 /**
  * @intent Provide the root application logger for mesh-arkade.
@@ -106,15 +106,13 @@ async function main() {
           }
 
           case 'list': {
-            const rootPath = args[2] ?? getAppRootPath()
-            const collections = await arkive.listCollections({ rootPath })
-            if (collections.length === 0) {
+            const config = readConfig()
+            if (!config || config.collections.length === 0) {
               console.log('No collections found')
             } else {
               console.log('Collections:')
-              for (const col of collections) {
-                const status = col.connected ? 'connected' : 'disconnected'
-                console.log(`  ${col.name} [${col.id}] (${status})`)
+              for (const col of config.collections) {
+                console.log(`  ${col.name} [${col.uuid}] (disconnected)`)
               }
             }
             break
@@ -124,6 +122,10 @@ async function main() {
             const collectionId = args[2]
             if (!collectionId) {
               console.error('Usage: collection scan <collection-id>')
+              process.exit(1)
+            }
+            if (!/^[0-9a-fA-F]{32}$/.test(collectionId)) {
+              console.error('Invalid collection ID: must be a 32-character hex string')
               process.exit(1)
             }
             console.log('Scanning collection...')

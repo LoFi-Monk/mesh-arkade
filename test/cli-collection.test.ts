@@ -2,7 +2,8 @@ import test from 'brittle'
 import * as fs from 'fs'
 import * as path from 'path'
 import { createStore } from '../src/store/store.js'
-import { ArkiveService } from '../src/arkive/index.js'
+import { ArkiveService, IdentityServiceImpl } from '../src/arkive/index.js'
+import { readConfig, initAppRoot, addCollectionToConfig } from '../src/arkive/index.js'
 
 function getTmpDir(): string {
   return process.env.TEMP || process.env.TMPDIR || process.env.TMP || '/tmp'
@@ -114,7 +115,7 @@ test('CLI rejects collection commands without identity for add', async (t) => {
   await store.close()
 })
 
-test('CLI rejects collection commands without identity for scan', async (t) => {
+test('CLI rejects collection scan with invalid collection ID format', async (t) => {
   const tmpPath = createTmpPath()
   fs.mkdirSync(tmpPath, { recursive: true })
   t.teardown(() => {
@@ -125,16 +126,67 @@ test('CLI rejects collection commands without identity for scan', async (t) => {
     }
   })
 
-  const store = createStore(tmpPath)
-  const arkive = new ArkiveService({ store })
+  await initAppRoot(tmpPath)
 
+  const store = createStore(tmpPath)
+  const identity = new IdentityServiceImpl(store)
+  await identity.createIdentity('Test User')
+  const arkive = new ArkiveService({ store, identity, customRoot: tmpPath })
+
+  const invalidIds = [
+    'short',           // too short
+    'abc',             // too short
+    '0000000000000000000000000000000000', // too long (33 chars)
+    'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',   // non-hex chars
+    'G12345678901234567890123456789012',   // non-hex uppercase
+  ]
+
+  for (const invalidId of invalidIds) {
+    try {
+      await arkive.scanCollection({ collectionId: invalidId })
+      t.fail(`should have thrown for invalid ID: ${invalidId}`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : ''
+      t.is(errorMessage.includes('Invalid'), true, `rejects invalid ID: ${invalidId} - got: "${errorMessage}"`)
+    }
+  }
+
+  const validId = 'a'.repeat(32)
   try {
-    await arkive.scanCollection({ collectionId: 'test-id' })
-    t.fail('should have thrown')
+    await arkive.scanCollection({ collectionId: validId })
+    t.fail('should have thrown for non-existent valid ID')
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : ''
-    t.ok(errorMessage.includes('Identity'), 'throws IdentityRequiredError')
+    t.is(errorMessage.includes('Collection not found') || errorMessage.includes('App config not found'), true, `accepts valid format but fails - got: "${errorMessage}"`)
   }
 
   await store.close()
+})
+
+test('CLI list surfaces externally added collection from config.json', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  addCollectionToConfig({
+    uuid: '1234567890abcdef1234567890abcdef',
+    name: 'External USB Collection',
+    path: '/external/usb/roms',
+  }, tmpPath)
+
+  const config = readConfig(tmpPath)
+  t.ok(config, 'config exists')
+  t.is(config?.collections.length, 1, 'has one collection')
+  if (config?.collections[0]) {
+    t.is(config.collections[0].name, 'External USB Collection', 'collection name matches')
+    t.is(config.collections[0].uuid, '1234567890abcdef1234567890abcdef', 'collection uuid matches')
+  }
 })
