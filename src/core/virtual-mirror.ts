@@ -13,6 +13,7 @@ export async function mountCollection(
   collectionPath: string
 ): Promise<Hyperdrive> {
   const localdrive = new Localdrive(collectionPath)
+  await localdrive.ready()
   const drive = new Hyperdrive(corestore, localdrive)
   return drive
 }

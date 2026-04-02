@@ -101,3 +101,32 @@ test('mountCollection can be unmounted', async (t) => {
 
   t.pass('unmountCollection completes without error')
 })
+
+test('mountCollection returns fully operational Hyperdrive', async (t) => {
+  const tmpPath = createTmpPath()
+  const collectionPath = path.join(tmpPath, 'collection')
+  const corestorePath = path.join(tmpPath, 'corestore')
+  fs.mkdirSync(collectionPath, { recursive: true })
+  t.teardown(async () => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch { /* ignore */ }
+  })
+
+  fs.writeFileSync(path.join(collectionPath, 'game1.nes'), 'rom1')
+  fs.writeFileSync(path.join(collectionPath, 'game2.nes'), 'rom2')
+
+  const corestore = new Corestore(corestorePath)
+  t.teardown(() => corestore.close())
+
+  const drive = await mountCollection(corestore, collectionPath)
+
+  await drive.ready()
+  
+  t.ok(drive, 'Hyperdrive is truthy after ready')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t.ok(typeof (drive as any).readdir === 'function', 'Hyperdrive has readdir method after ready')
+
+  await drive.close()
+  t.pass('Hyperdrive operations work immediately after mountCollection returns')
+})
