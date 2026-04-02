@@ -45,6 +45,8 @@
     "fetch": "npm:bare-node-fetch@^1.0.0",
     "fs": "npm:bare-node-fs@^1.0.0",
     "hyperbee": "^2.27.3",
+    "hyperdrive": "^13.3.2",
+    "localdrive": "^2.2.1",
     "os": "npm:bare-node-os@^1.0.0",
     "path": "npm:bare-node-path@^1.0.0",
     "pino": "^10.3.1",

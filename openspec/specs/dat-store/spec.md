@@ -14,7 +14,7 @@ The system SHALL provide a `createStore(storagePath?)` function that initializes
 - **THEN** no further operations are accepted
 
 ### Requirement: Store parsed DAT data
-The system SHALL provide a `storeDat(store, systemName, datFile)` function that writes all entries from a parsed `DatFile` into Hyperbee. For each `DatRom` in each `DatGame`, the system SHALL write one key per available hash type using the schema `dat:<canonical-system-name>:<hashType>:<HASH>`. Hash values in keys SHALL be normalized to uppercase. The stored value SHALL contain `gameName`, `romName`, `size`, and all other available hashes plus `serial` if present. The system SHALL also write a header key `dat:<canonical-system-name>:header` with the DAT file's `name` and `version`.
+The system SHALL provide a `storeDat(store, systemName, datFile)` function that writes all entries from a parsed `DatFile` into Hyperbee. For each `DatRom` in each `DatGame`, the system SHALL write one key per available hash type using the schema `dat:<canonical-system-name>:<hashType>:<HASH>`. Hash values in keys SHALL be normalized to uppercase. The stored value SHALL be a `StoredRomEntry` containing `gameName`, `romName`, `size`, all available hashes, `serial` if present, and enrichment fields (`developer`, `genre`, `releaseyear`, `releasemonth`, `publisher`, `region`) when available. Enrichment fields SHALL be optional (undefined when not yet merged).
 
 #### Scenario: Store a DAT file with CRC, MD5, and SHA1
 - **WHEN** `storeDat(store, "Nintendo - Nintendo Entertainment System", datFile)` is called with a DatFile containing a game with one ROM having crc, md5, and sha1
@@ -38,6 +38,36 @@ The system SHALL provide a `storeDat(store, systemName, datFile)` function that 
 #### Scenario: ROM serial is preserved in stored value
 - **WHEN** a `DatRom` has a `serial` field
 - **THEN** the stored value includes `serial`
+
+#### Scenario: Enrichment fields are preserved in stored value
+- **WHEN** a `StoredRomEntry` includes enrichment fields (`developer`, `genre`, `releaseyear`, `releasemonth`, `publisher`, `region`)
+- **THEN** those fields are included in the Hyperbee value
+
+### Requirement: StoredRomEntry enrichment fields
+The `StoredRomEntry` type SHALL include optional fields: `developer?: string`, `genre?: string`, `releaseyear?: string`, `releasemonth?: string`, `publisher?: string`, `region?: string`. All enrichment fields SHALL be optional to support incremental merge.
+
+#### Scenario: StoredRomEntry with all enrichment fields
+- **WHEN** a `StoredRomEntry` is created with developer, genre, releaseyear, releasemonth, publisher, and region
+- **THEN** the TypeScript compiler accepts all fields without error
+
+#### Scenario: StoredRomEntry with no enrichment fields
+- **WHEN** a `StoredRomEntry` is created with only the base fields (gameName, romName, size, hashes)
+- **THEN** the TypeScript compiler accepts it without error (enrichment fields are undefined)
+
+### Requirement: Name-based index for search
+The system SHALL provide a name index in Hyperbee mapping normalized game names to CRC values. The key schema SHALL be `dat:<system>:name:<normalized-name>` where `normalized-name` is the game name lowercased and trimmed. The value SHALL contain the CRC of the game's primary ROM.
+
+#### Scenario: Name index entry created during store
+- **WHEN** `storeDat` stores a game with name "Super Mario Bros. (World)" and CRC "3A3B5B05"
+- **THEN** a key `dat:<system>:name:super mario bros. (world)` is written with value containing `crc: "3A3B5B05"`
+
+#### Scenario: Name index lookup
+- **WHEN** a prefix scan is performed on `dat:<system>:name:super mario`
+- **THEN** all games whose normalized names start with "super mario" are returned
+
+#### Scenario: Name index is rebuilt on re-store
+- **WHEN** `storeDat` is called again with an updated DAT file
+- **THEN** the name index entries reflect the updated game list
 
 ### Requirement: Look up ROM by hash with fallback
 The system SHALL provide a `lookupRom(store, systemName, hash)` function that searches for a ROM entry by hash. The function SHALL normalize the input hash to uppercase, then attempt lookup in order: SHA1 key, MD5 key, CRC key. The function SHALL return the first match found, or null if no match exists. The result SHALL include which hash type matched.

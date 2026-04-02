@@ -1,8 +1,9 @@
 // @ts-expect-error - compat.js is a plain JS module that sets globals
 await import('./compat.js')
+import * as path from 'path'
 import { createLogger } from './src/core/logger.js'
 import { createStore } from './src/store/store.js'
-import { ArkiveService, initAppRoot, IdentityServiceStub } from './src/arkive/index.js'
+import { ArkiveService, initAppRoot, IdentityServiceImpl } from './src/arkive/index.js'
 
 /**
  * @intent Provide the root application logger for mesh-arkade.
@@ -23,7 +24,7 @@ async function main() {
 
   const store = createStore()
   Pear.teardown(() => store.close())
-  const identity = new IdentityServiceStub()
+  const identity = new IdentityServiceImpl(store)
   const arkive = new ArkiveService({ store, identity })
 
   const args = process.argv.slice(2)
@@ -89,6 +90,62 @@ async function main() {
         break
       }
 
+      case 'collection': {
+        const subcommand = args[1]
+        switch (subcommand) {
+          case 'add': {
+            const collectionPath = args[2]
+            if (!collectionPath) {
+              console.error('Usage: collection add <path> [name]')
+              process.exit(1)
+            }
+            const absolutePath = path.resolve(collectionPath)
+            const collectionName = args[3] ?? path.basename(absolutePath)
+            const result = await arkive.addCollection({ name: collectionName, path: absolutePath })
+            console.log(`Collection added: ${result.name} (${result.id})`)
+            break
+          }
+
+          case 'list': {
+            const rootPath = args[2]
+            const collections = rootPath 
+              ? await arkive.listCollections({ rootPath })
+              : await arkive.listCollections({})
+            if (collections.length === 0) {
+              console.log('No collections found')
+            } else {
+              console.log('Collections:')
+              for (const col of collections) {
+                const status = col.connected ? 'connected' : 'disconnected'
+                console.log(`  ${col.name} [${col.id}] (${status})`)
+              }
+            }
+            break
+          }
+
+          case 'scan': {
+            const collectionId = args[2]
+            if (!collectionId) {
+              console.error('Usage: collection scan <collection-id>')
+              process.exit(1)
+            }
+            if (!/^[0-9a-fA-F]{32}$/.test(collectionId)) {
+              console.error('Invalid collection ID: must be a 32-character hex string')
+              process.exit(1)
+            }
+            console.log('Scanning collection...')
+            await arkive.scanCollection({ collectionId })
+            console.log('Scan complete!')
+            break
+          }
+
+          default:
+            console.error('Usage: collection <add|list|scan> [options]')
+            process.exit(1)
+        }
+        break
+      }
+
       case 'help':
       case undefined:
       case '':
@@ -98,6 +155,9 @@ Mesh ARKade Commands:
   search <query>       Search for titles by name
   info <crc>          Get title info by CRC
   refresh              Refresh the NES catalog
+  collection add <path> [name]    Add a collection
+  collection list [path]         List collections
+  collection scan <id>           Scan a collection
   help                 Show this help message
         `)
         break

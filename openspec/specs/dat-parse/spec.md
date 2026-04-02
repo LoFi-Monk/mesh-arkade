@@ -31,7 +31,7 @@ The system SHALL extract header metadata from the first `clrmamepro (...)` or `h
 - **THEN** those fields are `undefined` on the parsed `DatHeader`
 
 ### Requirement: Extract game entries with nested ROM data
-The system SHALL extract all `game (...)` blocks and their nested `rom (...)` blocks into `DatGame` entries with `DatRom` arrays.
+The system SHALL extract all `game (...)` blocks and their nested `rom (...)` blocks into `DatGame` entries with `DatRom` arrays. When extracting a game entry, the system SHALL use the `name` field as the game name. If `name` is not present, the system SHALL fall back to the `comment` field. If neither field is present, the game block SHALL be skipped.
 
 #### Scenario: Single ROM per game
 - **WHEN** a game block contains one `rom (...)` entry with name, size, crc, md5, and sha1
@@ -52,6 +52,15 @@ The system SHALL extract all `game (...)` blocks and their nested `rom (...)` bl
 #### Scenario: Game without optional fields
 - **WHEN** a game block contains only `name` and `rom` entries (no description or comment)
 - **THEN** `game.description` and `game.comment` are `undefined`
+
+#### Scenario: Supplementary DAT with comment instead of name
+- **WHEN** a game block has no `name` field but has a `comment` field (e.g., supplementary metadata DATs from libretro `metadat/`)
+- **THEN** `game.name` is set to the value of the `comment` field
+- **THEN** the game block is parsed successfully with all its ROM data
+
+#### Scenario: Game block with neither name nor comment
+- **WHEN** a game block has no `name` field and no `comment` field
+- **THEN** the game block is skipped (not included in the parsed `DatFile.games` array)
 
 ### Requirement: Handle optional and partial checksum fields
 The system SHALL treat all checksum fields (crc, md5, sha1, sha256) as optional on ROM entries.

@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { createStore } from '../src/store/store.js'
 import { storeDat } from '../src/store/dat-store.js'
-import { ArkiveService, IdentityServiceStub, IdentityRequiredError } from '../src/arkive/index.js'
+import { ArkiveService, IdentityRequiredError, initAppRoot, readConfig, IdentityServiceImpl } from '../src/arkive/index.js'
 import type { DatFile } from '../src/dat/types.js'
 
 function getTmpDir(): string {
@@ -47,7 +47,7 @@ test('listTitles returns all stored titles after catalog refresh', async (t) => 
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
   const titles = await arkive.listTitles({ system: 'nes' })
 
   t.is(titles.length, 3, 'returns 3 titles')
@@ -70,7 +70,7 @@ test('listTitles returns empty array on empty store', async (t) => {
   })
 
   const store = createStore(tmpPath)
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const titles = await arkive.listTitles({ system: 'nes' })
 
@@ -112,7 +112,7 @@ test('searchByName returns matching titles (case-insensitive)', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const results1 = await arkive.searchByName({ system: 'nes', query: 'super mario' })
   t.is(results1.length, 2, 'finds 2 results for "super mario"')
@@ -151,7 +151,7 @@ test('searchByName returns empty array on no match', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const results = await arkive.searchByName({ system: 'nes', query: 'zzz' })
   t.is(results.length, 0, 'returns empty array for no match')
@@ -195,7 +195,7 @@ test('getTitle returns full enriched entry for known CRC', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const entry = await arkive.getTitle('nes', '6B0C2D41')
 
@@ -227,7 +227,7 @@ test('getTitle returns null for unknown CRC', async (t) => {
   })
 
   const store = createStore(tmpPath)
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const entry = await arkive.getTitle('nes', 'FFFFFFFF')
 
@@ -310,13 +310,228 @@ test('listTitles respects limit and offset', async (t) => {
 
   await storeDat(store, 'nes', datFile)
 
-  const arkive = new ArkiveService({ store, identity: new IdentityServiceStub() })
+  const arkive = new ArkiveService({ store, identity: new IdentityServiceImpl(store) })
 
   const firstTwo = await arkive.listTitles({ system: 'nes', limit: 2 })
   t.is(firstTwo.length, 2, 'limit returns correct count')
 
   const skipFirstTwo = await arkive.listTitles({ system: 'nes', offset: 2, limit: 2 })
   t.is(skipFirstTwo.length, 2, 'offset skips correctly')
+
+  await store.close()
+})
+
+test('addCollection updates App Root config.json', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+
+  const result = await arkive.addCollection({ name: 'My Collection', path: collectionPath })
+
+  t.ok(result.id, 'collection has UUID')
+  t.is(result.name, 'My Collection', 'collection name matches')
+
+  const config = readConfig(tmpPath)
+  t.ok(config, 'config exists')
+  const firstCollection = config?.collections?.[0]
+  if (firstCollection) {
+    t.is(firstCollection.name, 'My Collection', 'config has collection name')
+    t.is(firstCollection.path, collectionPath, 'config has collection path')
+  }
+
+  await store.close()
+})
+
+test('scanCollection generates manifest.json', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+
+  fs.writeFileSync(path.join(collectionPath, 'game1.nes'), 'rom-data-1')
+  fs.writeFileSync(path.join(collectionPath, 'game2.nes'), 'rom-data-2')
+
+  const collectionResult = await arkive.addCollection({ name: 'Test Collection', path: collectionPath })
+
+  const manifest = await arkive.scanCollection({ collectionId: collectionResult.id })
+
+  t.ok(manifest, 'scanCollection returns manifest')
+  t.ok((manifest as { files: unknown[] }).files.length >= 2, 'manifest has at least 2 files')
+
+  const markerPath = path.join(collectionPath, '.mesh-arkade', 'manifest.json')
+  t.ok(fs.existsSync(markerPath), 'manifest.json exists in collection')
+
+  const loadedManifest = JSON.parse(fs.readFileSync(markerPath, 'utf-8'))
+  t.is(loadedManifest.collectionId, collectionResult.id, 'manifest has correct collectionId')
+  t.ok(loadedManifest.files.length >= 2, 'manifest file has at least 2 entries')
+
+  await store.close()
+})
+
+test('addCollection throws IdentityRequiredError when no identity', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const arkive = new ArkiveService({ store })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+
+  try {
+    await arkive.addCollection({ name: 'Test', path: collectionPath })
+    t.fail('should have thrown')
+  } catch (err) {
+    t.ok(err instanceof IdentityRequiredError, 'throws IdentityRequiredError')
+  }
+
+  await store.close()
+})
+
+test('scanCollection throws IdentityRequiredError when no identity', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const arkive = new ArkiveService({ store })
+
+  try {
+    await arkive.scanCollection({ collectionId: 'a'.repeat(32) })
+    t.fail('should have thrown')
+  } catch (err) {
+    t.ok(err instanceof IdentityRequiredError, 'throws IdentityRequiredError')
+  }
+
+  await store.close()
+})
+
+test('scanCollection performs case-insensitive ID lookup', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+  fs.writeFileSync(path.join(collectionPath, 'game.nes'), 'rom-data')
+
+  const result = await arkive.addCollection({ name: 'Test Collection', path: collectionPath })
+
+  const lowercaseId = result.id
+  const uppercaseId = lowercaseId.toUpperCase()
+
+  t.is(lowercaseId, uppercaseId.toLowerCase(), 'UUID is lowercase')
+
+  const scanResult = await arkive.scanCollection({ collectionId: uppercaseId })
+
+  t.ok(scanResult, 'scanCollection succeeds with uppercase ID')
+
+  await store.close()
+})
+
+test('scanCollection returns ManifestData type', async (t) => {
+  const tmpPath = createTmpPath()
+  fs.mkdirSync(tmpPath, { recursive: true })
+  t.teardown(() => {
+    try {
+      fs.rmSync(tmpPath, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  await initAppRoot(tmpPath)
+
+  const store = createStore(tmpPath)
+  const identityService = new IdentityServiceImpl(store)
+  await identityService.createIdentity('TestUser')
+
+  const arkive = new ArkiveService({ store, identity: identityService, customRoot: tmpPath })
+
+  const collectionPath = path.join(tmpPath, 'my-collection')
+  fs.mkdirSync(collectionPath, { recursive: true })
+  fs.writeFileSync(path.join(collectionPath, 'game.nes'), 'rom-data')
+
+  const result = await arkive.addCollection({ name: 'Test Collection', path: collectionPath })
+
+  const manifest = await arkive.scanCollection({ collectionId: result.id })
+
+  t.ok(manifest, 'returns manifest')
+  t.is(typeof manifest.collectionId, 'string', 'has collectionId string')
+  t.is(typeof manifest.scannedAt, 'number', 'scannedAt is number')
+  t.ok(Array.isArray(manifest.files), 'files is array')
+
+  if (manifest.files && manifest.files.length > 0) {
+    const firstFile = manifest.files[0]
+    if (firstFile) {
+      t.is(typeof firstFile.path, 'string', 'file has path')
+      t.is(typeof firstFile.crc32, 'string', 'file has crc32')
+    }
+  }
 
   await store.close()
 })

@@ -5,11 +5,21 @@ import type {
   TitleEntry,
   ListTitlesOptions,
   SearchOptions,
+  AddCollectionOptions,
+  ScanCollectionOptions,
+  ListCollectionsOptions,
 } from './types.js'
 import { IdentityRequiredError } from './types.js'
 import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { lookupRom } from '../store/dat-lookup.js'
+import * as path from 'path'
+import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
+import type { ListCollectionInfo } from '../core/collection-registry.js'
+import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
+import type { ManifestData } from '../core/collection-scanner.js'
+import { addCollectionToConfig, readConfig } from './app-root.js'
+import { pathExists } from '../core/runtime.js'
 
 /**
  * @intent   Service facade for managing the game catalog.
@@ -19,6 +29,7 @@ import { lookupRom } from '../store/dat-lookup.js'
 export class ArkiveService {
   private store: MeshStore
   private identity: IdentityService | undefined
+  private customRoot: string | undefined
 
   /**
    * @intent   Construct ArkiveService with store and optional identity.
@@ -28,6 +39,7 @@ export class ArkiveService {
   constructor(options: ArkiveServiceOptions) {
     this.store = options.store
     this.identity = options.identity
+    this.customRoot = options.customRoot
   }
 
   /**
@@ -159,5 +171,111 @@ export class ArkiveService {
 
     // TODO: Implement adding to collection
     throw new Error('Not implemented')
+  }
+
+  /**
+   * @intent   Register a new collection at the specified path.
+   * @guarantee Returns collection info on success, throws IdentityRequiredError if no identity. Updates App Root config.
+   * @constraint The path must exist on the filesystem. Creates .mesh-arkade/ marker folder. Adds to config.json.
+   */
+  async addCollection(options: AddCollectionOptions): Promise<ListCollectionInfo> {
+    if (!this.identity) {
+      throw new IdentityRequiredError('Identity required to add collection')
+    }
+
+    const identity = await this.identity.getIdentity()
+    if (!identity) {
+      throw new IdentityRequiredError('Identity required to add collection')
+    }
+
+    const absolutePath = path.resolve(options.path)
+    const result = await registerCollection(absolutePath, options.name)
+
+    if (!result.ok) {
+      throw new Error(result.error.message)
+    }
+
+    addCollectionToConfig({
+      uuid: result.collection.id,
+      name: result.collection.name,
+      path: result.collection.path,
+    }, this.customRoot)
+
+    return {
+      ...result.collection,
+      connected: true,
+    }
+  }
+
+  /**
+   * @intent   List collections from config.json or discover collections in a root path.
+   * @guarantee Returns array of collection info with connected/disconnected status.
+   * @constraint If rootPath is empty/omitted: reads from global config.json and checks path existence for connected status.
+   *             If rootPath is provided: calls discovery tool to find .mesh-arkade folders in subdirectories.
+   */
+  async listCollections(options: ListCollectionsOptions): Promise<ListCollectionInfo[]> {
+    const { rootPath } = options
+
+    if (!rootPath || rootPath === '' || rootPath === undefined) {
+      const customRoot = this.customRoot
+      const config = readConfig(customRoot)
+      if (!config || config.collections.length === 0) {
+        return []
+      }
+
+      return config.collections.map((col) => ({
+        id: col.uuid,
+        name: col.name,
+        path: col.path,
+        createdAt: 0,
+        connected: pathExists(col.path),
+      }))
+    }
+
+    return listCollectionsFromRegistry(rootPath)
+  }
+
+  /**
+   * @intent   Scan a collection directory, hash files, and verify against catalog.
+   * @guarantee Returns manifest data with verification status for each file. Writes to .mesh-arkade/manifest.json.
+   * @constraint Requires identity. Uses empty catalog for verification - to be enhanced with global catalog later.
+   *             Looks up collection from global config.json to support external paths.
+   *             Validates collectionId is a 32-character hex string.
+   */
+  async scanCollection(options: ScanCollectionOptions): Promise<ManifestData> {
+    if (!/^[0-9a-fA-F]{32}$/.test(options.collectionId)) {
+      throw new Error('Invalid collection ID: must be a 32-character hex string')
+    }
+
+    if (!this.identity) {
+      throw new IdentityRequiredError('Identity required to scan collection')
+    }
+
+    const identity = await this.identity.getIdentity()
+    if (!identity) {
+      throw new IdentityRequiredError('Identity required to scan collection')
+    }
+
+    const config = readConfig(this.customRoot)
+    if (!config) {
+      throw new Error('App config not found')
+    }
+
+    const collectionIdLower = options.collectionId.toLowerCase()
+    const collectionEntry = config.collections.find(
+      (c) => c.uuid.toLowerCase() === collectionIdLower
+    )
+    if (!collectionEntry) {
+      throw new Error(`Collection not found: ${options.collectionId}`)
+    }
+
+    const catalog = new Map<string, boolean>()
+    const manifest = await scanCollectionFromScanner(
+      collectionEntry.path,
+      collectionEntry.uuid,
+      catalog
+    )
+
+    return manifest
   }
 }
