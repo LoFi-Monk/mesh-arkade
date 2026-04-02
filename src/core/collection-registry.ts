@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomBytes } from 'crypto'
+import { pathExists } from './runtime.js'
 
 export interface CollectionInfo {
   id: string
@@ -28,7 +29,7 @@ function getCollectionJsonPath(collectionPath: string): string {
 function isCollectionRegistered(collectionPath: string): boolean {
   const markerPath = getCollectionMarkerPath(collectionPath)
   const jsonPath = getCollectionJsonPath(collectionPath)
-  return fs.existsSync(markerPath) && fs.existsSync(jsonPath)
+  return pathExists(markerPath) && pathExists(jsonPath)
 }
 
 /**
@@ -42,7 +43,7 @@ export async function registerCollection(
 ): Promise<RegisterCollectionResult> {
   return new Promise((resolve) => {
     try {
-      if (!fs.existsSync(collectionPath)) {
+      if (!pathExists(collectionPath)) {
         resolve({
           ok: false,
           error: {
@@ -101,7 +102,7 @@ export async function registerCollection(
 export async function listCollections(rootPath: string): Promise<ListCollectionInfo[]> {
   return new Promise((resolve) => {
     try {
-      if (!fs.existsSync(rootPath)) {
+      if (!pathExists(rootPath)) {
         resolve([])
         return
       }
@@ -118,14 +119,14 @@ export async function listCollections(rootPath: string): Promise<ListCollectionI
         const markerPath = getCollectionMarkerPath(collectionPath)
         const jsonPath = getCollectionJsonPath(collectionPath)
 
-        if (fs.existsSync(markerPath) && fs.existsSync(jsonPath)) {
+        if (pathExists(markerPath) && pathExists(jsonPath)) {
           try {
             const content = fs.readFileSync(jsonPath, 'utf-8')
             const collectionData: CollectionInfo = JSON.parse(content)
 
             collections.push({
               ...collectionData,
-              connected: fs.existsSync(collectionPath),
+              connected: pathExists(collectionPath),
             })
           } catch {
             // Skip invalid collection.json files

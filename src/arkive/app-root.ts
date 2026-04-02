@@ -1,6 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
+import { pathExists } from '../core/runtime.js'
 
 const APP_DIR_NAME = 'mesh-arkade'
 
@@ -34,7 +35,7 @@ export async function initAppRoot(customRoot?: string): Promise<void> {
 
   await ensureDir(appRoot)
 
-  if (!fileExists(configPath)) {
+  if (!pathExists(configPath)) {
     const config: AppConfig = {
       version: '1.0.0',
       collections: [],
@@ -52,7 +53,7 @@ export function readConfig(customRoot?: string): AppConfig | null {
   const appRoot = getAppRootPath(customRoot)
   const configPath = path.join(appRoot, 'config.json')
 
-  if (!fileExists(configPath)) {
+  if (!pathExists(configPath)) {
     return null
   }
 
@@ -94,7 +95,7 @@ export function addCollectionToConfig(
 }
 
 function ensureDirSync(dirPath: string): void {
-  if (!fileExists(dirPath)) {
+  if (!pathExists(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true })
   }
 }
@@ -118,17 +119,8 @@ export function removeCollectionFromConfig(uuid: string, customRoot?: string): v
 }
 
 async function ensureDir(dirPath: string): Promise<void> {
-  if (!fileExists(dirPath)) {
+  if (!pathExists(dirPath)) {
     await mkdir(dirPath, { recursive: true })
-  }
-}
-
-function fileExists(filePath: string): boolean {
-  try {
-    fs.statSync(filePath)
-    return true
-  } catch {
-    return false
   }
 }
 

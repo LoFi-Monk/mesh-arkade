@@ -17,3 +17,17 @@ export function getFetch (): typeof fetch {
 export function getFs (): typeof fs {
   return fs
 }
+
+/**
+ * @intent   Check if a path exists (file or directory) reliably across Bare and Node runtimes.
+ * @guarantee Returns true if the path exists (either as file or directory), false otherwise.
+ * @constraint Uses try/catch with fs.statSync pattern for maximum compatibility in Pear/Bare runtime.
+ */
+export function pathExists (filePath: string): boolean {
+  try {
+    fs.statSync(filePath)
+    return true
+  } catch {
+    return false
+  }
+}

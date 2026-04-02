@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { hashRom } from './rom-hasher.js'
+import { pathExists } from './runtime.js'
 
 export interface ScannedFile {
   path: string
@@ -25,7 +26,7 @@ export type HashAndMatchResult =
  * @constraint Returns empty async iterable if directory doesn't exist.
  */
 export async function* walkDirectory(dirPath: string): AsyncGenerator<string> {
-  if (!fs.existsSync(dirPath)) {
+  if (!pathExists(dirPath)) {
     return
   }
 
@@ -51,7 +52,7 @@ export async function hashAndMatch(
   filePath: string,
   catalog: Map<string, boolean>
 ): Promise<HashAndMatchResult> {
-  if (!fs.existsSync(filePath)) {
+  if (!pathExists(filePath)) {
     return null
   }
 
@@ -82,7 +83,7 @@ export async function writeManifest(
     try {
       const markerPath = path.join(collectionPath, '.mesh-arkade')
 
-      if (!fs.existsSync(markerPath)) {
+      if (!pathExists(markerPath)) {
         fs.mkdirSync(markerPath, { recursive: true })
       }
 

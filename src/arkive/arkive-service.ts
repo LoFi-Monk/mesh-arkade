@@ -14,12 +14,12 @@ import { mergeDat } from '../dat/merge.js'
 import { storeDat } from '../store/dat-store.js'
 import { lookupRom } from '../store/dat-lookup.js'
 import * as path from 'path'
-import * as fs from 'fs'
 import { registerCollection, listCollections as listCollectionsFromRegistry } from '../core/collection-registry.js'
 import type { ListCollectionInfo } from '../core/collection-registry.js'
 import { scanCollection as scanCollectionFromScanner } from '../core/collection-scanner.js'
 import type { ManifestData } from '../core/collection-scanner.js'
-import { getAppRootPath, addCollectionToConfig, readConfig } from './app-root.js'
+import { addCollectionToConfig, readConfig } from './app-root.js'
+import { pathExists } from '../core/runtime.js'
 
 /**
  * @intent   Service facade for managing the game catalog.
@@ -40,10 +40,6 @@ export class ArkiveService {
     this.store = options.store
     this.identity = options.identity
     this.customRoot = options.customRoot
-  }
-
-  private getAppRoot(): string {
-    return getAppRootPath(this.customRoot)
   }
 
   /**
@@ -232,7 +228,7 @@ export class ArkiveService {
         name: col.name,
         path: col.path,
         createdAt: 0,
-        connected: fs.existsSync(col.path),
+        connected: pathExists(col.path),
       }))
     }
 
